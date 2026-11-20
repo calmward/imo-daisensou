@@ -735,8 +735,40 @@ const dorobou: Drawer = (ctx, p) => {
   ctx.restore();
 };
 
+const kame: Drawer = (ctx, p) => {
+  const m = motion(p, 5);
+  feet(ctx, 0, 0, 16, 6, p.walk * 5, m.moving, '#6aa84a');
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.4);
+  ctx.rotate(m.lean * 0.5);
+  // head
+  const hx = p.state === 'attack' ? 30 + (p.atk > 0.5 ? 8 : -4) : 28;
+  ellipse(ctx, hx, -20, 11, 10);
+  fillStroke(ctx, '#8ad85a', 2.5);
+  eye(ctx, hx + 3, -23, 3.6, { look: 0.8, angry: p.state === 'attack' });
+  mouth(ctx, hx + 5, -15, 5, 'smile');
+  // shell dome
+  ctx.beginPath();
+  ctx.arc(-2, -10, 28, Math.PI, 0);
+  ctx.closePath();
+  fillStroke(ctx, radial(ctx, -8, -26, 30, '#c8a060', '#7a5a22'), 3);
+  ctx.strokeStyle = '#5a3a12';
+  ctx.lineWidth = 2;
+  for (const [x, y] of [[-14, -22], [2, -28], [14, -18], [-4, -14]]) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      ctx.lineTo(x + Math.cos(a) * 6, y + Math.sin(a) * 5);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  }
+  ctx.fillRect(-30, -11, 56, 3);
+  ctx.restore();
+};
+
 export const ENEMY_ART: Record<string, Drawer> = {
-  dorobou, kaeru, metal,
+  kame, dorobou, kaeru, metal,
   ari, nezumi, kemushi, karasu, hachi, mogura, katatsumuri, tanuki, kamakiri, hebi, inoshishi, fukurou, kabuto, okarasu, kuma, daiou,
 };
 

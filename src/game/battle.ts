@@ -34,10 +34,11 @@ export interface Fighter {
   walkT: number; // render: animation phase
   size: number;
   evo: boolean; // evolved potato (visual)
+  shield: number; // remaining barrier threshold (0 = broken / none)
 }
 
 export type BEvent =
-  | { type: 'hit'; x: number; lane: number; side: 0 | 1; dmg: number; crit: boolean; big: boolean; targetSide: 0 | 1 | 2; effect?: string }
+  | { type: 'hit'; x: number; lane: number; side: 0 | 1; dmg: number; crit: boolean; big: boolean; targetSide: 0 | 1 | 2; effect?: 'slow' | 'freeze' | 'knock' | 'block' | 'break' }
   | { type: 'swing'; f: Fighter }
   | { type: 'kb'; f: Fighter }
   | { type: 'death'; f: Fighter }
@@ -202,7 +203,7 @@ export class Battle {
   private makeFighter(side: 0 | 1, id: string, s: CombatStats, x: number, size: number, reward: number, boss = false): Fighter {
     return {
       uid: this.uid++, side, id, s, hp: s.hp, maxHp: s.hp, x, state: 'walk', t: 0, atkCd: 0, hitDone: false, kbCount: 0, kbFrom: x, kbTo: x,
-      slowT: 0, freezeT: 0, lane: this.rng.next(), burrowLeft: s.burrow ?? 0, burrowed: false, boss, reward, flash: 0, walkT: this.rng.next() * 10, size, evo: false,
+      slowT: 0, freezeT: 0, lane: this.rng.next(), burrowLeft: s.burrow ?? 0, burrowed: false, boss, reward, flash: 0, walkT: this.rng.next() * 10, size, evo: false, shield: s.barrier ?? 0,
     };
   }
 
@@ -216,6 +217,7 @@ export class Battle {
     const m = (mult / 100) * this.rage;
     const s: CombatStats = { ...def, hp: Math.round(def.hp * m), atk: Math.round(def.atk * m) };
     const f = this.makeFighter(1, id, s, this.length + 14 + this.rng.range(-6, 6), def.size, def.reward, !!def.boss);
+    f.shield = Math.round((def.barrier ?? 0) * m);
     this.enemies.push(f);
     this.spawned++;
     this.events.push({ type: 'spawn', f });
@@ -347,6 +349,14 @@ export class Battle {
       const crit = !!f.s.crit && this.rng.chance(f.s.crit);
       if (crit) dmg *= 2;
       if (t.s.metal && !crit) dmg = 1;
+      if (t.shield > 0) {
+        if (dmg < t.shield) {
+          this.events.push({ type: 'hit', x: t.x, lane: t.lane, side: f.side, dmg: 0, crit: false, big: false, targetSide: t.side, effect: 'block' });
+          continue;
+        }
+        t.shield = 0;
+        this.events.push({ type: 'hit', x: t.x, lane: t.lane, side: f.side, dmg: 0, crit: false, big: true, targetSide: t.side, effect: 'break' });
+      }
       this.damage(t, dmg, f, crit);
       const ef = f.s.effect;
       if (ef && t.state !== 'dead' && (!ef.vs || hasAny(ef.vs, t.s.traits)) && this.rng.chance(ef.chance)) {

@@ -282,8 +282,17 @@ export class BattleScene implements Scene {
         const y = -26 - e.lane * 0;
         const ly = this.laneY(e.lane);
         if (e.effect) {
-          const label = e.effect === 'slow' ? 'おそく！' : e.effect === 'freeze' ? 'ストップ！' : 'ふっとばし！';
-          const col = e.effect === 'slow' ? '#d9a6ff' : e.effect === 'freeze' ? '#9be8ff' : '#ffb340';
+          const label = { slow: 'おそく！', freeze: 'ストップ！', knock: 'ふっとばし！', block: 'カキン！', break: 'こうらが われた！' }[e.effect] ?? '';
+          const col = { slow: '#d9a6ff', freeze: '#9be8ff', knock: '#ffb340', block: '#c9d2e0', break: '#ffe14d' }[e.effect] ?? '#fff';
+          if (e.effect === 'block') {
+            audio.sfx('deny');
+            fx.add({ kind: 'spark', x: e.x, y: -30, max: 0.25, size: 10, color: '#c9d2e0', rot: 0, vr: 6 });
+            if (r() > 0.5) break;
+          }
+          if (e.effect === 'break') {
+            audio.sfx('crit');
+            this.shake = Math.max(this.shake, 8);
+          }
           fx.add({ kind: 'text', x: e.x, y: y - 40 + ly, vy: -40, max: 0.9, size: 16, color: col, text: label });
           if (e.effect === 'freeze') audio.sfx('freeze');
           break;
@@ -1335,6 +1344,7 @@ export function counterHint(enemyId: string, owned: Record<string, number>): str
   const counter = Object.keys(owned).map((id) => ALLY_MAP[id]).find((a) => a && a.strongVs?.some((t) => traits.includes(t)));
   if (counter) return `${TRAIT_NAME[counter.strongVs!.find((t) => traits.includes(t))!]}に つよい「${counter.name}」を だそう！`;
   if (e.range >= 200) return 'とおくから うってくる てき。しゃていの ながい なかまで たおそう！';
+  if (e.barrier) return 'こうらの てきは つよい いちげきで わろう！ フライドポテトや ながいもが とくい！';
   if (e.metal) return 'かたい てきは クリティカルで たおそう！「いもけんぴ」や しんかした いもが とくい！';
   if (e.burrow) return 'うしろに まわりこんで くるよ。うしろにも なかまを だそう！';
   return 'パワーアップで なかまを つよくしよう！';
