@@ -84,6 +84,7 @@ export class BattleScene implements Scene {
     const st = this.b.stage;
     this.banner = { text: st.boss ? 'ボス ステージ！' : 'スタート！', sub: `${st.id}. ${st.name}${this.star > 1 ? '（' + STAR_NAMES[this.star] + '）' : ''}`, t: 0, color: st.boss ? '#ff5f5f' : '#ffd23a', dur: 2.2 };
     audio.sfx('whistle');
+    setTimeout(() => audio.say(st.boss ? 'ボスステージだ！ しゅつげき！' : 'しゅつげき！'), 300);
   }
 
   onBack() {
@@ -317,6 +318,7 @@ export class BattleScene implements Scene {
       }
       case 'beam':
         audio.sfx('beam');
+        audio.say('いもビーム！');
         this.shake = 6;
         break;
       case 'beamHit': {
@@ -335,6 +337,7 @@ export class BattleScene implements Scene {
       }
       case 'boss':
         this.banner = { text: 'ボスが あらわれた！', sub: ENEMY_MAP[e.f.id]?.name, t: 0, color: '#ff5f5f', dur: 2.4 };
+        audio.say('ボスが きたぞ！');
         audio.sfx('boss');
         this.userCamT = 0;
         break;
@@ -408,9 +411,11 @@ export class BattleScene implements Scene {
       for (let i = 0; i < 40; i++)
         this.fx.add({ kind: 'debris', x: bx + (Math.random() - 0.5) * 100, y: -Math.random() * 200, vx: (Math.random() - 0.5) * 400, vy: -200 - Math.random() * 300, grav: 700, max: 2, size: 10, color: ['#6a4a2a', '#3a2a1a', '#9a7a5a'][i % 3], rot: Math.random() * 6, vr: 10 });
       setTimeout(() => audio.jingle('win'), 900);
+      setTimeout(() => audio.say('やったー！ しょうり！'), 600);
     } else {
       this.lossGold = applyLoss(save, stage, killGold);
       setTimeout(() => audio.jingle('lose'), 600);
+      setTimeout(() => audio.say('まけちゃった… つぎは がんばろう'), 2200);
     }
     this.app.persist();
   }

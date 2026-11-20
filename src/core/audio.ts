@@ -217,6 +217,26 @@ class Audio {
     }
   }
 
+  /** Cute voice line via the built-in speech synthesizer (if the device has a Japanese voice). */
+  say(line: string) {
+    if (this.muted || typeof speechSynthesis === 'undefined') return;
+    try {
+      const voices = speechSynthesis.getVoices();
+      const ja = voices.find((v) => v.lang?.toLowerCase().startsWith('ja'));
+      if (!ja && voices.length) return; // no Japanese voice: stay silent rather than mispronounce
+      const u = new SpeechSynthesisUtterance(line);
+      u.lang = 'ja-JP';
+      if (ja) u.voice = ja;
+      u.pitch = 1.7;
+      u.rate = 1.15;
+      u.volume = 0.9;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    } catch {
+      /* ignore */
+    }
+  }
+
   /** Short jingles (not looping) */
   jingle(name: 'win' | 'lose') {
     if (!this.ctx) return;
