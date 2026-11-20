@@ -259,13 +259,14 @@ export class MapScene implements Scene {
     const by = h - botH;
     ctx.fillStyle = '#5a3a1e';
     ctx.fillRect(0, by, w, botH);
-    const bw = Math.min(200, (w - 40) / 3);
+    const bw = Math.min(180, (w - 50) / 4);
     const btns: [string, string, keyof typeof STYLES, () => void, boolean][] = [
       ['power', 'パワーアップ', 'green', () => this.app.go('power'), save.gold >= 100 && !save.tut.power && isCleared(save, 1)],
       ['gacha', 'ガチャ', 'pink', () => this.app.go('gacha'), save.tickets > 0],
       ['missions', 'ミッション', 'blue', () => this.app.go('missions'), claimable(save).length > 0],
+      ['zukan', 'ずかん', 'purple', () => this.app.go('zukan'), false],
     ];
-    const totalW = bw * 3 + 20;
+    const totalW = bw * 4 + 30;
     btns.forEach(([id, label, st, fn, badge], i) => {
       const r = { x: (w - totalW) / 2 + i * (bw + 10), y: by + 10, w: bw, h: botH - 20 };
       const off = drawButton(ctx, r, STYLES[st], ui.isPressed(id));

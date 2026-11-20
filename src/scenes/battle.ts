@@ -392,6 +392,13 @@ export class BattleScene implements Scene {
         }
         break;
       case 'spawn':
+        if (e.f.side === 1) {
+          const seen = this.app.save.seen;
+          if (!seen[e.f.id]) {
+            seen[e.f.id] = 1;
+            fx.add({ kind: 'text', x: e.f.x - 30, y: -120, vy: -20, max: 1.6, size: 16, color: '#9be8ff', text: 'ずかんに とうろく！' });
+          }
+        }
         if (e.f.side === 0) {
           audio.sfx('spawn');
           fx.add({ kind: 'puff', x: e.f.x - 10, y: -10, max: 0.4, size: 22, color: '#fff' });

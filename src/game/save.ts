@@ -16,6 +16,7 @@ export interface SaveData {
   crowns: Record<number, number>; // stage id -> highest ★ cleared (1..3)
   daily: string; // last day the login bonus was claimed
   claimed: string[]; // mission ids already claimed
+  seen: Record<string, number>; // enemy id -> times defeated/encountered
   stats: { wins: number; losses: number; kills: number };
 }
 
@@ -39,6 +40,7 @@ export function newSave(): SaveData {
     crowns: {},
     daily: '',
     claimed: [],
+    seen: {},
     stats: { wins: 0, losses: 0, kills: 0 },
   };
 }
@@ -77,6 +79,7 @@ export function sanitize(d: unknown): SaveData {
   for (const [k, v] of Object.entries(obj(o.units))) if (ALLY_MAP[k]) units[k] = num(v, 1, 1, MAX_LEVEL);
   s.units = Object.keys(units).length ? units : base.units;
   if (!s.units.jaga) s.units.jaga = 1;
+  for (const [k, v] of Object.entries(obj(o.seen))) s.seen[k] = num(v, 0);
   for (const [k, v] of Object.entries(obj(o.research))) s.research[k] = num(v, 0, 0, 20);
   for (const [k, v] of Object.entries(obj(o.tut))) s.tut[k] = v === true;
   const st = obj(o.stats);
