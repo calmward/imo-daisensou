@@ -1,10 +1,21 @@
 import { portrait } from '../art/index';
 import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
-import { clamp, drawButton, panel, rr, STYLES, text } from '../core/ui';
+import { clamp, drawButton, font, panel, rr, STYLES, text } from '../core/ui';
 import { claim, claimDailyMission, dailyMissions, isDone, MISSIONS, rollDay } from '../game/missions';
 import { MUSIC } from '../game/music';
 import { drawGoldIcon } from './battle';
+
+/** shrink the font evenly (never squash horizontally) so long labels stay readable */
+function fitText(ctx: CanvasRenderingContext2D, s: string, x: number, y: number, size: number, maxW: number, color: string) {
+  let sz = size;
+  ctx.font = font(sz);
+  while (sz > 9 && ctx.measureText(s).width > maxW) {
+    sz -= 0.5;
+    ctx.font = font(sz);
+  }
+  text(ctx, s, x, y, sz, { align: 'left', color, stroke: 'none' });
+}
 
 const ICONS: Record<string, string> = { c: 'jaga', k: 'ari', u: 'potesala', l: 'satsu', evo: 'king', r: '🏰', g: '🎰', s: '⭐', w: '🏆' };
 
@@ -69,7 +80,7 @@ export class MissionScene implements Scene {
       panel(ctx, { x: lx, y, w: lw, h: rh }, got ? '#e8e8e8' : done ? '#fff6c8' : '#fff0f6', got ? '#aaa' : '#ff8a1f', 12);
       const fs = clamp(rh * 0.24, 12, 18);
       const btnW = Math.min(100, lw * 0.24);
-      text(ctx, d.label, lx + 14, y + rh * 0.32, fs, { align: 'left', color: '#5a3a12', stroke: 'none', maxW: lw - btnW - 110 });
+      fitText(ctx, d.label, lx + 14, y + rh * 0.32, fs, lw - btnW - 110, '#5a3a12');
       const bw = lw - btnW - 170;
       ctx.fillStyle = '#eed8e0';
       rr(ctx, lx + 14, y + rh * 0.6, bw, rh * 0.16, rh * 0.08);
@@ -117,7 +128,7 @@ export class MissionScene implements Scene {
       lw = lw - rh * 0.9;
       const btnW = Math.min(100, lw * 0.24);
       const rx = lx + lw - btnW - 18 - Math.min(70, lw * 0.18);
-      text(ctx, mi.label, lx + 14, y + rh * 0.32, fs, { align: 'left', color: got ? '#888' : '#3a3a6a', stroke: 'none', maxW: rx - lx - 20 });
+      fitText(ctx, mi.label, lx + 14, y + rh * 0.32, fs, rx - lx - 20, got ? '#888' : '#3a3a6a');
       const [a, b] = mi.progress(save);
       const bw = rx - lx - 80;
       ctx.fillStyle = '#d8e4ee';

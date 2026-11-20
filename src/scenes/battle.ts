@@ -51,6 +51,7 @@ export class BattleScene implements Scene {
   hitStop = 0;
   beamCamT = 0;
   thiefWarned = false;
+  spawnTime = new Map<number, number>();
   endHandled = false;
   winRes: WinResult | null = null;
   lossGold = 0;
@@ -302,7 +303,9 @@ export class BattleScene implements Scene {
           fx.add({ kind: 'spark', x: e.x + (r() - 0.5) * 20, y: y + ly + (r() - 0.5) * 20, vx: (r() - 0.5) * 160, vy: -r() * 160, max: 0.35, size: e.big ? 14 : 9, color: e.crit ? '#ff5f5f' : r() < 0.5 ? '#fff6a0' : '#ffffff', rot: r() * 6, vr: 8 });
         if (e.big || r() < 0.25) fx.add({ kind: 'flash', x: e.x, y: y + ly, max: 0.18, size: e.big ? 34 : 20, color: '#fffbe0' });
         const dmgColor = e.targetSide === 1 ? '#fff36a' : '#ffb0b0';
-        fx.add({ kind: 'text', x: e.x + (r() - 0.5) * 16, y: y - 26 + ly, vy: -70, max: 0.75, size: e.big ? 28 : 20, color: dmgColor, text: String(e.dmg) });
+        // keep busy fights readable: limit how many small numbers float at once
+        const numbers = fx.list.filter((p) => p.kind === 'text').length;
+        if (e.big || numbers < 6) fx.add({ kind: 'text', x: e.x + (r() - 0.5) * 40, y: y - 26 + ly - r() * 14, vx: (r() - 0.5) * 40, vy: -70, max: 0.75, size: e.big ? 28 : 18, color: dmgColor, text: String(e.dmg) });
         if (e.big) this.hitStop = Math.max(this.hitStop, 0.045);
         if (e.crit) {
           fx.add({ kind: 'text', x: e.x, y: y - 56 + ly, vy: -40, max: 0.9, size: 22, color: '#ff4040', stroke: '#fff', text: 'クリティカル！', rot: -0.1 });
@@ -344,7 +347,7 @@ export class BattleScene implements Scene {
       }
       case 'money':
         for (let i = 0; i < 3; i++) fx.add({ kind: 'coin', x: e.x + 20, y: -30, vx: (r() - 0.5) * 120, vy: -150 - r() * 100, grav: 500, max: 0.9, size: 6 });
-        fx.add({ kind: 'text', x: e.x + 20, y: -70, vy: -40, max: 0.9, size: 15, color: '#ffe14d', text: `+${e.amount}えん` });
+        if (fx.list.filter((p) => p.kind === 'text').length < 8) fx.add({ kind: 'text', x: e.x + 20, y: -90, vy: -40, max: 0.8, size: 13, color: '#ffe14d', text: `+${e.amount}えん` });
         audio.sfx('coin');
         break;
       case 'baseHit': {
@@ -355,6 +358,7 @@ export class BattleScene implements Scene {
         break;
       }
       case 'beam':
+        if (this.banner && !this.banner.boss) this.banner = null;
         countToday(this.app.save, 'beams');
         this.beamCamT = 1.6;
         audio.sfx('beam');
@@ -451,7 +455,7 @@ export class BattleScene implements Scene {
               fukurou: 'にらまれると うごけなくなるよ！',
               hebi: 'とおくまで かみついてくる！',
             };
-            if (intro[e.f.id] && !this.banner) {
+            if (intro[e.f.id] && (!this.banner || this.banner.t > 1.5)) {
               this.banner = { text: `${ENEMY_MAP[e.f.id].name}が きた！`, sub: intro[e.f.id], t: 0, color: '#9be8ff', dur: 2.6 };
               this.userCamT = 0;
             }
@@ -459,6 +463,7 @@ export class BattleScene implements Scene {
           }
         }
         if (e.f.side === 0) {
+          this.spawnTime.set(e.f.uid, this.b.time);
           countToday(this.app.save, 'deploys');
           audio.sfx('spawn');
           fx.add({ kind: 'puff', x: e.f.x - 10, y: -10, max: 0.4, size: 22, color: '#fff' });
@@ -474,6 +479,7 @@ export class BattleScene implements Scene {
   private onEnd(win: boolean) {
     if (this.endHandled) return;
     this.endHandled = true;
+    this.banner = null;
     const save = this.app.save;
     const stage = this.b.stage;
     const killGold = Math.min(300, this.b.kills * 3);
@@ -612,7 +618,7 @@ export class BattleScene implements Scene {
     this.drawControls(ctx, L);
     this.drawBanner(ctx, w, h, L);
     if (this.tut !== 'done' && !this.paused) this.drawTutorial(ctx, L, w, h);
-    else if (!this.paused && !b.result && b.walletLv < 3 && b.time > 20 && b.canUpgradeWallet() && this.app.save.stats.wins < 15) {
+    else if (!this.paused && !b.result && b.walletLv < 3 && b.time > 20 && b.canUpgradeWallet() && this.app.save.stats.wins < 6) {
       // gentle reminder for kids who forget the wallet
       drawHand(ctx, L.wallet.x + L.wallet.w * 0.6, L.wallet.y + L.wallet.h * 0.45 + Math.abs(Math.sin(this.t * 5)) * 10, 22);
     }
@@ -632,6 +638,10 @@ export class BattleScene implements Scene {
       const fs = fi.s.foreswing;
       atk = fi.t < fs ? (0.5 * fi.t) / fs : 0.5 + (0.5 * (fi.t - fs)) / ATTACK_BACKSWING;
       atk = Math.min(1, atk);
+    }
+    if (fi.side === 0 && fi.state === 'walk' && this.b.time - (this.spawnTime.get(fi.uid) ?? -9) < 0.35) {
+      const k = (this.b.time - (this.spawnTime.get(fi.uid) ?? 0)) / 0.35;
+      yOff -= Math.sin(k * Math.PI) * 22;
     }
     if (fi.state === 'burrow' && fi.s.thief) {
       alpha = 0.35;
@@ -665,7 +675,7 @@ export class BattleScene implements Scene {
     if (fi.state !== 'burrow' || fi.s.jump || fi.s.thief) {
       ctx.globalAlpha = 0.25 * alpha;
       ellipse(ctx, sx, toY(this.laneY(fi.lane)) + 2, fi.s.width * 0.45 * s, 6 * s);
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = fi.side === 1 ? '#b00000' : '#3a1a00';
       ctx.fill();
     }
     ctx.globalAlpha = alpha;
@@ -1212,7 +1222,7 @@ export class BattleScene implements Scene {
         y += fs * 1.6;
       }
       const secs = Math.floor(this.b.time);
-      text(ctx, `たおした てき ${this.b.kills}ひき ・ じかん ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, w / 2, y, fs * 0.62, { color: '#8a5a22', stroke: 'none', maxW: pw - 30 });
+      if (this.b.kills) text(ctx, `たおした てき ${this.b.kills}ひき ・ じかん ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, w / 2, y, fs * 0.62, { color: '#8a5a22', stroke: 'none', maxW: pw - 30 });
       y += fs * 1.1;
       if (this.resultT > 4.2 && Object.keys(this.app.save.units).some((id) => canLevelUp(this.app.save, id))) {
         const pulse = 1 + Math.sin(this.t * 5) * 0.04;
