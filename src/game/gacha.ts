@@ -13,7 +13,8 @@ export const GACHA_POOL: Record<Rarity, string[]> = {
 
 export type GachaResult =
   | { kind: 'unit'; id: string; isNew: boolean; level: number; rarity: Rarity }
-  | { kind: 'gold'; amount: number; rarity: Rarity };
+  | { kind: 'gold'; amount: number; rarity: Rarity }
+  | { kind: 'power'; id: string; level: number; rarity: Rarity };
 
 export function canGacha(save: SaveData) {
   return save.tickets > 0 || save.gold >= GACHA_GOLD_COST;
@@ -34,7 +35,14 @@ export function rollGacha(save: SaveData, rnd: () => number = Math.random): Gach
   else if (r < 0.7) rarity = 'R';
   else rarity = 'N';
   if (rarity === 'N') {
-    const amount = [300, 500, 800][Math.floor(rnd() * 3)];
+    // いもパワー: a random owned potato levels up (feels better than coins)
+    const ids = Object.keys(save.units).filter((u) => save.units[u] < MAX_LEVEL);
+    if (ids.length && rnd() < 0.7) {
+      const id = ids[Math.floor(rnd() * ids.length)];
+      save.units[id]++;
+      return { kind: 'power', id, level: save.units[id], rarity };
+    }
+    const amount = [600, 800, 1000][Math.floor(rnd() * 3)];
     save.gold += amount;
     return { kind: 'gold', amount, rarity };
   }

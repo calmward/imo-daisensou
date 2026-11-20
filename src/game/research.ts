@@ -33,7 +33,7 @@ export interface BattleMods {
 export function battleMods(r: Record<string, number>): BattleMods {
   const L = (id: string) => r[id] ?? 0;
   return {
-    castleHp: 2000 + 400 * L('castle'),
+    castleHp: 5000 + 800 * L("castle"),
     incomeMult: 1 + 0.06 * L('income'),
     walletMult: 1 + 0.08 * L('wallet'),
     beamDmg: 160 + 70 * L('beamPow'),

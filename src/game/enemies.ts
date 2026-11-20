@@ -31,6 +31,8 @@ export const ENEMIES: EnemyDef[] = [
     hp: 700, atk: 70, range: 120, speed: 50, atkInterval: 1.5, foreswing: 0.3, kb: 3, area: false, width: 48, size: 1.0, burrow: 220, jump: true },
   { id: 'metal', name: 'メタルてんとう', desc: 'ピカピカで かたい！ クリティカルで しか ダメージが はいらない。', traits: ['bug'], reward: 800,
     hp: 30, atk: 60, range: 110, speed: 35, atkInterval: 1.6, foreswing: 0.3, kb: 2, area: false, width: 40, size: 0.85, metal: true },
+  { id: 'dorobou', name: 'いもどろぼう', desc: 'いもを ぬすみに くる アライグマ。なかまを むしして おしろに まっしぐら！ はやく たおそう！', traits: ['beast'], reward: 120,
+    hp: 420, atk: 150, range: 90, speed: 70, atkInterval: 1.0, foreswing: 0.2, kb: 1, area: false, width: 44, size: 0.9, thief: true, burrow: 99999 },
   // ---- bosses ----
   { id: 'kabuto', name: 'カブトムシ', desc: 'もりの つよい むし。つので まとめて ふっとばす！', traits: ['bug', 'boss'], reward: 1000, boss: true,
     hp: 5000, atk: 180, range: 160, speed: 30, atkInterval: 2.4, foreswing: 0.5, kb: 3, area: true, width: 90, size: 1.6, shockwave: true },

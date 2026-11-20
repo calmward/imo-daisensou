@@ -133,8 +133,8 @@ export const STAGES: StageDef[] = RAW.map((r, i) => ({
   name: r.name,
   world: Math.floor(i / 12),
   length: r.len,
-  baseHp: r.hp,
-  spawns: r.spawns.map((s) => ({ ...s, mult: Math.round(((s.mult ?? 100) * r.d * (TUNING[i] ?? 1)) / 100) })),
+  baseHp: i >= 12 ? Math.round(r.hp * 0.7) : r.hp,
+  spawns: withThieves(i + 1, r).map((s) => ({ ...s, mult: Math.round(((s.mult ?? 100) * r.d * (TUNING[i] ?? 1)) / 100) })),
   reward: Math.round((150 + 60 * i + (r.boss ? 300 + 40 * i : 0)) / 10) * 10,
   unlock: r.unlock,
   boss: r.boss,
@@ -142,6 +142,12 @@ export const STAGES: StageDef[] = RAW.map((r, i) => ({
   tip: r.tip,
   rushes: makeRushes(i + 1, r, TUNING[i] ?? 1),
 }));
+
+function withThieves(id: number, r: Raw): SpawnEntry[] {
+  if (id < 5 || VALLEYS.has(id)) return r.spawns;
+  const iv: [number, number] = id < 13 ? [28, 36] : [20, 28];
+  return [...r.spawns, { enemy: 'dorobou', start: 25, interval: iv, count: 0, mult: 100 }];
+}
 
 function makeRushes(id: number, r: Raw, tune: number) {
   if (id <= 2 || VALLEYS.has(id)) return [];
@@ -162,7 +168,7 @@ export function ticketReward(stage: StageDef): number {
 }
 
 /** ★2 / ★3 versions of a stage: same layout, much stronger enemies. */
-export const STAR_MULT = [1, 1, 1.8, 3.0];
+export const STAR_MULT = [1, 1, 1.45, 2.1];
 export const STAR_NAMES = ['', 'ふつう', 'むずかしい', 'げきむず'];
 
 export function starStage(stage: StageDef, star: number): StageDef {

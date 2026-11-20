@@ -27,6 +27,7 @@ export interface CombatStats {
   multiHit?: number; // hits per attack (visual + split damage)
   minRange?: number; // can't hit things closer than this (long-range snipers)
   heal?: number; // heals nearby allies by this fraction of their max hp each attack
+  thief?: boolean; // ignores potatoes and runs for the castle
   metal?: boolean; // takes only 1 damage unless critical
   jump?: boolean; // burrow distance is a leap through the air instead
 }

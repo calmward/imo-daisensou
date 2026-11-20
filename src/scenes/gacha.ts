@@ -263,6 +263,11 @@ export class GachaScene implements Scene {
       text(ctx, a.name, w / 2, py + ph * 0.76, fs, { color: '#ffd23a' });
       const label = { R: 'レア', SR: 'スーパーレア', UR: 'ウルトラレア！！', N: '' }[res.rarity];
       text(ctx, res.isNew ? label : `Lv.${res.level} に なった！`, w / 2, py + ph * 0.89, fs * 0.65, { color: c2 });
+    } else if (res.kind === 'power') {
+      const a = ALLY_MAP[res.id];
+      text(ctx, 'いもパワー！', w / 2, py + fs * 1.1, fs, { color: '#4cbf3a' });
+      portrait(ctx, a.id, w / 2, py + ph * 0.46, ph * 0.42, this.t * 2, 0, 'walk');
+      text(ctx, `${a.name} が Lv.${res.level} に なった！`, w / 2, py + ph * 0.8, fs * 0.75, { color: '#ffd23a', maxW: pw - 20 });
     } else {
       text(ctx, 'きんいも ゲット！', w / 2, py + fs * 1.1, fs, { color: '#ffb000' });
       drawGoldIcon(ctx, w / 2, py + ph * 0.45, ph * 0.1);

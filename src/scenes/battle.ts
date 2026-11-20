@@ -367,6 +367,11 @@ export class BattleScene implements Scene {
         audio.sfx('shock');
         break;
       case 'burrow':
+        if (e.f.s.thief) {
+          if (!e.up) fx.add({ kind: 'text', x: e.f.x, y: -80, vy: -30, max: 1.0, size: 18, color: '#ff8080', text: 'こそこそ…' });
+          else fx.add({ kind: 'text', x: e.f.x, y: -80, vy: -30, max: 1.2, size: 20, color: '#ff4040', stroke: '#fff', text: 'どろぼうだ！' });
+          break;
+        }
         if (e.f.s.jump) {
           if (!e.up) fx.add({ kind: 'text', x: e.f.x, y: -90, vy: -30, max: 0.9, size: 18, color: '#8fe36b', text: 'ぴょーん！' });
           audio.sfx('pop');
@@ -584,6 +589,10 @@ export class BattleScene implements Scene {
       atk = fi.t < fs ? (0.5 * fi.t) / fs : 0.5 + (0.5 * (fi.t - fs)) / ATTACK_BACKSWING;
       atk = Math.min(1, atk);
     }
+    if (fi.state === 'burrow' && fi.s.thief) {
+      alpha = 0.35;
+      state = 'walk';
+    }
     if (fi.state === 'burrow' && fi.s.jump) {
       const p = 1 - fi.burrowLeft / (fi.s.burrow ?? 1);
       yOff -= Math.sin(Math.min(1, p) * Math.PI) * 110;
@@ -609,7 +618,7 @@ export class BattleScene implements Scene {
     if (sx < -200 || sx > this.L.field.w + 200) return;
     const sc = s * fi.size;
     // shadow
-    if (fi.state !== 'burrow' || fi.s.jump) {
+    if (fi.state !== 'burrow' || fi.s.jump || fi.s.thief) {
       ctx.globalAlpha = 0.25 * alpha;
       ellipse(ctx, sx, toY(this.laneY(fi.lane)) + 2, fi.s.width * 0.45 * s, 6 * s);
       ctx.fillStyle = '#000';

@@ -262,6 +262,11 @@ export class Battle {
       }
       return { list, base: base && (f.s.area || list.length === 0) };
     } else {
+      if (f.s.thief) {
+        // sneak past the potatoes when they get close (handled as a burrow)
+        if (!f.burrowed && this.allies.some((a) => this.targetable(a) && a.x <= f.x + 25 && a.x >= f.x - 120)) return { list: [this.allies[0]], base: false };
+        return { list, base: f.x <= range };
+      }
       for (const a of this.allies) {
         if (!this.targetable(a)) continue;
         if (a.x <= f.x + 25 && a.x >= f.x - range) list.push(a);
@@ -337,7 +342,7 @@ export class Battle {
     }
     for (const t of list) {
       let dmg = f.s.atk;
-      if (hasAny(f.s.strongVs, t.s.traits)) dmg *= 1.8;
+      if (hasAny(f.s.strongVs, t.s.traits)) dmg *= 2.5;
       if (hasAny(t.s.strongVs, f.s.traits)) dmg *= 0.5;
       const crit = !!f.s.crit && this.rng.chance(f.s.crit);
       if (crit) dmg *= 2;
@@ -404,7 +409,7 @@ export class Battle {
       f.x += dir * mv;
       f.burrowLeft -= mv;
       f.walkT += dt;
-      if (f.burrowLeft <= 0 || f.x <= 20) {
+      if (f.burrowLeft <= 0 || f.x <= 20 || (f.s.thief && f.x <= 230)) {
         f.state = 'walk';
         f.t = 0;
         f.burrowed = true;

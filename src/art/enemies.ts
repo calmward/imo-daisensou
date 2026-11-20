@@ -682,8 +682,61 @@ const metal: Drawer = (ctx, p) => {
   ctx.restore();
 };
 
+const dorobou: Drawer = (ctx, p) => {
+  const m = motion(p, 14);
+  feet(ctx, 0, 0, 9, 4.5, p.walk * 14, m.moving, '#3a3a44');
+  ctx.save();
+  ctx.translate(0, -m.bob);
+  ctx.rotate(m.lean + (m.moving ? 0.12 : 0));
+  // striped tail
+  ctx.save();
+  ctx.translate(-18, -18);
+  ctx.rotate(-0.6 + Math.sin(p.t * 10) * 0.15);
+  ellipse(ctx, -10, 0, 13, 6);
+  fillStroke(ctx, '#8a8a96', 2);
+  ctx.fillStyle = '#3a3a44';
+  ctx.fillRect(-14, -5, 3, 10);
+  ctx.fillRect(-6, -6, 3, 12);
+  ctx.restore();
+  // loot sack on the back
+  ellipse(ctx, -14, -30, 12, 13);
+  fillStroke(ctx, '#d8c08a', 2.5);
+  ellipse(ctx, -12, -42, 6, 4.5, 0.4);
+  fillStroke(ctx, '#e6648a', 1.5);
+  ellipse(ctx, 0, -22, 17, 16);
+  fillStroke(ctx, radial(ctx, 0, -22, 17, '#b8b8c4', '#7a7a88'));
+  // ears
+  for (const ex of [-8, 8]) {
+    ellipse(ctx, ex, -38, 5, 6);
+    fillStroke(ctx, '#7a7a88', 2);
+  }
+  // bandit mask
+  ctx.fillStyle = '#2a2a34';
+  ctx.beginPath();
+  ctx.ellipse(6, -25, 14, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  eye(ctx, 1, -25, 3.4, { look: 0.9, angry: true });
+  eye(ctx, 11, -25, 3.4, { look: 0.9, angry: true });
+  ellipse(ctx, 15, -18, 3, 2.4);
+  ctx.fillStyle = OUT;
+  ctx.fill();
+  mouth(ctx, 10, -13, 6, 'grin');
+  ctx.restore();
+  // warning bubble
+  const by = -58 + Math.sin(p.t * 8) * 2;
+  ellipse(ctx, 4, by, 7, 7);
+  fillStroke(ctx, '#ff3b3b', 2, '#fff');
+  ctx.save();
+  ctx.scale(-1, 1);
+  ctx.fillStyle = '#fff';
+  ctx.font = '900 11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('!', -4, by + 4);
+  ctx.restore();
+};
+
 export const ENEMY_ART: Record<string, Drawer> = {
-  kaeru, metal,
+  dorobou, kaeru, metal,
   ari, nezumi, kemushi, karasu, hachi, mogura, katatsumuri, tanuki, kamakiri, hebi, inoshishi, fukurou, kabuto, okarasu, kuma, daiou,
 };
 

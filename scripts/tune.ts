@@ -66,6 +66,18 @@ for (const st of STAGES) {
     if (Math.max(...ts) <= cap) break;
     f = Math.round(f * 0.9 * 1000) / 1000;
   }
+  // push difficulty up until the castle actually gets hurt (tension), as long as the bot still wins
+  const castleGoal = VALLEY.has(st.id) || st.id <= 2 ? 1.01 : st.boss ? 0.6 : 0.85;
+  for (let k = 0; k < 10; k++) {
+    const rs = [11, 23, 37].map((sd) => trial(save, st.id, f, sd));
+    const avg = rs.reduce((a, r) => a + r.baseFrac, 0) / rs.length;
+    if (avg <= castleGoal) break;
+    const f2 = Math.round(f * 1.08 * 1000) / 1000;
+    const rs2 = [11, 23, 37].map((sd) => trial(save, st.id, f2, sd));
+    if (!rs2.every((r) => r.win) || Math.max(...rs2.map((r) => r.time)) > (st.boss ? 260 : 200)) break;
+    if (st.id <= 10 && ![11, 23].every((sd) => trial(save, st.id, f2, sd, true).win)) break;
+    f = f2;
+  }
   out.push(f);
   const r = trial(save, st.id, f, 99);
   console.log(`${st.id} max=${lo.toFixed(2)} use=${f} win=${r.win} t=${r.time.toFixed(0)} base=${r.baseFrac.toFixed(2)} lv=${(save.deck.reduce((a, d) => a + save.units[d], 0) / save.deck.length).toFixed(1)}`);

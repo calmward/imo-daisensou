@@ -18,6 +18,12 @@ describe('campaign balance', () => {
     }, 120_000);
   }
 
+  it('battles have tension: the castle often gets hurt', () => {
+    const { logs } = runCampaign({ skill: 0.6, seed: 5 });
+    const hurt = logs.filter((l) => l.baseFrac < 0.95).length;
+    expect(hurt / logs.length).toBeGreaterThan(0.4);
+  }, 120_000);
+
   it('starter deck beats stage 1 even when played sloppily', () => {
     const b = new Battle(STAGES[0], [{ id: 'jaga', level: 1 }, { id: 'sato', level: 1 }], battleMods({}), 1);
     expect(simulate(b, 400, 0.3).win).toBe(true);

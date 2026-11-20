@@ -135,6 +135,6 @@ export const MAX_LEVEL = 30;
 
 /** きんいも needed to go from lv to lv+1. */
 export function levelCost(def: AllyDef, lv: number): number {
-  const base = { N: 100, R: 160, SR: 240, UR: 400 }[def.rarity];
-  return Math.round(base * lv * (1 + lv * 0.08) / 10) * 10;
+  const base = { N: 60, R: 100, SR: 160, UR: 260 }[def.rarity];
+  return Math.round((base * lv * (1 + lv * 0.06)) / 10) * 10;
 }
