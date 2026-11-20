@@ -5,7 +5,7 @@ import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
 import { clamp, drawButton, easeOutBack, font, panel, rr, STYLES, text, type Rect } from '../core/ui';
 import { ATTACK_BACKSWING, Battle, KB_TIME, WALLET_MAX_LV, type BEvent, type Fighter } from '../game/battle';
-import { ALLY_MAP } from '../game/allies';
+import { ALLY_MAP, isEvolved } from '../game/allies';
 import { ENEMY_MAP } from '../game/enemies';
 import { MUSIC } from '../game/music';
 import { applyLoss, applyWin, type WinResult } from '../game/progress';
@@ -384,7 +384,7 @@ export class BattleScene implements Scene {
       };
     }
     const topH = clamp(h * 0.07, 48, 64);
-    const scale = Math.min(w / 560, (h * 0.4) / 400);
+    const scale = Math.min(w / 430, (h * 0.4) / 400);
     const fh = Math.min(h * 0.42, 430 * scale);
     const field = { x: 0, y: topH, w, h: fh };
     const groundY = field.y + field.h - 48 * scale;
@@ -519,7 +519,7 @@ export class BattleScene implements Scene {
     const flashing = fi.flash > 0;
     if (flashing) ctx.filter = 'brightness(1.8)';
     else if (fi.freezeT > 0) ctx.filter = 'saturate(0.4) brightness(1.15) hue-rotate(160deg)';
-    drawChar(ctx, fi.id, 0, 0, sc, { t: this.t + fi.uid, walk: fi.walkT, state, atk, hurt: flashing, frozen: fi.freezeT > 0 }, fi.side);
+    drawChar(ctx, fi.id, 0, 0, sc, { t: this.t + fi.uid, walk: fi.walkT, state, atk, hurt: flashing, frozen: fi.freezeT > 0 }, fi.side, fi.evo);
     ctx.filter = 'none';
     ctx.restore();
     ctx.globalAlpha = 1;
@@ -719,7 +719,7 @@ export class BattleScene implements Scene {
       ctx.clip();
       const ps = Math.min(r.w * 0.95, (r.h - 3) * 0.85);
       if (!ready) ctx.globalAlpha = 0.55;
-      portrait(ctx, slot.def.id, r.x + r.w / 2, r.y + off + (r.h - 3) * 0.42, ps, t * (ready ? 1 : 0), 0, ready ? 'idle' : 'portrait');
+      portrait(ctx, slot.def.id, r.x + r.w / 2, r.y + off + (r.h - 3) * 0.42, ps, t * (ready ? 1 : 0), 0, ready ? 'idle' : 'portrait', isEvolved(slot.level));
       ctx.globalAlpha = 1;
       // cooldown overlay
       if (slot.cd > 0) {
@@ -745,9 +745,9 @@ export class BattleScene implements Scene {
     const maxed = b.walletLv >= WALLET_MAX_LV;
     const off = drawButton(ctx, wl, { ...(canW ? STYLES.green : STYLES.gray) }, ui.isPressed('wallet'), 14);
     const ws = Math.min(wl.w * 0.2, wl.h * 0.2);
-    this.drawWalletIcon(ctx, wl.x + wl.w * 0.5, wl.y + off + wl.h * 0.35, Math.min(wl.w, wl.h) * 0.3, canW);
-    text(ctx, `おさいふ Lv.${b.walletLv}`, wl.x + wl.w / 2, wl.y + off + wl.h * 0.12 + 2, ws * 0.8, { maxW: wl.w - 8 });
-    text(ctx, maxed ? 'MAX' : `${b.walletCost}えん`, wl.x + wl.w / 2, wl.y + off + wl.h * 0.74, ws, { color: canW ? '#fff' : '#ffd0d0', maxW: wl.w - 8 });
+    this.drawWalletIcon(ctx, wl.x + wl.w * 0.5, wl.y + off + wl.h * 0.47, Math.min(wl.w * 0.22, wl.h * 0.17), canW);
+    text(ctx, `おさいふ Lv.${b.walletLv}`, wl.x + wl.w / 2, wl.y + off + wl.h * 0.16, ws * 0.75, { maxW: wl.w - 10 });
+    text(ctx, maxed ? 'MAX' : `${b.walletCost}えん`, wl.x + wl.w / 2, wl.y + off + wl.h * 0.76, ws * 0.9, { color: canW ? '#fff' : '#ffd0d0', maxW: wl.w - 8 });
     if (canW) {
       ctx.save();
       ctx.globalAlpha = 0.5 + Math.sin(t * 8) * 0.3;

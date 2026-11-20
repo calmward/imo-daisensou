@@ -1,7 +1,7 @@
 // Pure battle simulation — no rendering, deterministic with a seed.
 // The renderer reads state and drains `events` to draw effects.
 import { Rng } from '../core/rng';
-import { ALLY_MAP, levelMult } from './allies';
+import { ALLY_MAP, isEvolved, levelMult } from './allies';
 import { ENEMY_MAP } from './enemies';
 import type { BattleMods } from './research';
 import type { AllyDef, CombatStats, StageDef, Trait } from './types';
@@ -33,6 +33,7 @@ export interface Fighter {
   flash: number; // render: hit flash timer
   walkT: number; // render: animation phase
   size: number;
+  evo: boolean; // evolved potato (visual)
 }
 
 export type BEvent =
@@ -153,7 +154,8 @@ export class Battle {
     const s = this.slots[i];
     this.money -= s.def.cost;
     s.cd = s.def.cooldown;
-    const f = this.makeFighter(0, s.def.id, s.stats, -14 + this.rng.range(-6, 6), s.def.size, 0);
+    const f = this.makeFighter(0, s.def.id, s.stats, -14 + this.rng.range(-6, 6), s.def.size * (isEvolved(s.level) ? 1.1 : 1), 0);
+    f.evo = isEvolved(s.level);
     this.allies.push(f);
     this.events.push({ type: 'spawn', f });
     return f;
@@ -192,7 +194,7 @@ export class Battle {
   private makeFighter(side: 0 | 1, id: string, s: CombatStats, x: number, size: number, reward: number, boss = false): Fighter {
     return {
       uid: this.uid++, side, id, s, hp: s.hp, maxHp: s.hp, x, state: 'walk', t: 0, atkCd: 0, hitDone: false, kbCount: 0, kbFrom: x, kbTo: x,
-      slowT: 0, freezeT: 0, lane: this.rng.next(), burrowLeft: s.burrow ?? 0, burrowed: false, boss, reward, flash: 0, walkT: this.rng.next() * 10, size,
+      slowT: 0, freezeT: 0, lane: this.rng.next(), burrowLeft: s.burrow ?? 0, burrowed: false, boss, reward, flash: 0, walkT: this.rng.next() * 10, size, evo: false,
     };
   }
 

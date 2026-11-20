@@ -101,7 +101,18 @@ export const ALLY_MAP: Record<string, AllyDef> = Object.fromEntries(ALLIES.map((
 
 /** Stat multiplier for a unit level. */
 export function levelMult(lv: number): number {
-  return 1 + 0.22 * (lv - 1);
+  return (1 + 0.22 * (lv - 1)) * (lv >= EVOLVE_LV ? 1.2 : 1);
+}
+
+/** At this level a potato evolves ("しんか") into its super form. */
+export const EVOLVE_LV = 10;
+
+export function isEvolved(lv: number) {
+  return lv >= EVOLVE_LV;
+}
+
+export function unitName(def: AllyDef, lv: number) {
+  return isEvolved(lv) ? 'スーパー' + def.name : def.name;
 }
 
 export const MAX_LEVEL = 30;

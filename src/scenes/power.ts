@@ -3,7 +3,7 @@ import { ellipse } from '../art/kit';
 import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
 import { clamp, drawButton, panel, rr, STYLES, text, type Rect } from '../core/ui';
-import { ALLIES, ALLY_MAP, levelCost, levelMult, MAX_LEVEL } from '../game/allies';
+import { ALLIES, ALLY_MAP, EVOLVE_LV, isEvolved, levelCost, levelMult, MAX_LEVEL, unitName } from '../game/allies';
 import { MUSIC } from '../game/music';
 import { canLevelUp, canResearch, doResearch, levelUp } from '../game/progress';
 import { RESEARCH, researchCost } from '../game/research';
@@ -152,7 +152,7 @@ export class PowerScene implements Scene {
       rr(ctx, r.x, r.y, r.w, 6, 3);
       ctx.fill();
       if (owned) {
-        portrait(ctx, a.id, r.x + r.w / 2, r.y + r.h * 0.44, r.w * 0.78, selected ? this.t * 2 : 0, 0, selected ? 'walk' : 'idle');
+        portrait(ctx, a.id, r.x + r.w / 2, r.y + r.h * 0.44, r.w * 0.78, selected ? this.t * 2 : 0, 0, selected ? 'walk' : 'idle', isEvolved(save.units[a.id]));
         text(ctx, `Lv.${save.units[a.id]}`, r.x + r.w / 2, r.y + r.h - 12, clamp(r.w * 0.17, 10, 15), { color: '#fff' });
         if (canLevelUp(save, a.id)) text(ctx, '▲', r.x + r.w - 10, r.y + 16, 14, { color: '#7dff7d' });
       } else {
@@ -197,7 +197,7 @@ export class PowerScene implements Scene {
     ctx.fillStyle = 'rgba(140,200,255,0.25)';
     ellipse(ctx, px, py, ps * 0.55, ps * 0.55);
     ctx.fill();
-    if (owned) portrait(ctx, a.id, px, py, ps, this.t * 1.5, 0, Math.sin(this.t * 0.7) > 0.6 ? 'attack' : 'walk');
+    if (owned) portrait(ctx, a.id, px, py, ps, this.t * 1.5, 0, Math.sin(this.t * 0.7) > 0.6 ? 'attack' : 'walk', isEvolved(save.units[a.id]));
     else {
       ctx.save();
       ctx.filter = 'brightness(0)';
@@ -207,7 +207,7 @@ export class PowerScene implements Scene {
     }
     const tx = px + ps * 0.62;
     const tw = r.x + r.w - tx - 10;
-    text(ctx, owned ? a.name : '？？？', tx, r.y + fs * 1.1, fs * 1.1, { align: 'left', color: '#ffd23a', maxW: tw });
+    text(ctx, owned ? unitName(a, save.units[a.id]) : '？？？', tx, r.y + fs * 1.1, fs * 1.1, { align: 'left', color: '#ffd23a', maxW: tw });
     ctx.fillStyle = RARITY_COLOR[a.rarity];
     rr(ctx, tx, r.y + fs * 2, Math.min(tw, fs * 6.5), fs * 1.2, fs * 0.6);
     ctx.fill();
@@ -215,6 +215,7 @@ export class PowerScene implements Scene {
     if (owned) {
       const lv = save.units[a.id];
       text(ctx, `Lv.${lv}`, tx, r.y + fs * 4.1, fs * 1.1, { align: 'left', color: '#fff' });
+      if (!isEvolved(lv)) text(ctx, `Lv.${EVOLVE_LV}で しんか！`, tx + fs * 3.4, r.y + fs * 4.15, fs * 0.6, { align: 'left', color: '#ff8a1f', stroke: 'none', maxW: tw - fs * 3.4 });
       // stats bars
       const m = levelMult(lv);
       const stats: [string, number, number][] = [
@@ -259,8 +260,9 @@ export class PowerScene implements Scene {
       if (can && !this.app.save.tut.lvup) drawHand(ctx, lvR.x + lvR.w * 0.7, lvR.y + bh * 0.5 + Math.abs(Math.sin(this.t * 5)) * 8, 22);
       ui.add({ id: 'lvup', r: lvR, onTap: () => {
         if (levelUp(save, a.id)) {
-          audio.sfx('levelup');
-          this.popText = { s: 'レベルアップ！', t: 0 };
+          const evolved = save.units[a.id] === EVOLVE_LV;
+          audio.sfx(evolved ? 'fanfare' : 'levelup');
+          this.popText = evolved ? { s: `しんか！ ${unitName(a, EVOLVE_LV)}！`, t: -0.8 } : { s: 'レベルアップ！', t: 0 };
           save.tut.lvup = true;
           this.app.persist();
         } else audio.sfx('deny');
