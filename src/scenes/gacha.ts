@@ -1,4 +1,4 @@
-import { portrait } from '../art/index';
+import { portrait, silhouette } from '../art/index';
 import { ellipse, star } from '../art/kit';
 import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
@@ -63,6 +63,7 @@ export class GachaScene implements Scene {
       return;
     }
     this.res = rollGacha(save);
+    if (this.res?.kind === 'unit' && this.res.isNew) this.app.lastNew = this.res.id;
     this.app.persist();
     this.setPhase('spin');
     audio.sfx('gacha');
@@ -258,8 +259,18 @@ export class GachaScene implements Scene {
     const fs = Math.min(26, pw * 0.07);
     if (res.kind === 'unit') {
       const a = ALLY_MAP[res.id];
-      text(ctx, res.isNew ? 'NEW！ あたらしい なかま！' : 'レベルアップ！', w / 2, py + fs * 1.1, fs * 0.9, { color: res.isNew ? '#ff5fa8' : '#4cbf3a', maxW: pw - 20 });
-      portrait(ctx, a.id, w / 2, py + ph * 0.46, ph * 0.42, this.t * 2, 0, 'walk');
+      const hidden = res.isNew && this.pt < 0.9;
+      text(ctx, hidden ? 'だれかな…？' : res.isNew ? 'NEW！ あたらしい なかま！' : 'レベルアップ！', w / 2, py + fs * 1.1, fs * 0.9, { color: res.isNew ? '#ff5fa8' : '#4cbf3a', maxW: pw - 20 });
+      if (hidden) silhouette(ctx, a.id, w / 2 + Math.sin(this.t * 30) * 2, py + ph * 0.46, ph * 0.42, 0, '#2a1a3a');
+      else portrait(ctx, a.id, w / 2, py + ph * 0.46 - Math.abs(Math.sin(this.t * 5)) * 8, ph * 0.42, this.t * 2, 0, 'walk');
+      if (res.isNew && this.pt >= 0.9 && this.pt < 1.3) {
+        ctx.fillStyle = `rgba(255,255,255,${1 - (this.pt - 0.9) / 0.4})`;
+        ctx.fillRect(px, py, pw, ph);
+      }
+      if (hidden) {
+        ctx.restore();
+        return;
+      }
       text(ctx, a.name, w / 2, py + ph * 0.76, fs, { color: '#ffd23a' });
       const label = { R: 'レア', SR: 'スーパーレア', UR: 'ウルトラレア！！', N: '' }[res.rarity];
       text(ctx, res.isNew ? label : `Lv.${res.level} に なった！`, w / 2, py + ph * 0.89, fs * 0.65, { color: c2 });

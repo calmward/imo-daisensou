@@ -41,6 +41,7 @@ export class App {
   fade = 0; // 0..1 transition
   fadeDir = 0;
   t = 0;
+  lastNew: string | null = null; // most recently obtained potato (power-up screen highlights it)
   private ptrs = new Map<number, PtrState>();
   private last = 0;
   private factories: Record<string, (arg?: any) => Scene> = {};

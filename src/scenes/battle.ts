@@ -449,6 +449,7 @@ export class BattleScene implements Scene {
     this.flashT = 0.4;
     if (win) {
       this.winRes = applyWin(save, stage, killGold, this.star);
+      if (this.winRes.unlocked) this.app.lastNew = this.winRes.unlocked;
       if (stage.id === 1) save.tut.battle = true;
       save.lastStage = Math.min(STAGES.length, stage.id + (this.winRes.first ? 1 : 0));
       const bx = this.b.length + 70;

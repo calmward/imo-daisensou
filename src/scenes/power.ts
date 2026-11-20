@@ -26,7 +26,8 @@ export class PowerScene implements Scene {
 
   constructor(private app: App, arg?: { tab?: 'units' | 'castle' }) {
     if (arg?.tab) this.tab = arg.tab;
-    this.sel = app.save.deck[0] ?? 'jaga';
+    this.sel = app.lastNew && app.save.units[app.lastNew] ? app.lastNew : app.save.deck[0] ?? 'jaga';
+    app.lastNew = null;
   }
 
   enter() {
@@ -137,7 +138,8 @@ export class PowerScene implements Scene {
     ctx.beginPath();
     ctx.rect(gridA.x - 4, gy0 - 2, gridA.w + 8, gridA.h - fs * 1.4 + 4);
     ctx.clip();
-    ALLIES.forEach((a, i) => {
+    const list = [...ALLIES].sort((a, b) => (save.units[b.id] ? 1 : 0) - (save.units[a.id] ? 1 : 0));
+    list.forEach((a, i) => {
       const r = { x: gridA.x + (i % cols) * (cw + 6), y: gy0 + Math.floor(i / cols) * (ch + 6) - this.scroll, w: cw, h: ch };
       if (r.y > gridA.y + gridA.h || r.y + r.h < gy0) return;
       const owned = !!save.units[a.id];
