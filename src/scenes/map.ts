@@ -1,6 +1,6 @@
 import { portrait } from '../art/index';
 import { ellipse, star } from '../art/kit';
-import { THEMES } from '../art/scenery';
+import { mapProp, THEMES } from '../art/scenery';
 import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
 import { clamp, drawButton, easeOutBack, panel, rr, STYLES, text, type Rect } from '../core/ui';
@@ -123,15 +123,34 @@ export class MapScene implements Scene {
       ctx.fillStyle = th.hill1;
       if (this.horizontal) ctx.fillRect(start, area.y, end - start, area.h);
       else ctx.fillRect(area.x, start, area.w, end - start);
-      // decoration blobs
+      // soft grass patches + props
       ctx.fillStyle = th.hill2;
-      for (let k = 0; k < 10; k++) {
-        const m = start + ((k * 97) % Math.max(1, end - start));
+      const span = Math.max(1, end - start);
+      for (let k = 0; k < 14; k++) {
+        const m = start + ((k * 97) % span);
         const c = ((k * 53) % 100) / 100;
         const x = this.horizontal ? m : area.x + c * area.w;
         const y = this.horizontal ? area.y + c * area.h : m;
-        ellipse(ctx, x, y, 30, 18);
+        ellipse(ctx, x, y, 30, 14);
         ctx.fill();
+      }
+      for (let k = 0; k < 26; k++) {
+        const hm = Math.sin(k * 12.9898 + wi * 78.233) * 43758.5453;
+        const fr = hm - Math.floor(hm);
+        const m = start + 20 + ((k * 61 + wi * 17) % Math.max(1, span - 40));
+        const c = 0.06 + ((k * 37) % 88) / 100;
+        const x = this.horizontal ? m : area.x + c * area.w;
+        const y = this.horizontal ? area.y + c * area.h : m;
+        // keep the path area clear
+        const idx = Math.max(0, Math.min(11, Math.round((m - start - SPACING * 0.8) / SPACING)));
+        const np = this.nodePos(wi * 12 + idx, area);
+        if (Math.hypot(np.x - x, np.y - y) < 55) continue;
+        if (x < -40 || x > w + 40 || y < area.y || y > area.y + area.h + 30) continue;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(0.8, 0.8);
+        mapProp(ctx, wi, fr, this.t + k);
+        ctx.restore();
       }
       // world sign
       const sx = this.horizontal ? start + 70 : area.x + area.w - 90;
@@ -182,8 +201,15 @@ export class MapScene implements Scene {
       ctx.fillStyle = 'rgba(255,255,255,0.4)';
       ellipse(ctx, -r * 0.3, -r * 0.35, r * 0.4, r * 0.22);
       ctx.fill();
-      if (st.boss && open) {
-        text(ctx, 'ボス', 0, -r - 8, 13, { color: '#ffe14d' });
+      if (st.boss) {
+        const bossId = st.spawns.find((sp) => sp.boss)?.enemy;
+        if (bossId) {
+          ctx.save();
+          if (!open) ctx.filter = 'brightness(0.2)';
+          portrait(ctx, bossId, r * 0.1, -r - 18, 44, this.t, 1);
+          ctx.restore();
+        }
+        text(ctx, 'ボス', 0, -r - 2, 12, { color: '#ffe14d' });
       }
       text(ctx, String(st.id), 0, 1, r * 0.8, { color: open ? '#fff' : '#ddd' });
       if (!open) {

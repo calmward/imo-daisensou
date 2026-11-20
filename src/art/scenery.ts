@@ -450,3 +450,39 @@ function shrub(ctx: Ctx) {
   ellipse(ctx, 0, -18, 8, 3);
   ctx.fill();
 }
+
+/** Decorative prop for the world map (feet at 0,0, ~40 units tall). */
+export function mapProp(ctx: Ctx, world: number, k: number, t: number) {
+  if (world === 0) {
+    if (k < 0.15) scarecrow(ctx, t);
+    else if (k < 0.75) potatoPlant(ctx, t);
+    else flower(ctx, '#ff7eb6', t);
+  } else if (world === 1) {
+    if (k < 0.45) {
+      // round tree
+      ctx.fillStyle = '#6a4a2a';
+      ctx.fillRect(-4, -18, 8, 18);
+      ellipse(ctx, 0, -30, 18, 20);
+      fillStroke(ctx, k < 0.2 ? '#3a8a4a' : '#4a9a5a', 2, '#1e4a2a');
+    } else if (k < 0.75) mushroom(ctx, '#e8312f');
+    else acorn(ctx);
+  } else {
+    if (k < 0.4) {
+      // snowy mini mountain
+      ctx.beginPath();
+      ctx.moveTo(-26, 0);
+      ctx.lineTo(0, -40);
+      ctx.lineTo(26, 0);
+      ctx.closePath();
+      fillStroke(ctx, '#8a7ab0', 2, '#4a3a6a');
+      ctx.beginPath();
+      ctx.moveTo(-9, -26);
+      ctx.lineTo(0, -40);
+      ctx.lineTo(9, -26);
+      ctx.closePath();
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+    } else if (k < 0.75) rock(ctx, k);
+    else shrub(ctx);
+  }
+}
