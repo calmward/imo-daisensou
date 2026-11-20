@@ -78,6 +78,9 @@ for (const st of STAGES) {
     if (st.id <= 10 && ![11, 23].every((sd) => trial(save, st.id, f2, sd, true).win)) break;
     f = f2;
   }
+  // hand adjustments for spikes found by the multi-skill campaign test
+  const ADJUST: Record<number, number> = { 29: 0.88 };
+  f = Math.round(f * (ADJUST[st.id] ?? 1) * 1000) / 1000;
   out.push(f);
   const r = trial(save, st.id, f, 99);
   console.log(`${st.id} max=${lo.toFixed(2)} use=${f} win=${r.win} t=${r.time.toFixed(0)} base=${r.baseFrac.toFixed(2)} lv=${(save.deck.reduce((a, d) => a + save.units[d], 0) / save.deck.length).toFixed(1)}`);
