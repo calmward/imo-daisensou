@@ -8,7 +8,7 @@ import { ATTACK_BACKSWING, Battle, KB_TIME, WALLET_MAX_LV, type BEvent, type Fig
 import { ALLY_MAP, isEvolved } from '../game/allies';
 import { ENEMY_MAP } from '../game/enemies';
 import { MUSIC } from '../game/music';
-import { applyLoss, applyWin, type WinResult } from '../game/progress';
+import { applyLoss, applyWin, canLevelUp, type WinResult } from '../game/progress';
 import { battleMods } from '../game/research';
 import { STAGES, STAR_NAMES, starStage } from '../game/stages';
 import { FX } from './fx';
@@ -1173,6 +1173,18 @@ export class BattleScene implements Scene {
         ctx.restore();
         portrait(ctx, r.unlocked, px + fs * 1.6, y - fs * 0.3, fs * 2.4, this.t * 2, 0, 'walk');
         y += fs * 1.6;
+      }
+      const secs = Math.floor(this.b.time);
+      text(ctx, `たおした てき ${this.b.kills}ひき ・ じかん ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, w / 2, y, fs * 0.62, { color: '#8a5a22', stroke: 'none', maxW: pw - 30 });
+      y += fs * 1.1;
+      if (this.resultT > 4.2 && Object.keys(this.app.save.units).some((id) => canLevelUp(this.app.save, id))) {
+        const pulse = 1 + Math.sin(this.t * 5) * 0.04;
+        ctx.save();
+        ctx.translate(w / 2, y);
+        ctx.scale(pulse, pulse);
+        text(ctx, '▲ レベルアップ できる なかまが いるよ！', 0, 0, fs * 0.62, { color: '#4cbf3a', maxW: pw - 30 });
+        ctx.restore();
+        y += fs * 1.1;
       }
       if (r.chest && this.resultT > 3.9) {
         const k2 = easeOutBack(Math.min(1, (this.resultT - 3.9) / 0.4));
