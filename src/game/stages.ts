@@ -1,4 +1,5 @@
 import type { SpawnEntry, StageDef } from './types';
+import { TUNING } from './tuning';
 
 // Helper to keep the stage table compact.
 // e(enemy, start, [min,max] interval, count?, mult?, trigger?)
@@ -128,7 +129,7 @@ export const STAGES: StageDef[] = RAW.map((r, i) => ({
   world: Math.floor(i / 12),
   length: r.len,
   baseHp: r.hp,
-  spawns: r.spawns.map((s) => ({ ...s, mult: Math.round(((s.mult ?? 100) * r.d) / 100) })),
+  spawns: r.spawns.map((s) => ({ ...s, mult: Math.round(((s.mult ?? 100) * r.d * (TUNING[i] ?? 1)) / 100) })),
   reward: Math.round((150 + 60 * i + (r.boss ? 300 + 40 * i : 0)) / 10) * 10,
   unlock: r.unlock,
   boss: r.boss,

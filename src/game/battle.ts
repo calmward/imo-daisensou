@@ -50,7 +50,8 @@ export type BEvent =
   | { type: 'burrow'; f: Fighter; up: boolean }
   | { type: 'end'; win: boolean }
   | { type: 'deny' }
-  | { type: 'wallet' };
+  | { type: 'wallet' }
+  | { type: 'rage' };
 
 export interface Slot {
   def: AllyDef;
@@ -72,12 +73,13 @@ export const KB_DIST = 110;
 export const ATTACK_BACKSWING = 0.3;
 export const MAX_ALLIES = 40;
 export const WALLET_MAX_LV = 8;
+export const RAGE_START = 150;
 
 export function walletRate(lv: number) {
-  return 22 + 9 * (lv - 1);
+  return 30 + 12 * (lv - 1);
 }
 export function walletCap(lv: number) {
-  return 500 + 450 * (lv - 1);
+  return 600 + 500 * (lv - 1);
 }
 export function walletUpgradeCost(lv: number) {
   return 60 + 70 * lv;
@@ -194,9 +196,14 @@ export class Battle {
     };
   }
 
+  /** After a while enemies get angry and stronger, so stalemates always resolve. */
+  get rage() {
+    return this.time > RAGE_START ? 1 + (this.time - RAGE_START) * 0.015 : 1;
+  }
+
   spawnEnemy(id: string, mult = 100): Fighter {
     const def = ENEMY_MAP[id];
-    const m = mult / 100;
+    const m = (mult / 100) * this.rage;
     const s: CombatStats = { ...def, hp: Math.round(def.hp * m), atk: Math.round(def.atk * m) };
     const f = this.makeFighter(1, id, s, this.length + 14 + this.rng.range(-6, 6), def.size, def.reward, !!def.boss);
     this.enemies.push(f);
@@ -406,7 +413,7 @@ export class Battle {
 
   private stepSpawns() {
     const frac = this.eBase.hp / this.eBase.max;
-    const maxE = this.stage.maxEnemies ?? 28;
+    const maxE = this.stage.maxEnemies ?? 16;
     const alive = this.enemies.filter((e) => e.state !== 'dead').length;
     this.stage.spawns.forEach((sp, i) => {
       const st = this.spawns[i];
@@ -438,7 +445,9 @@ export class Battle {
       for (const f of this.enemies) this.stepEndAnim(f, dt);
       return;
     }
+    const before = this.time;
     this.time += dt;
+    if (before < RAGE_START && this.time >= RAGE_START) this.events.push({ type: 'rage' });
     this.money = Math.min(this.cap, this.money + this.rate * dt);
     if (this.beamT < 0) this.beam = Math.min(1, this.beam + dt / this.mods.beamCharge);
     for (const s of this.slots) if (s.cd > 0) s.cd = Math.max(0, s.cd - dt);

@@ -14,11 +14,12 @@ export class Bot {
 
   step(dt: number) {
     this.t += dt;
-    if (this.t < 0.2) return;
+    const skill = this.opts.skill ?? 1;
+    // sloppier players react more slowly
+    if (this.t < 0.2 + (1 - skill) * 1.2) return;
     this.t = 0;
     const b = this.b;
     if (b.result) return;
-    const skill = this.opts.skill ?? 1;
     const live = b.enemies.filter((e) => e.state !== 'dead');
     const front = live.reduce((m, e) => Math.min(m, e.x), Infinity);
     const danger = front < b.length * 0.35;
@@ -29,7 +30,7 @@ export class Bot {
       if (inReach.length >= 3 || inReach.some((e) => e.boss) || (danger && inReach.length)) b.fireBeam();
     }
     // wallet
-    const wantWallet = skill >= 0.8 ? 6 : 3;
+    const wantWallet = skill >= 0.8 ? 8 : 6;
     if (b.walletLv < wantWallet && b.canUpgradeWallet() && (!danger || b.money >= b.cap * 0.95)) {
       b.upgradeWallet();
       return;
@@ -46,7 +47,7 @@ export class Bot {
         continue;
       }
       // cheap fodder only when rich or in danger
-      if (s.def.cost < 100 && !(danger || b.money > b.cap * 0.5 || live.length > 3)) continue;
+      if (s.def.cost < 100 && !(danger || b.money > b.cap * 0.6)) continue;
       // keep some money for walls when sloppy
       b.deploy(i);
     }

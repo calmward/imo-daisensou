@@ -1,14 +1,33 @@
 import { describe, expect, it } from 'vitest';
+import { Battle } from '../src/game/battle';
+import { simulate } from '../src/game/bot';
+import { battleMods } from '../src/game/research';
 import { runCampaign } from '../src/game/simCampaign';
 import { STAGES } from '../src/game/stages';
 
 describe('campaign balance', () => {
-  it('a decent bot can clear every stage with limited retries', () => {
-    const { logs } = runCampaign({ skill: 1, seed: 3 });
-    const table = logs.map((l) => `${String(l.id).padStart(2)} ${l.win ? 'WIN ' : 'LOSE'} tries=${l.tries} t=${l.time}s base=${l.baseFrac} lv=${l.avgLv} ${l.name}`).join('\n');
-    console.log(table);
-    // TODO(balance): tighten to all stages once tuned
-    expect(logs.filter((l) => l.win).length).toBeGreaterThanOrEqual(12);
-    void STAGES;
-  }, 120_000);
+  for (const skill of [1, 0.6, 0.4]) {
+    it(`bot (skill ${skill}) clears all ${STAGES.length} stages with few retries`, () => {
+      const { logs } = runCampaign({ skill, seed: 3 });
+      expect(logs.length).toBe(STAGES.length);
+      expect(logs.every((l) => l.win)).toBe(true);
+      // nobody should need to grind more than a few times for a stage
+      expect(Math.max(...logs.map((l) => l.tries))).toBeLessThanOrEqual(5);
+      const avg = logs.reduce((s, l) => s + l.time, 0) / logs.length;
+      expect(avg).toBeLessThan(260);
+    }, 120_000);
+  }
+
+  it('starter deck beats stage 1 even when played sloppily', () => {
+    const b = new Battle(STAGES[0], [{ id: 'jaga', level: 1 }, { id: 'sato', level: 1 }], battleMods({}), 1);
+    expect(simulate(b, 400, 0.3).win).toBe(true);
+  });
+
+  it('later stages are NOT beatable without any power-ups (not too easy)', () => {
+    const deck = ['jaga', 'sato', 'chips', 'satsu', 'kenpi', 'fry', 'yaki', 'murasaki', 'konnyaku', 'butter'].map((id) => ({ id, level: 1 }));
+    for (const id of [13, 20, 24, 30, 36]) {
+      const b = new Battle(STAGES[id - 1], deck, battleMods({}), 2);
+      expect(simulate(b, 420, 1).win, `stage ${id}`).toBe(false);
+    }
+  });
 });

@@ -20,7 +20,7 @@ export const ENEMIES: EnemyDef[] = [
   { id: 'kamakiri', name: 'カマキリ', desc: 'するどい カマで きりさく。クリティカルに ちゅうい！', traits: ['bug'], reward: 200,
     hp: 1000, atk: 140, range: 160, speed: 55, atkInterval: 1.6, foreswing: 0.3, kb: 3, area: false, width: 56, size: 1.15, crit: 0.2 },
   { id: 'hebi', name: 'ヘビ', desc: 'ながい からだで とおくまで かみつく。', traits: ['beast'], reward: 200,
-    hp: 850, atk: 90, range: 300, speed: 35, atkInterval: 2.5, foreswing: 0.5, kb: 2, area: true, width: 80, size: 1.0 },
+    hp: 850, atk: 80, range: 230, speed: 35, atkInterval: 2.5, foreswing: 0.5, kb: 2, area: true, width: 80, size: 1.0 },
   { id: 'inoshishi', name: 'イノシシ', desc: 'もうれつ とっしん！ いもを ふっとばす。', traits: ['beast'], reward: 260,
     hp: 1300, atk: 120, range: 130, speed: 75, atkInterval: 2.0, foreswing: 0.3, kb: 3, area: true, width: 72, size: 1.2,
     effect: { kind: 'knock', chance: 0.3, dur: 0 } },

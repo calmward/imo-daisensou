@@ -302,6 +302,10 @@ export class BattleScene implements Scene {
       case 'burrow':
         for (let i = 0; i < 8; i++) fx.add({ kind: 'dirt', x: e.f.x + 20, y: -4, vx: (r() - 0.5) * 160, vy: -120 - r() * 120, grav: 600, max: 0.8, size: 5, color: '#7a4a22' });
         break;
+      case 'rage':
+        this.banner = { text: 'てきが おこってきた！', sub: 'はやく おしろを こわそう！', t: 0, color: '#ff7a3a', dur: 2.4 };
+        audio.sfx('boss');
+        break;
       case 'end':
         this.onEnd(e.win);
         break;
