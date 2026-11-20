@@ -15,6 +15,7 @@ export interface SaveData {
   gachaCount: number;
   crowns: Record<number, number>; // stage id -> highest ★ cleared (1..3)
   daily: string; // last day the login bonus was claimed
+  claimed: string[]; // mission ids already claimed
   stats: { wins: number; losses: number; kills: number };
 }
 
@@ -37,6 +38,7 @@ export function newSave(): SaveData {
     gachaCount: 0,
     crowns: {},
     daily: '',
+    claimed: [],
     stats: { wins: 0, losses: 0, kills: 0 },
   };
 }

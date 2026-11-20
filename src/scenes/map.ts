@@ -10,6 +10,7 @@ import { MUSIC } from '../game/music';
 import { highestUnlocked, isCleared } from '../game/save';
 import { STAGES, STAR_NAMES, ticketReward, WORLD_NAMES } from '../game/stages';
 import { claimDaily } from '../game/progress';
+import { claimable } from '../game/missions';
 import { drawGoldIcon, drawHand, wrapText } from './battle';
 
 const SPACING = 96;
@@ -264,7 +265,7 @@ export class MapScene implements Scene {
     const btns: [string, string, keyof typeof STYLES, () => void, boolean][] = [
       ['power', 'パワーアップ', 'green', () => this.app.go('power'), save.gold >= 100 && !save.tut.power && isCleared(save, 1)],
       ['gacha', 'ガチャ', 'pink', () => this.app.go('gacha'), save.tickets > 0],
-      ['title', 'タイトル', 'cream', () => this.app.go('title'), false],
+      ['missions', 'ミッション', 'blue', () => this.app.go('missions'), claimable(save).length > 0],
     ];
     const totalW = bw * 3 + 20;
     btns.forEach(([id, label, st, fn, badge], i) => {
