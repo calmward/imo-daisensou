@@ -31,6 +31,7 @@ export class GachaScene implements Scene {
   update(dt: number) {
     this.t += dt;
     this.pt += dt;
+    if (this.confirmT > 0) this.confirmT -= dt;
     if (this.phase === 'spin' && this.pt > 1.3) this.setPhase('drop');
     if (this.phase === 'drop' && this.pt > 1.0) this.setPhase('open');
     if (this.phase === 'open' && this.pt > 0.9) {
@@ -56,12 +57,20 @@ export class GachaScene implements Scene {
     if (p === 'open') audio.sfx('charge');
   }
 
+  confirmT = 0;
   private pull() {
     const save = this.app.save;
     if (!canGacha(save)) {
       audio.sfx('deny');
       return;
     }
+    if (save.tickets <= 0 && this.confirmT <= 0) {
+      // paying with gold: ask once more
+      this.confirmT = 3;
+      audio.sfx('tap');
+      return;
+    }
+    this.confirmT = 0;
     this.res = rollGacha(save);
     if (this.res?.kind === 'unit' && this.res.isNew) this.app.lastNew = this.res.id;
     this.app.persist();
@@ -161,7 +170,7 @@ export class GachaScene implements Scene {
       const can = canGacha(save);
       const off = drawButton(ctx, r, can ? STYLES.pink : STYLES.gray, ui.isPressed('pull'), 18);
       text(ctx, this.phase === 'reveal' ? 'もういっかい！' : 'ガチャを まわす！', w / 2, r.y + off + bh * 0.32, bh * 0.32, { maxW: bw - 10 });
-      text(ctx, save.tickets > 0 ? 'ガチャけん 1まい' : `きんいも ${GACHA_GOLD_COST}`, w / 2, r.y + off + bh * 0.66, bh * 0.22, { color: can ? '#fff' : '#ffd0d0', maxW: bw - 10 });
+      text(ctx, save.tickets > 0 ? 'ガチャけん 1まい' : this.confirmT > 0 ? `きんいも ${GACHA_GOLD_COST} つかう？ もういちど タップ！` : `きんいも ${GACHA_GOLD_COST}`, w / 2, r.y + off + bh * 0.66, bh * 0.22, { color: this.confirmT > 0 ? '#fff36a' : can ? '#fff' : '#ffd0d0', maxW: bw - 10 });
       ui.add({ id: 'pull', r, onTap: () => this.pull(), sound: false });
       const back = { x: (w - bw) / 2, y: h - bh - 16, w: bw, h: bh * 0.8 };
       const ob = drawButton(ctx, back, STYLES.cream, ui.isPressed('gback'));
