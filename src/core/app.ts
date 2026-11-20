@@ -108,6 +108,8 @@ export class App {
 
   resetSave() {
     this.save = newSave();
+    this.lastNew = null;
+    audio.setMuted(false);
     this.persist();
   }
 

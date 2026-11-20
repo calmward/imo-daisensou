@@ -36,7 +36,7 @@ export const MISSIONS: Mission[] = [
   m('u15', 'なかまを 15しゅるい あつめる', owned, 15, 1500, 2),
   m('uall', `なかまを ぜんいん あつめる（${ALLIES.length}）`, owned, ALLIES.length, 5000, 5),
   m('l5', 'なかまを レベル5に する', maxLv, 5, 300),
-  m('evo1', 'なかまを しんか させる（レベル10）', evolved, 1, 1000, 1),
+  m('evo1', `なかまを しんか させる（レベル${EVOLVE_LV}）`, evolved, 1, 1000, 1),
   m('evo5', 'なかまを 5たい しんか させる', evolved, 5, 3000, 3),
   m('r10', 'おしろを 10かい つよくする', research, 10, 600),
   m('r40', 'おしろを 40かい つよくする', research, 40, 2000, 2),
@@ -101,13 +101,13 @@ export function rollDay(s: SaveData, date = todayKey()) {
 export function dailyMissions(s: SaveData, date = todayKey()): Daily[] {
   let h = 0;
   for (const c of date) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  const pool = [...DAILY_POOL];
+  const cleared = Object.keys(s.cleared).length;
+  const pool = DAILY_POOL.filter((d) => (d.key === 'thieves' ? cleared >= 5 : d.key === 'bosses' ? cleared >= 6 : true));
   const out: Daily[] = [];
   while (out.length < 3 && pool.length) {
     h = (h * 1103515245 + 12345) >>> 0;
     out.push(pool.splice(h % pool.length, 1)[0]);
   }
-  void s;
   return out;
 }
 

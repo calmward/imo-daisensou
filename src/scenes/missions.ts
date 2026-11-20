@@ -95,7 +95,7 @@ export class MissionScene implements Scene {
       else {
         const off = drawButton(ctx, br, done ? STYLES.orange : { ...STYLES.gray, disabled: true }, ui.isPressed('d' + d.id), 12);
         text(ctx, done ? 'もらう！' : 'まだ', br.x + br.w / 2, br.y + off + (br.h - 6) / 2, br.h * 0.36);
-        if (done && y > topH)
+        if (done && br.y > topH)
           ui.add({ id: 'd' + d.id, r: br, sound: false, onTap: () => {
             if (claimDailyMission(save, d)) {
               audio.sfx('fanfare');
@@ -147,7 +147,7 @@ export class MissionScene implements Scene {
       else {
         const off = drawButton(ctx, br, done ? STYLES.orange : { ...STYLES.gray, disabled: true }, ui.isPressed('m' + mi.id), 12);
         text(ctx, done ? 'もらう！' : 'まだ', br.x + br.w / 2, br.y + off + (br.h - 6) / 2, br.h * 0.36, { color: '#fff' });
-        if (done)
+        if (done && br.y > topH)
           ui.add({ id: 'm' + mi.id, r: br, sound: false, onTap: () => {
             if (claim(save, mi)) {
               audio.sfx('fanfare');

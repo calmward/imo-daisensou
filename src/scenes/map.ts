@@ -240,7 +240,7 @@ export class MapScene implements Scene {
         // marching potato hero marks the next stage
         portrait(ctx, 'jaga', p.x, p.y - r - 26 - Math.abs(Math.sin(this.t * 4)) * 6, 40, this.t, 0, 'walk');
       }
-      if (open) ui.add({ id: 'st' + st.id, r: { x: p.x - r - 6, y: p.y - r - 6, w: r * 2 + 12, h: r * 2 + 12 }, onTap: () => { this.popup = st.id; this.popT = 0; this.popStar = 1; } });
+      if (open && p.y - r > area.y - 4 && p.y + r < area.y + area.h + 4 && !(isCleared(save, 6) && p.x + r > w - 118 && p.y - r < area.y + 66)) ui.add({ id: 'st' + st.id, r: { x: p.x - r - 6, y: p.y - r - 6, w: r * 2 + 12, h: r * 2 + 12 }, onTap: () => { this.popup = st.id; this.popT = 0; this.popStar = 1; } });
     }
     // top bar
     const g = ctx.createLinearGradient(0, 0, 0, topH);

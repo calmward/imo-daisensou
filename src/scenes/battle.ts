@@ -90,7 +90,7 @@ export class BattleScene implements Scene {
   enter() {
     audio.playMusic('battle', MUSIC.battle);
     const st = this.b.stage;
-    this.banner = { text: st.boss ? 'ボス ステージ！' : 'スタート！', sub: `${st.id}. ${st.name}${this.star > 1 ? '（' + STAR_NAMES[this.star] + '）' : ''}`, t: 0, color: st.boss ? '#ff5f5f' : '#ffd23a', dur: 2.2 };
+    this.banner = { text: st.boss ? 'ボス ステージ！' : 'スタート！', sub: `${st.id === BONUS_ID ? '' : st.id + '. '}${st.name}${this.star > 1 ? '（' + STAR_NAMES[this.star] + '）' : ''}`, t: 0, color: st.boss ? '#ff5f5f' : '#ffd23a', dur: 2.2 };
     audio.sfx('whistle');
     setTimeout(() => audio.say(st.boss ? 'ボスステージだ！ しゅつげき！' : 'しゅつげき！'), 300);
   }
@@ -265,7 +265,7 @@ export class BattleScene implements Scene {
       if (f.side === 0) this.fx.add({ kind: 'soul', x: cx, y: -40 + ly, vy: -55, max: 1.6, size: 10 });
       audio.sfx('pop');
     }
-    if (this.popped.size > 500) this.popped.clear();
+    if (this.popped.size > 500) for (const id of [...this.popped].slice(0, 250)) this.popped.delete(id);
   }
 
   private handleEvents() {
@@ -504,7 +504,7 @@ export class BattleScene implements Scene {
       if (this.winRes.unlocked) this.app.lastNew = this.winRes.unlocked;
       countToday(save, 'wins');
       if (stage.id === 1) save.tut.battle = true;
-      save.lastStage = Math.min(STAGES.length, stage.id + (this.winRes.first ? 1 : 0));
+      if (stage.id !== BONUS_ID) save.lastStage = Math.min(STAGES.length, stage.id + (this.winRes.first ? 1 : 0));
       const bx = this.b.length + 70;
       for (let i = 0; i < 40; i++)
         this.fx.add({ kind: 'debris', x: bx + (Math.random() - 0.5) * 100, y: -Math.random() * 200, vx: (Math.random() - 0.5) * 400, vy: -200 - Math.random() * 300, grav: 700, max: 2, size: 10, color: ['#6a4a2a', '#3a2a1a', '#9a7a5a'][i % 3], rot: Math.random() * 6, vr: 10 });
@@ -543,7 +543,7 @@ export class BattleScene implements Scene {
         units, wallet, beam,
       };
     }
-    const topH = clamp(h * 0.07, 48, 64);
+    const topH = clamp(h * 0.07, 56, 66);
     const scale = Math.min(w / 370, (h * 0.42) / 300);
     const fh = Math.min(h * 0.46, 300 * scale);
     const field = { x: 0, y: topH, w, h: fh };
@@ -1245,8 +1245,8 @@ export class BattleScene implements Scene {
         y += fs * 1.6;
       }
       const secs = Math.floor(this.b.time);
-      if (this.b.kills) text(ctx, `たおした てき ${this.b.kills}ひき ・ じかん ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, w / 2, y, fs * 0.62, { color: '#8a5a22', stroke: 'none', maxW: pw - 30 });
-      y += fs * 1.1;
+      if (this.b.kills && (!r.chest || y + fs * 2.4 < by)) text(ctx, `たおした てき ${this.b.kills}ひき ・ じかん ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, w / 2, y, fs * 0.62, { color: '#8a5a22', stroke: 'none', maxW: pw - 30 });
+      if (this.b.kills && (!r.chest || y + fs * 2.4 < by)) y += fs * 1.1;
       if (this.resultT > 4.2 && !r.chest && y < by - fs * 1.2 && Object.keys(this.app.save.units).some((id) => canLevelUp(this.app.save, id))) {
         const pulse = 1 + Math.sin(this.t * 5) * 0.04;
         ctx.save();
@@ -1256,7 +1256,8 @@ export class BattleScene implements Scene {
         ctx.restore();
         y += fs * 1.1;
       }
-      if (r.chest && this.resultT > 3.9 && y < by - fs * 0.8) {
+      if (r.chest && this.resultT > 3.9) {
+        y = Math.min(y, by - fs * 0.9);
         const k2 = easeOutBack(Math.min(1, (this.resultT - 3.9) / 0.4));
         ctx.save();
         ctx.translate(w / 2, y);

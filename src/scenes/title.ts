@@ -101,6 +101,14 @@ export class TitleScene implements Scene {
 
   settings = false;
   confirm = 0;
+  confirmAt = -9;
+  onBack() {
+    if (this.settings) {
+      this.settings = false;
+      return true;
+    }
+    return false;
+  }
   private drawSettings(ctx: CanvasRenderingContext2D, w: number, h: number) {
     const ui = this.app.ui;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
@@ -117,6 +125,8 @@ export class TitleScene implements Scene {
     const items: [string, string, keyof typeof STYLES, () => void][] = [
       ['snd', audio.muted ? 'おと: オフ' : 'おと: オン', 'green', () => { audio.setMuted(!audio.muted); this.app.save.muted = audio.muted; this.app.persist(); }],
       ['reset', ['データを けす', 'ほんとうに けす？', 'さいごの かくにん！'][this.confirm], 'red', () => {
+        if (this.t - this.confirmAt < 1) return; // each step needs a deliberate pause
+        this.confirmAt = this.t;
         if (this.confirm < 2) this.confirm++;
         else {
           this.app.resetSave();

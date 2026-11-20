@@ -82,11 +82,12 @@ export function sanitize(d: unknown): SaveData {
   for (const [k, v] of Object.entries(obj(o.crowns))) if (okId(k) && s.cleared[+k]) s.crowns[+k] = num(v, 0, 0, 3);
   for (const k of Object.keys(s.cleared)) if (!s.crowns[+k]) s.crowns[+k] = 1;
   const units: Record<string, number> = {};
-  for (const [k, v] of Object.entries(obj(o.units))) if (ALLY_MAP[k]) units[k] = num(v, 1, 1, MAX_LEVEL);
+  for (const [k, v] of Object.entries(obj(o.units))) if (Object.prototype.hasOwnProperty.call(ALLY_MAP, k)) units[k] = num(v, 1, 1, MAX_LEVEL);
   s.units = Object.keys(units).length ? units : base.units;
   if (!s.units.jaga) s.units.jaga = 1;
-  for (const [k, v] of Object.entries(obj(o.seen))) s.seen[k] = num(v, 0);
-  for (const [k, v] of Object.entries(obj(o.research))) s.research[k] = num(v, 0, 0, 20);
+  for (const [k, v] of Object.entries(obj(o.seen))) if (/^[a-z]+$/.test(k) && !(k in Object.prototype)) s.seen[k] = num(v, 0);
+  const RES = ['castle', 'income', 'wallet', 'beamPow', 'beamCharge', 'startMoney'];
+  for (const [k, v] of Object.entries(obj(o.research))) if (RES.includes(k)) s.research[k] = num(v, 0, 0, 20);
   for (const [k, v] of Object.entries(obj(o.tut))) s.tut[k] = v === true;
   const td = obj(o.today);
   s.today = { date: typeof td.date === 'string' ? td.date : '', counts: {}, claimed: Array.isArray(td.claimed) ? td.claimed.filter((x): x is string => typeof x === 'string') : [] };
@@ -94,7 +95,7 @@ export function sanitize(d: unknown): SaveData {
   const st = obj(o.stats);
   s.stats = { wins: num(st.wins, 0), losses: num(st.losses, 0), kills: num(st.kills, 0) };
   const deck = Array.isArray(o.deck) ? o.deck : [];
-  s.deck = deck.filter((id, i): id is string => typeof id === 'string' && !!s.units[id] && deck.indexOf(id) === i).slice(0, DECK_SIZE);
+  s.deck = deck.filter((id, i): id is string => typeof id === 'string' && Object.prototype.hasOwnProperty.call(s.units, id) && deck.indexOf(id) === i).slice(0, DECK_SIZE);
   if (!s.deck.length) s.deck = Object.keys(s.units).slice(0, DECK_SIZE);
   return s;
 }
