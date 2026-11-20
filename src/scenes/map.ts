@@ -376,7 +376,7 @@ export class MapScene implements Scene {
     const ps = this.popStar;
     const firstStar = ps === 1 ? !cleared : (save.crowns[st.id] ?? 0) < ps;
     const rw = Math.round(((firstStar ? st.reward : st.reward * 0.4) * [1, 1, 1.6, 2.4][ps]) / 10) * 10;
-    text(ctx, `ほうしゅう: きんいも ${rw}${firstStar ? '（はじめて）' : ''}`, px + 46, y, fs * 0.62, { align: 'left', color: '#5a3a12', stroke: 'none', maxW: pw - 60 });
+    text(ctx, `もらえる: きんいも ${rw}${firstStar ? '（はじめて）' : ''}`, px + 46, y, fs * 0.62, { align: 'left', color: '#5a3a12', stroke: 'none', maxW: pw - 60 });
     y += fs * 1.1;
     const tk = ps > 1 ? (firstStar ? ps - 1 : 0) : ticketReward(st);
     if (firstStar && (tk || (st.unlock && ps === 1))) {

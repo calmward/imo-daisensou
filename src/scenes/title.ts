@@ -69,7 +69,8 @@ export class TitleScene implements Scene {
     text(ctx, 'いも大戦争', 0, bob, ls, { color: '#fff', stroke: '#7a1a3a', lw: ls * 0.26 });
     ctx.restore();
     // subtitle
-    text(ctx, '〜 いもたちの だいぼうけん 〜', w / 2, ly + ls * 0.85, ls * 0.25, { color: '#fff', stroke: '#7a4a22' });
+    text(ctx, 'いもだいせんそう', w / 2, ly + ls * 0.78, ls * 0.26, { color: '#ffe680', stroke: '#7a1a3a' });
+    text(ctx, '〜 いもたちの だいぼうけん 〜', w / 2, ly + ls * 1.1, ls * 0.2, { color: '#fff', stroke: '#7a4a22' });
     drawChar(ctx, 'satsu', w / 2 - ls * 3, ly + ls * 0.5, ls / 55, { t: this.t, walk: this.t, state: 'idle', atk: 0, hurt: false });
     drawChar(ctx, 'jaga', w / 2 + ls * 3, ly + ls * 0.5, ls / 55, { t: this.t + 1, walk: this.t, state: 'idle', atk: 0, hurt: false });
     // start button

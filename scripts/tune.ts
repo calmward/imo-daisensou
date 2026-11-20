@@ -23,12 +23,12 @@ function target(id: number) {
   return 0.72 + 0.2 * pos;
 }
 
-function trial(save: SaveData, id: number, f: number, seed: number) {
+function trial(save: SaveData, id: number, f: number, seed: number, spam = false) {
   const base = STAGES[id - 1];
   const prev = TUNING[id - 1] ?? 1;
   const st = { ...base, spawns: base.spawns.map((s) => ({ ...s, mult: Math.round(((s.mult ?? 100) / prev) * f) })), rushes: (base.rushes ?? []).map((r) => ({ ...r, mult: Math.round((r.mult / prev) * f) })) };
   const b = new Battle(st, save.deck.map((d) => ({ id: d, level: save.units[d] })), battleMods(save.research), seed);
-  return simulate(b, LIMIT(id), SKILL);
+  return simulate(b, LIMIT(id), SKILL, 1 / 30, spam);
 }
 
 const save = newSave();
@@ -46,6 +46,19 @@ for (const st of STAGES) {
     else hi = mid;
   }
   let f = Math.round(lo * target(st.id) * 1000) / 1000;
+  // early stages must also be beatable by a kid who just taps every button
+  if (st.id <= 10) {
+    let slo = 0.1,
+      shi = f;
+    if ([11, 23].every((sd) => trial(save, st.id, shi, sd, true).win)) slo = shi;
+    else
+      for (let it = 0; it < 12; it++) {
+        const mid = (slo + shi) / 2;
+        if ([11, 23].every((sd) => trial(save, st.id, mid, sd, true).win)) slo = mid;
+        else shi = mid;
+      }
+    f = Math.min(f, Math.round(slo * 0.92 * 1000) / 1000);
+  }
   // keep battles short enough for kids: ~4 min max for bosses, ~3 min otherwise
   const cap = st.boss ? 260 : 200;
   for (let k = 0; k < 12; k++) {

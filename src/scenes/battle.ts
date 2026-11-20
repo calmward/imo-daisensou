@@ -48,6 +48,7 @@ export class BattleScene implements Scene {
   banner: { text: string; sub?: string; t: number; color: string; dur: number } | null = null;
   flashT = 0;
   hitStop = 0;
+  beamCamT = 0;
   endHandled = false;
   winRes: WinResult | null = null;
   lossGold = 0;
@@ -156,6 +157,10 @@ export class BattleScene implements Scene {
       this.tut = 'beam';
       this.tutT = 0;
     }
+    if (this.tut === 'wallet' && this.tutT > 7) {
+      this.tut = 'money';
+      this.tutT = -999;
+    }
     if (b.result) this.tut = 'done';
   }
 
@@ -166,8 +171,11 @@ export class BattleScene implements Scene {
     const minX = -280,
       maxX = this.b.length + 280 - viewW;
     let target = this.camX;
+    if (this.beamCamT > 0) this.beamCamT -= dt;
     if (this.b.result) {
       target = this.b.result === 'win' ? this.b.length - viewW * 0.65 : -viewW * 0.35;
+    } else if (this.beamCamT > 0) {
+      target = -220;
     } else if (this.userCamT <= 0) {
       // follow the front line
       let front = 0;
@@ -182,7 +190,7 @@ export class BattleScene implements Scene {
       return;
     }
     target = clamp(target, minX, maxX);
-    if (this.userCamT <= 0 || this.b.result) this.camX += (target - this.camX) * Math.min(1, dt * 2.2);
+    if (this.userCamT <= 0 || this.b.result || this.beamCamT > 0) this.camX += (target - this.camX) * Math.min(1, dt * (this.beamCamT > 0 ? 6 : 2.2));
     this.camX = clamp(this.camX, minX, maxX);
   }
 
@@ -328,6 +336,7 @@ export class BattleScene implements Scene {
         break;
       }
       case 'beam':
+        this.beamCamT = 1.6;
         audio.sfx('beam');
         audio.say('いもビーム！');
         this.shake = 6;
@@ -368,6 +377,10 @@ export class BattleScene implements Scene {
       case 'heal':
         fx.add({ kind: 'text', x: e.f.x - 10, y: -70, vy: -40, max: 0.8, size: 16, color: '#7dff7d', text: '+げんき' });
         fx.add({ kind: 'spark', x: e.f.x - 10, y: -40, vy: -60, max: 0.6, size: 10, color: '#7dff7d', rot: 0, vr: 4 });
+        break;
+      case 'castleShake':
+        this.banner = { text: 'てきの おしろが ぐらついた！', sub: 'いまだ！ せめこめー！', t: 0, color: '#ffd23a', dur: 2.2 };
+        this.shake = 18;
         break;
       case 'rush':
         this.banner = { text: 'てきの だいぐんだ！', sub: 'かべで まもろう！', t: 0, color: '#ff9a3a', dur: 1.8 };
@@ -550,6 +563,10 @@ export class BattleScene implements Scene {
     this.drawControls(ctx, L);
     this.drawBanner(ctx, w, h, L);
     if (this.tut !== 'done' && !this.paused) this.drawTutorial(ctx, L, w, h);
+    else if (!this.paused && !b.result && b.walletLv < 3 && b.time > 20 && b.canUpgradeWallet() && this.app.save.stats.wins < 15) {
+      // gentle reminder for kids who forget the wallet
+      drawHand(ctx, L.wallet.x + L.wallet.w * 0.6, L.wallet.y + L.wallet.h * 0.45 + Math.abs(Math.sin(this.t * 5)) * 10, 22);
+    }
     if (this.paused) this.drawPause(ctx, w, h);
     if (b.result && this.resultT > 2.2) this.drawResult(ctx, w, h);
   }
@@ -642,6 +659,9 @@ export class BattleScene implements Scene {
     const label = `${Math.ceil(hp)}/${max}`;
     ctx.font = font(size);
     const w = Math.max(ctx.measureText(label).width + 16, 70);
+    const f = this.L.field;
+    x = clamp(x, f.x + w / 2 + 4, f.x + f.w - w / 2 - 4);
+    y = Math.max(y, f.y + (this.L.portrait ? 30 : this.L.pause.h + 30));
     ctx.fillStyle = 'rgba(40,20,5,0.7)';
     rr(ctx, x - w / 2, y - size * 0.9, w, size * 2.1, 8);
     ctx.fill();
@@ -848,7 +868,7 @@ export class BattleScene implements Scene {
       }
       ctx.restore();
       // cost
-      const cs = clamp(r.h * 0.2, 10, 17);
+      const cs = clamp(r.h * 0.25, 12, 18);
       text(ctx, `${slot.def.cost}えん`, r.x + r.w / 2, r.y + off + r.h - 3 - cs * 0.75, cs, { color: affordable ? '#fff' : '#ff8080', maxW: r.w - 6 });
       if (slot.cd > 0) {
         ctx.fillStyle = '#3a2410';
@@ -895,7 +915,7 @@ export class BattleScene implements Scene {
     ctx.stroke();
     // little potato in the gauge
     portrait(ctx, 'satsu', cx, cy, rad * 1.6, ready ? t * 3 : 0, 0, ready ? 'attack' : 'idle');
-    text(ctx, ready ? 'いもビーム！' : 'じゅうでん中', cx, bm.y + boff + bm.h * 0.8, Math.min(bm.w * 0.13, bm.h * 0.17), { color: ready ? '#fff' : '#e0e0e0', maxW: bm.w - 8 });
+    text(ctx, ready ? 'いもビーム！' : 'ためてる…', cx, bm.y + boff + bm.h * 0.8, Math.min(bm.w * 0.13, bm.h * 0.17), { color: ready ? '#fff' : '#e0e0e0', maxW: bm.w - 8 });
     if (ready) {
       ctx.save();
       ctx.globalAlpha = 0.3 + Math.sin(t * 10) * 0.25;
@@ -1075,10 +1095,11 @@ export class BattleScene implements Scene {
       text(ctx, 'まけちゃった…', w / 2, py + ph * 0.13, ts * 0.85, { color: '#c0c8ff', lw: ts * 0.22 });
     }
     // characters
-    const deck = this.b.slots.slice(0, 5);
+    const deck = this.b.slots;
+    const step = Math.min(0.16, 0.84 / Math.max(1, deck.length));
     deck.forEach((s, i) => {
-      const cx = px + pw * (0.18 + i * 0.16);
-      portrait(ctx, s.def.id, cx, py + ph * 0.37 - (win ? Math.abs(Math.sin(this.t * 5 + i * 0.9)) * 14 : 0), Math.min(64, pw * 0.15), this.t * (win ? 2 : 0.3) + i, 0, win ? 'walk' : 'kb', isEvolved(s.level));
+      const cx = w / 2 + (i - (deck.length - 1) / 2) * pw * step;
+      portrait(ctx, s.def.id, cx, py + ph * 0.37 - (win ? Math.abs(Math.sin(this.t * 5 + i * 0.9)) * 14 : 0), Math.min(64, pw * Math.max(step, 0.1)), this.t * (win ? 2 : 0.3) + i, 0, win ? 'walk' : 'kb', isEvolved(s.level));
     });
     const fs = Math.min(22, pw * 0.055);
     let y = py + ph * 0.55;

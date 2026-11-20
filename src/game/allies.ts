@@ -16,7 +16,7 @@ export const ALLIES: AllyDef[] = [
     cost: 120, cooldown: 3.5, hp: 620, atk: 8, range: 105, speed: 42, atkInterval: 1.8, foreswing: 0.3, kb: 2, area: false, width: 46, size: 1.0,
   },
   {
-    id: 'chips', name: 'ポテチ', role: 'こうそく', rarity: 'N',
+    id: 'chips', name: 'ポテチ', role: 'はやい', rarity: 'N',
     desc: 'ぱりぱり ポテチ。はやくて とっても やすい！',
     cost: 50, cooldown: 1.6, hp: 70, atk: 14, range: 100, speed: 95, atkInterval: 0.6, foreswing: 0.12, kb: 1, area: false, width: 30, size: 0.8,
   },

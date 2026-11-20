@@ -6,6 +6,8 @@ const WALL_ROLES = new Set(['かべ', 'てっぺき', 'タンク', 'たて']);
 export interface BotOptions {
   /** 0..1 how well it manages money (1 = decent player, 0.5 = sloppy kid) */
   skill?: number;
+  /** taps every affordable unit, never touches the wallet (a typical first-time kid) */
+  spam?: boolean;
 }
 
 export class Bot {
@@ -20,6 +22,11 @@ export class Bot {
     this.t = 0;
     const b = this.b;
     if (b.result) return;
+    if (this.opts.spam) {
+      if (b.beam >= 1) b.fireBeam();
+      for (let i = 0; i < b.slots.length; i++) if (b.canDeploy(i)) b.deploy(i);
+      return;
+    }
     const live = b.enemies.filter((e) => e.state !== 'dead');
     const front = live.reduce((m, e) => Math.min(m, e.x), Infinity);
     const danger = front < b.length * 0.35;
@@ -54,8 +61,8 @@ export class Bot {
   }
 }
 
-export function simulate(b: Battle, maxTime = 600, skill = 1, dt = 1 / 30) {
-  const bot = new Bot(b, { skill });
+export function simulate(b: Battle, maxTime = 600, skill = 1, dt = 1 / 30, spam = false) {
+  const bot = new Bot(b, { skill, spam });
   let minEnemyX = b.length;
   while (!b.result && b.time < maxTime) {
     bot.step(dt);

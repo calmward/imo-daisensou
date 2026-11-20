@@ -54,6 +54,7 @@ export type BEvent =
   | { type: 'wallet' }
   | { type: 'rage' }
   | { type: 'rush' }
+  | { type: 'castleShake' }
   | { type: 'heal'; f: Fighter };
 
 export interface Slot {
@@ -85,7 +86,7 @@ export function walletCap(lv: number) {
   return 600 + 500 * (lv - 1);
 }
 export function walletUpgradeCost(lv: number) {
-  return 60 + 70 * lv;
+  return lv === 1 ? 80 : 60 + 70 * lv;
 }
 
 const hasAny = (a?: Trait[], b?: Trait[]) => !!a && !!b && a.some((t) => b.includes(t));
@@ -291,6 +292,14 @@ export class Battle {
       target.kbTo = target.x + (target.side === 0 ? -1 : 1) * 70;
       this.events.push({ type: 'death', f: target });
       if (target.side === 0 && src) this.killedBy[src.id] = (this.killedBy[src.id] ?? 0) + 1;
+      if (target.side === 1 && target.boss) {
+        // beating the boss rattles the enemy castle
+        const dmg = Math.round(this.eBase.max * 0.25);
+        this.eBase.hp = Math.max(1, this.eBase.hp - dmg);
+        this.eBase.hitT = 0.6;
+        this.events.push({ type: 'baseHit', side: 1, dmg });
+        this.events.push({ type: 'castleShake' });
+      }
       if (target.side === 1) {
         this.kills++;
         if (target.reward > 0) {
@@ -466,7 +475,9 @@ export class Battle {
         this.spawnEnemy(sp.enemy, sp.mult ?? 100);
         st.spawned++;
         const iv = sp.interval ?? [10, 10];
-        st.next = this.time + this.rng.range(iv[0], iv[1]);
+        // when potatoes besiege the castle, the enemies get scared and come out slower
+        const siege = this.allies.some((a) => a.state !== 'dead' && a.x > this.length - 260) ? 1.8 : 1;
+        st.next = this.time + this.rng.range(iv[0], iv[1]) * siege;
       }
     });
   }
