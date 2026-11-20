@@ -291,7 +291,7 @@ export class MapScene implements Scene {
       ui.add({ id, r, onTap: fn });
     });
     // hint hand toward power-up after first loss or when rich
-    if (!save.tut.power && isCleared(save, 2) && save.gold >= 150 && !this.popup) {
+    if (!save.tut.power && isCleared(save, 2) && save.gold >= 150 && !this.popup && !this.daily) {
       const r = { x: (w - totalW) / 2, y: by + 10, w: bw, h: botH - 20 };
       drawHand(ctx, r.x + r.w * 0.6, r.y + r.h * 0.4 + Math.abs(Math.sin(this.t * 5)) * 10, 24);
     }

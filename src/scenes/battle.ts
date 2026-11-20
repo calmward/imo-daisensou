@@ -54,6 +54,7 @@ export class BattleScene implements Scene {
   spawnTime = new Map<number, number>();
   lastDanger = -99;
   rotateTip = 0;
+  bossCamT = 0;
   dangerT = 0;
   endHandled = false;
   winRes: WinResult | null = null;
@@ -187,6 +188,7 @@ export class BattleScene implements Scene {
       maxX = this.b.length + 280 - viewW;
     let target = this.camX;
     if (this.beamCamT > 0) this.beamCamT -= dt;
+    if (this.bossCamT > 0) this.bossCamT -= dt;
     if (this.b.result) {
       target = this.b.result === 'win' ? this.b.length - viewW * 0.65 : -viewW * 0.35;
     } else if (this.beamCamT > 0) {
@@ -197,8 +199,11 @@ export class BattleScene implements Scene {
       for (const a of this.b.allies) if (a.state !== 'dead') front = Math.max(front, a.x);
       let enemyFront = this.b.length;
       for (const e of this.b.enemies) if (e.state !== 'dead') enemyFront = Math.min(enemyFront, e.x);
-      const focus = Math.min(front + 150, enemyFront) ;
-      target = focus - viewW * 0.6;
+      // keep the clash in the middle of the screen
+      const focus = enemyFront - front < viewW * 0.7 ? (front + enemyFront) / 2 : front + viewW * 0.15;
+      target = focus - viewW * 0.5;
+      const boss = this.bossCamT > 0 ? this.b.enemies.find((e) => e.boss && e.state !== 'dead') : null;
+      if (boss) target = boss.x - viewW * 0.55;
     }
     if (maxX < minX) {
       this.camX = (minX + maxX) / 2;
@@ -398,6 +403,7 @@ export class BattleScene implements Scene {
         fx.add({ kind: 'ring', x: e.f.x, y: 0, max: 0.8, size: 300, color: '#c9a070' });
         fx.add({ kind: 'text', x: e.f.x - 40, y: -140, vy: -10, max: 1.4, size: 34, color: '#ff4040', stroke: '#fff', text: 'ドーン！' });
         audio.say('ボスが きたぞ！');
+        this.bossCamT = 1.8;
         audio.sfx('boss');
         this.userCamT = 0;
         break;
@@ -508,8 +514,12 @@ export class BattleScene implements Scene {
       if (stage.id === 1) save.tut.battle = true;
       if (stage.id !== BONUS_ID) save.lastStage = Math.min(STAGES.length, stage.id + (this.winRes.first ? 1 : 0));
       const bx = this.b.length + 70;
-      for (let i = 0; i < 40; i++)
-        this.fx.add({ kind: 'debris', x: bx + (Math.random() - 0.5) * 100, y: -Math.random() * 200, vx: (Math.random() - 0.5) * 400, vy: -200 - Math.random() * 300, grav: 700, max: 2, size: 10, color: ['#6a4a2a', '#3a2a1a', '#9a7a5a'][i % 3], rot: Math.random() * 6, vr: 10 });
+      for (let i = 0; i < 70; i++)
+        this.fx.add({ kind: 'debris', x: bx + (Math.random() - 0.5) * 120, y: -Math.random() * 220, vx: (Math.random() - 0.5) * 700, vy: -300 - Math.random() * 500, grav: 800, max: 2.2, size: 8 + Math.random() * 14, color: ['#6a4a2a', '#3a2a1a', '#ffd23a', '#9a7a5a', '#fff'][i % 5], rot: Math.random() * 6, vr: 10 });
+      for (let i = 0; i < 14; i++) this.fx.add({ kind: 'puff', x: bx + (Math.random() - 0.5) * 160, y: -Math.random() * 120, vx: (Math.random() - 0.5) * 200, vy: -40 - Math.random() * 80, max: 1.4, size: 50, color: '#f2ead8' });
+      this.fx.add({ kind: 'ring', x: bx, y: 0, max: 1.0, size: 500, color: '#fff6a0' });
+      this.fx.add({ kind: 'flash', x: bx, y: -100, max: 0.5, size: 260, color: '#fffbe0' });
+      this.hitStop = 0.25;
       setTimeout(() => audio.jingle('win'), 900);
       setTimeout(() => audio.say('やったー！ しょうり！'), 600);
     } else {
@@ -796,13 +806,13 @@ export class BattleScene implements Scene {
     const k = (bt - 0.35) / 0.75;
     const ex = toX(this.b.beamReach);
     const gy = toY(-20);
-    const thick = (1 - k) * 60 * s + 10 * s;
+    const thick = (1 - k) * 34 * s + 8 * s;
     const g = ctx.createLinearGradient(0, gy - thick, 0, gy + thick);
-    g.addColorStop(0, 'rgba(255,120,40,0)');
-    g.addColorStop(0.3, 'rgba(255,190,60,0.9)');
-    g.addColorStop(0.5, 'rgba(255,255,230,1)');
-    g.addColorStop(0.7, 'rgba(255,190,60,0.9)');
-    g.addColorStop(1, 'rgba(255,120,40,0)');
+    g.addColorStop(0, 'rgba(255,80,20,0)');
+    g.addColorStop(0.25, 'rgba(255,110,30,0.95)');
+    g.addColorStop(0.5, 'rgba(255,255,220,1)');
+    g.addColorStop(0.75, 'rgba(255,110,30,0.95)');
+    g.addColorStop(1, 'rgba(255,80,20,0)');
     ctx.fillStyle = g;
     ctx.beginPath();
     ctx.moveTo(ox, oy - thick * 0.5);
@@ -820,7 +830,7 @@ export class BattleScene implements Scene {
       ellipse(ctx, px, gy + Math.sin(i * 3 + this.t * 20) * thick * 0.4, 6 * s + 2, 3 * s + 1);
       ctx.fill();
     }
-    if (k < 0.5) text(ctx, 'いもビーーム！', ox + 160 * s, oy - 60 * s, clamp(36 * s, 18, 40), { color: '#ffe14d' });
+    if (k < 0.5) text(ctx, 'いもビーーム！', ox + 260 * s, oy - 30 * s, clamp(36 * s, 18, 40), { color: '#ffe14d' });
   }
 
   private drawBossBar(ctx: CanvasRenderingContext2D, L: Layout) {
@@ -879,7 +889,7 @@ export class BattleScene implements Scene {
     ctx.stroke();
     text(ctx, 'えん', m.x + m.h / 2, m.y + m.h / 2 + 1, m.h * 0.24, { color: '#a36a00', stroke: 'none' });
     const full = b.money >= b.cap;
-    text(ctx, `${Math.floor(b.money)}`, m.x + m.w * 0.62, m.y + m.h / 2, m.h * 0.5, { color: full ? '#7dff7d' : '#ffe14d', align: 'right', maxW: m.w * 0.42 });
+    text(ctx, `${Math.floor(b.money)}`, m.x + m.w * 0.62, m.y + m.h / 2, m.h * 0.5, { color: full ? '#ffffff' : '#ffe14d', align: 'right', maxW: m.w * 0.42 });
     text(ctx, `/${b.cap}`, m.x + m.w * 0.64, m.y + m.h / 2 + 2, m.h * 0.34, { color: '#fff', align: 'left', maxW: m.w * 0.33 });
     // minimap
     const mm = L.mini;

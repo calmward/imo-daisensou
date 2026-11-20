@@ -37,13 +37,13 @@ export const ENEMIES: EnemyDef[] = [
     hp: 1400, atk: 70, range: 120, speed: 20, atkInterval: 2.0, foreswing: 0.4, kb: 2, area: false, width: 60, size: 1.05, barrier: 200 },
   // ---- bosses ----
   { id: 'kabuto', name: 'カブトムシ', desc: 'もりの つよい むし。つので まとめて ふっとばす！', traits: ['bug', 'boss'], reward: 1000, boss: true,
-    hp: 5000, atk: 180, range: 160, speed: 30, atkInterval: 2.4, foreswing: 0.5, kb: 3, area: true, width: 90, size: 1.6, shockwave: true },
+    hp: 5000, atk: 180, range: 160, speed: 30, atkInterval: 2.4, foreswing: 0.5, kb: 3, area: true, width: 90, size: 2.1, shockwave: true },
   { id: 'okarasu', name: 'おおガラス', desc: 'そらの ボス。おおきな つばさで あばれる。', traits: ['bird', 'boss'], reward: 1400, boss: true,
-    hp: 7500, atk: 230, range: 240, speed: 45, atkInterval: 2.6, foreswing: 0.5, kb: 3, area: true, width: 90, size: 1.8, shockwave: true },
+    hp: 7500, atk: 230, range: 240, speed: 45, atkInterval: 2.6, foreswing: 0.5, kb: 3, area: true, width: 90, size: 3.1, shockwave: true },
   { id: 'kuma', name: 'クマ', desc: 'やまの ぬし。とんでもない ちから！', traits: ['beast', 'boss'], reward: 1800, boss: true,
-    hp: 14000, atk: 380, range: 170, speed: 30, atkInterval: 2.8, foreswing: 0.6, kb: 3, area: true, width: 100, size: 2.0, shockwave: true },
+    hp: 14000, atk: 380, range: 170, speed: 30, atkInterval: 2.8, foreswing: 0.6, kb: 3, area: true, width: 100, size: 2.7, shockwave: true },
   { id: 'daiou', name: 'イモクイ大王', desc: 'いもが だいすきな わるい 大王。ぜんぶの いもを たべようと している！', traits: ['beast', 'boss'], reward: 4000, boss: true,
-    hp: 40000, atk: 500, range: 260, speed: 25, atkInterval: 3.0, foreswing: 0.7, kb: 4, area: true, width: 120, size: 2.4, shockwave: true,
+    hp: 40000, atk: 500, range: 260, speed: 25, atkInterval: 3.0, foreswing: 0.7, kb: 4, area: true, width: 120, size: 3.1, shockwave: true,
     effect: { kind: 'freeze', chance: 0.25, dur: 1.5 } },
 ];
 
