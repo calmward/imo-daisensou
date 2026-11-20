@@ -473,8 +473,8 @@ export class BattleScene implements Scene {
               kaeru: 'ぴょーんと とびこえて くるよ！',
               metal: 'クリティカルで しか ダメージが はいらない！',
               kame: 'よわい こうげきは はじかれる！ つよい いちげきで わろう',
-              hachi: 'とおくから はりを とばしてくる！',
-              fukurou: 'にらまれると うごけなくなるよ！',
+              hachi: 'そらを とぶ てき！ ちかくの こうげきは とどきにくい。とおくから うてる なかまを だそう',
+              fukurou: 'そらを とぶ てき！ にらまれると うごけなくなるよ',
               hebi: 'とおくまで かみついてくる！',
             };
             if (intro[e.f.id] && (!this.banner || this.banner.t > 1.5)) {
@@ -1431,6 +1431,7 @@ export function counterHint(enemyId: string, owned: Record<string, number>): str
   const counter = Object.keys(owned).map((id) => ALLY_MAP[id]).find((a) => a && a.strongVs?.some((t) => traits.includes(t)));
   if (counter) return `${TRAIT_NAME[counter.strongVs!.find((t) => traits.includes(t))!]}に つよい「${counter.name}」を だそう！`;
   if (e.range >= 200) return 'とおくから うってくる てき。しゃていの ながい なかまで たおそう！';
+  if (e.flying) return 'そらを とぶ てきには ちかくの こうげきが とどきにくい！ フライドポテトや むらさきいもで うとう！';
   if (e.barrier) return 'こうらの てきは つよい いちげきで わろう！ フライドポテトや ながいもが とくい！';
   if (e.metal) return 'かたい てきは クリティカルで たおそう！「いもけんぴ」や しんかした いもが とくい！';
   if (e.burrow) return 'うしろに まわりこんで くるよ。うしろにも なかまを だそう！';

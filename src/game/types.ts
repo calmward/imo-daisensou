@@ -27,6 +27,7 @@ export interface CombatStats {
   multiHit?: number; // hits per attack (visual + split damage)
   minRange?: number; // can't hit things closer than this (long-range snipers)
   heal?: number; // heals nearby allies by this fraction of their max hp each attack
+  flying?: boolean; // short-range attacks (range < 160) only do half damage
   barrier?: number; // hits weaker than this bounce off until one strong hit breaks it
   thief?: boolean; // ignores potatoes and runs for the castle
   metal?: boolean; // takes only 1 damage unless critical

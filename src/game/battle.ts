@@ -358,6 +358,7 @@ export class Battle {
       const crit = !!f.s.crit && this.rng.chance(f.s.crit);
       if (crit) dmg *= 2;
       if (t.s.metal && !crit) dmg = 1;
+      if (t.s.flying && f.s.range < 160) dmg *= 0.5;
       if (t.shield > 0) {
         if (dmg < t.shield) {
           this.events.push({ type: 'hit', x: t.x, lane: t.lane, side: f.side, dmg: 0, crit: false, big: false, targetSide: t.side, effect: 'block' });

@@ -27,6 +27,14 @@ describe('campaign balance', () => {
     expect(hurt / real.length).toBeGreaterThan(0.45);
   }, 120_000);
 
+  it('counters matter: the flying crow boss needs ranged potatoes', () => {
+    const rl = { castle: 3, income: 3, wallet: 3, beamPow: 3, beamCharge: 3, startMoney: 3 };
+    const base = ['jaga', 'sato', 'chips', 'satsu', 'kenpi', 'yaki'];
+    const run = (deck: string[]) => [1, 2, 3].filter((sd) => simulate(new Battle(STAGES[11], deck.map((id) => ({ id, level: 5 })), battleMods(rl), sd), 420, 0.6).win).length;
+    expect(run([...base, 'fry', 'murasaki'])).toBe(3);
+    expect(run([...base, 'konnyaku', 'butter'])).toBe(0);
+  });
+
   it('starter deck beats stage 1 even when played sloppily', () => {
     const b = new Battle(STAGES[0], [{ id: 'jaga', level: 1 }, { id: 'sato', level: 1 }], battleMods({}), 1);
     expect(simulate(b, 400, 0.3).win).toBe(true);
