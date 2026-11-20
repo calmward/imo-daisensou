@@ -127,7 +127,8 @@ export class Battle {
     this.slots = deck.map((d) => {
       const def = ALLY_MAP[d.id];
       const m = levelMult(d.level);
-      return { def, level: d.level, stats: { ...def, hp: Math.round(def.hp * m), atk: Math.round(def.atk * m) }, cd: 0 };
+      const evoCrit = isEvolved(d.level) ? 0.08 : 0;
+      return { def, level: d.level, stats: { ...def, hp: Math.round(def.hp * m), atk: Math.round(def.atk * m), crit: (def.crit ?? 0) + evoCrit }, cd: 0 };
     });
     this.spawns = stage.spawns.map((_, idx) => ({ idx, next: 0, spawned: 0, active: false, activatedAt: 0 }));
   }
@@ -322,6 +323,7 @@ export class Battle {
       if (hasAny(t.s.strongVs, f.s.traits)) dmg *= 0.5;
       const crit = !!f.s.crit && this.rng.chance(f.s.crit);
       if (crit) dmg *= 2;
+      if (t.s.metal && !crit) dmg = 1;
       this.damage(t, dmg, f, crit);
       const ef = f.s.effect;
       if (ef && t.state !== 'dead' && (!ef.vs || hasAny(ef.vs, t.s.traits)) && this.rng.chance(ef.chance)) {
@@ -484,7 +486,7 @@ export class Battle {
         for (const e of this.enemies) {
           if (e.state === 'dead' || e.x > reach) continue;
           if (e.state === 'burrow') continue;
-          this.damage(e, this.mods.beamDmg * (e.boss ? 0.8 : 1), null, false);
+          this.damage(e, e.s.metal ? 1 : this.mods.beamDmg * (e.boss ? 0.8 : 1), null, false);
           if ((e.state as string) !== 'dead') this.knockback(e);
         }
         this.events.push({ type: 'beamHit' });

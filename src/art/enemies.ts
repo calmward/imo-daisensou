@@ -616,7 +616,74 @@ const daiou: Drawer = (ctx, p) => {
   ctx.restore();
 };
 
+const kaeru: Drawer = (ctx, p) => {
+  const m = motion(p, 8);
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.5);
+  ctx.rotate(m.lean);
+  // back legs
+  ellipse(ctx, -14, -6, 12, 7);
+  fillStroke(ctx, '#4fa83a', 2.5);
+  ellipse(ctx, 0, -18, 22, 16);
+  fillStroke(ctx, radial(ctx, 0, -20, 22, '#9be05a', '#4f9a2a'));
+  ellipse(ctx, 4, -12, 13, 8);
+  fillStroke(ctx, '#e8f6c8', 2);
+  // eye bumps
+  for (const ex of [2, 16]) {
+    ellipse(ctx, ex, -34, 8, 8);
+    fillStroke(ctx, '#7ac84a', 2.5);
+    eye(ctx, ex + 1, -34, 4.5, { look: 0.6, angry: p.state === 'attack' });
+  }
+  mouth(ctx, 12, -20, 9, p.state === 'attack' ? 'open' : 'smile');
+  blush(ctx, -6, -22, 3);
+  // front feet
+  ellipse(ctx, 14, -2, 6, 3);
+  fillStroke(ctx, '#4fa83a', 2);
+  if (p.state === 'attack' && p.atk > 0.4) {
+    ctx.strokeStyle = '#ff7eb6';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(18, -18);
+    ctx.lineTo(18 + 30 * (1 - p.atk) * 2, -18);
+    ctx.stroke();
+  }
+  ctx.restore();
+};
+
+const metal: Drawer = (ctx, p) => {
+  const m = motion(p, 12);
+  legs6(ctx, 0, 0, 8, 8, p.walk * 12, m.moving);
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.5);
+  ctx.rotate(m.lean);
+  ctx.beginPath();
+  ctx.arc(-2, -10, 18, Math.PI, 0);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(-20, -28, 16, -8);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.35, '#b8c4d8');
+  g.addColorStop(0.6, '#e8eef8');
+  g.addColorStop(1, '#7a8aa8');
+  fillStroke(ctx, g, 2.5);
+  ctx.fillStyle = '#4a5a78';
+  for (const [x, y] of [[-10, -18], [4, -20], [-4, -13]]) {
+    ellipse(ctx, x, y, 3, 3);
+    ctx.fill();
+  }
+  ellipse(ctx, 16, -13, 8, 7);
+  fillStroke(ctx, '#5a6a88', 2.5);
+  eye(ctx, 18, -14, 3.2, { look: 0.8, angry: true });
+  // shine glint
+  const gl = (p.t * 0.8) % 1;
+  ctx.fillStyle = `rgba(255,255,255,${1 - gl})`;
+  ctx.beginPath();
+  ctx.ellipse(-14 + gl * 22, -22 + gl * 6, 2, 6, 0.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+};
+
 export const ENEMY_ART: Record<string, Drawer> = {
+  kaeru, metal,
   ari, nezumi, kemushi, karasu, hachi, mogura, katatsumuri, tanuki, kamakiri, hebi, inoshishi, fukurou, kabuto, okarasu, kuma, daiou,
 };
 

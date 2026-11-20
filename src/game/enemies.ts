@@ -27,6 +27,10 @@ export const ENEMIES: EnemyDef[] = [
   { id: 'fukurou', name: 'フクロウ', desc: 'ホーホー。にらまれると うごけなくなる。', traits: ['bird'], reward: 220,
     hp: 900, atk: 70, range: 220, speed: 45, atkInterval: 2.2, foreswing: 0.4, kb: 3, area: false, width: 50, size: 1.0,
     effect: { kind: 'freeze', chance: 0.3, dur: 1.5 } },
+  { id: 'kaeru', name: 'カエル', desc: 'ぴょーんと とびこえて うしろから くる！', traits: ['beast'], reward: 140,
+    hp: 700, atk: 70, range: 120, speed: 50, atkInterval: 1.5, foreswing: 0.3, kb: 3, area: false, width: 48, size: 1.0, burrow: 220, jump: true },
+  { id: 'metal', name: 'メタルてんとう', desc: 'ピカピカで かたい！ クリティカルで しか ダメージが はいらない。', traits: ['bug'], reward: 400,
+    hp: 30, atk: 60, range: 110, speed: 35, atkInterval: 1.6, foreswing: 0.3, kb: 2, area: false, width: 40, size: 0.85, metal: true },
   // ---- bosses ----
   { id: 'kabuto', name: 'カブトムシ', desc: 'もりの つよい むし。つので まとめて ふっとばす！', traits: ['bug', 'boss'], reward: 500, boss: true,
     hp: 5000, atk: 180, range: 160, speed: 30, atkInterval: 2.4, foreswing: 0.5, kb: 3, area: true, width: 90, size: 1.6, shockwave: true },

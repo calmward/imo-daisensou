@@ -26,6 +26,8 @@ export interface CombatStats {
   shockwave?: boolean; // knocks back all foes on appear (boss)
   multiHit?: number; // hits per attack (visual + split damage)
   minRange?: number; // can't hit things closer than this (long-range snipers)
+  metal?: boolean; // takes only 1 damage unless critical
+  jump?: boolean; // burrow distance is a leap through the air instead
 }
 
 export type Rarity = 'N' | 'R' | 'SR' | 'UR';

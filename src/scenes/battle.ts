@@ -326,6 +326,11 @@ export class BattleScene implements Scene {
         audio.sfx('shock');
         break;
       case 'burrow':
+        if (e.f.s.jump) {
+          if (!e.up) fx.add({ kind: 'text', x: e.f.x, y: -90, vy: -30, max: 0.9, size: 18, color: '#8fe36b', text: 'ぴょーん！' });
+          audio.sfx('pop');
+          break;
+        }
         for (let i = 0; i < 8; i++) fx.add({ kind: 'dirt', x: e.f.x + 20, y: -4, vx: (r() - 0.5) * 160, vy: -120 - r() * 120, grav: 600, max: 0.8, size: 5, color: '#7a4a22' });
         break;
       case 'rush':
@@ -517,6 +522,11 @@ export class BattleScene implements Scene {
       atk = fi.t < fs ? (0.5 * fi.t) / fs : 0.5 + (0.5 * (fi.t - fs)) / ATTACK_BACKSWING;
       atk = Math.min(1, atk);
     }
+    if (fi.state === 'burrow' && fi.s.jump) {
+      const p = 1 - fi.burrowLeft / (fi.s.burrow ?? 1);
+      yOff -= Math.sin(Math.min(1, p) * Math.PI) * 110;
+      state = 'walk';
+    }
     if (fi.state === 'kb') {
       const p = Math.min(1, fi.t / KB_TIME);
       yOff -= Math.sin(p * Math.PI) * 36;
@@ -536,7 +546,7 @@ export class BattleScene implements Scene {
     if (sx < -200 || sx > this.L.field.w + 200) return;
     const sc = s * fi.size;
     // shadow
-    if (fi.state !== 'burrow') {
+    if (fi.state !== 'burrow' || fi.s.jump) {
       ctx.globalAlpha = 0.25 * alpha;
       ellipse(ctx, sx, toY(this.laneY(fi.lane)) + 2, fi.s.width * 0.45 * s, 6 * s);
       ctx.fillStyle = '#000';
@@ -1046,6 +1056,7 @@ export class BattleScene implements Scene {
       if (foe) {
         const ed = ENEMY_MAP[foe];
         portrait(ctx, foe, px + pw * 0.16, y + fs * 0.9, fs * 2.6, this.t, 1);
+        void 0;
         text(ctx, `ニガテな てき: ${ed.name}`, px + pw * 0.3, y + fs * 0.3, fs * 0.8, { align: 'left', color: '#ff8080', maxW: pw * 0.66 });
         wrapText(ctx, counterHint(foe, this.app.save.units), px + pw * 0.63, y + fs * 1.6, pw * 0.64, fs * 0.62, '#3a3a6a');
       } else wrapText(ctx, 'パワーアップで なかまを つよくしよう！', w / 2, y + 4, pw - 30, fs * 0.8, '#3a3a6a');
@@ -1159,7 +1170,8 @@ export function counterHint(enemyId: string, owned: Record<string, number>): str
   const counter = Object.keys(owned).map((id) => ALLY_MAP[id]).find((a) => a && a.strongVs?.some((t) => traits.includes(t)));
   if (counter) return `${TRAIT_NAME[counter.strongVs!.find((t) => traits.includes(t))!]}に つよい「${counter.name}」を だそう！`;
   if (e.range >= 200) return 'とおくから うってくる てき。しゃていの ながい なかまで たおそう！';
-  if (e.burrow) return 'もぐって くるよ。うしろにも なかまを だそう！';
+  if (e.metal) return 'かたい てきは クリティカルで たおそう！「いもけんぴ」や しんかした いもが とくい！';
+  if (e.burrow) return 'うしろに まわりこんで くるよ。うしろにも なかまを だそう！';
   return 'パワーアップで なかまを つよくしよう！';
 }
 
