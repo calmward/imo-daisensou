@@ -2,7 +2,7 @@ import { portrait } from '../art/index';
 import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
 import { clamp, drawButton, panel, rr, STYLES, text } from '../core/ui';
-import { claim, isDone, MISSIONS } from '../game/missions';
+import { claim, claimDailyMission, dailyMissions, isDone, MISSIONS, rollDay } from '../game/missions';
 import { MUSIC } from '../game/music';
 import { drawGoldIcon } from './battle';
 
@@ -42,6 +42,8 @@ export class MissionScene implements Scene {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
     const topH = clamp(h * 0.1, 50, 68);
+    rollDay(save);
+    const dailies = dailyMissions(save);
     const list = [...MISSIONS].sort((a, b) => {
       const ra = save.claimed.includes(a.id) ? 2 : isDone(save, a) ? 0 : 1;
       const rb = save.claimed.includes(b.id) ? 2 : isDone(save, b) ? 0 : 1;
@@ -50,13 +52,52 @@ export class MissionScene implements Scene {
     const rh = clamp(h * 0.12, 58, 76);
     let lw = Math.min(640, w - 16);
     let lx = (w - lw) / 2;
-    this.maxScroll = Math.max(0, list.length * (rh + 8) + 16 - (h - topH));
+    const dailyH = 30 + dailies.length * (rh + 8) + 30;
+    this.maxScroll = Math.max(0, dailyH + list.length * (rh + 8) + 16 - (h - topH));
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, topH, w, h - topH);
     ctx.clip();
+    // ---- today's missions ----
+    const ty = topH + 8 - this.scroll;
+    text(ctx, '☀ きょうの ミッション（まいにち かわるよ）', lx + 6, ty + 14, clamp(rh * 0.24, 13, 18), { align: 'left', color: '#d06a00', stroke: '#fff', maxW: lw - 12 });
+    dailies.forEach((d, i) => {
+      const y = ty + 30 + i * (rh + 8);
+      const cur = Math.min(d.target, save.today.counts[d.key] ?? 0);
+      const done = cur >= d.target;
+      const got = save.today.claimed.includes(d.id);
+      panel(ctx, { x: lx, y, w: lw, h: rh }, got ? '#e8e8e8' : done ? '#fff6c8' : '#fff0f6', got ? '#aaa' : '#ff8a1f', 12);
+      const fs = clamp(rh * 0.24, 12, 18);
+      const btnW = Math.min(100, lw * 0.24);
+      text(ctx, d.label, lx + 14, y + rh * 0.32, fs, { align: 'left', color: '#5a3a12', stroke: 'none', maxW: lw - btnW - 110 });
+      const bw = lw - btnW - 170;
+      ctx.fillStyle = '#eed8e0';
+      rr(ctx, lx + 14, y + rh * 0.6, bw, rh * 0.16, rh * 0.08);
+      ctx.fill();
+      ctx.fillStyle = '#ff8a1f';
+      rr(ctx, lx + 14, y + rh * 0.6, Math.max(rh * 0.16, (bw * cur) / d.target), rh * 0.16, rh * 0.08);
+      ctx.fill();
+      text(ctx, `${cur}/${d.target}`, lx + 20 + bw, y + rh * 0.68, fs * 0.75, { align: 'left', color: '#5a3a12', stroke: 'none' });
+      text(ctx, `🎟${d.tickets}`, lx + lw - btnW - 20, y + rh / 2, fs * 0.9, { align: 'right', color: '#d0407a', stroke: 'none' });
+      const br = { x: lx + lw - btnW - 10, y: y + rh * 0.18, w: btnW, h: rh * 0.64 };
+      if (got) text(ctx, 'もらった', br.x + br.w / 2, y + rh / 2, fs * 0.8, { color: '#999', stroke: 'none' });
+      else {
+        const off = drawButton(ctx, br, done ? STYLES.orange : { ...STYLES.gray, disabled: true }, ui.isPressed('d' + d.id), 12);
+        text(ctx, done ? 'もらう！' : 'まだ', br.x + br.w / 2, br.y + off + (br.h - 6) / 2, br.h * 0.36);
+        if (done && y > topH)
+          ui.add({ id: 'd' + d.id, r: br, sound: false, onTap: () => {
+            if (claimDailyMission(save, d)) {
+              audio.sfx('fanfare');
+              this.pop = { s: 'ごほうび ゲット！', t: 0 };
+              this.app.persist();
+            }
+          } });
+      }
+    });
+    const listTop = ty + dailyH;
+    text(ctx, '🏆 ずっと ミッション', lx + 6, listTop - 14, clamp(rh * 0.24, 13, 18), { align: 'left', color: '#1d5aa3', stroke: '#fff' });
     list.forEach((mi, i) => {
-      const y = topH + 10 + i * (rh + 8) - this.scroll;
+      const y = listTop + i * (rh + 8);
       if (y > h || y + rh < topH) return;
       const done = isDone(save, mi);
       const got = save.claimed.includes(mi.id);

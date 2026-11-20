@@ -56,7 +56,9 @@ export function isDone(s: SaveData, mi: Mission) {
 }
 
 export function claimable(s: SaveData) {
-  return MISSIONS.filter((mi) => isDone(s, mi) && !s.claimed.includes(mi.id));
+  rollDay(s);
+  const daily = dailyMissions(s).filter((d) => !s.today.claimed.includes(d.id) && (s.today.counts[d.key] ?? 0) >= d.target);
+  return [...MISSIONS.filter((mi) => isDone(s, mi) && !s.claimed.includes(mi.id)), ...daily];
 }
 
 export function claim(s: SaveData, mi: Mission): boolean {
@@ -64,5 +66,61 @@ export function claim(s: SaveData, mi: Mission): boolean {
   s.claimed.push(mi.id);
   s.gold += mi.gold;
   s.tickets += mi.tickets;
+  return true;
+}
+
+// ---- daily missions ----
+export interface Daily {
+  id: string;
+  label: string;
+  key: string; // counter in save.today.counts
+  target: number;
+  gold: number;
+  tickets: number;
+}
+
+const DAILY_POOL: Daily[] = [
+  { id: 'dk', label: 'てきを 40ぴき たおす', key: 'kills', target: 40, gold: 300, tickets: 1 },
+  { id: 'dw', label: 'バトルで 2かい かつ', key: 'wins', target: 2, gold: 300, tickets: 1 },
+  { id: 'db', label: 'いもビームを 3かい うつ', key: 'beams', target: 3, gold: 250, tickets: 1 },
+  { id: 'dd', label: 'なかまを 50たい しゅつげき させる', key: 'deploys', target: 50, gold: 300, tickets: 1 },
+  { id: 'dt', label: 'いもどろぼうを 3びき たおす', key: 'thieves', target: 3, gold: 300, tickets: 1 },
+  { id: 'dwl', label: 'おさいふを 10かい レベルアップ', key: 'wallets', target: 10, gold: 250, tickets: 1 },
+  { id: 'dbs', label: 'ボスを たおす', key: 'bosses', target: 1, gold: 400, tickets: 1 },
+];
+
+export function todayKey(d = new Date()) {
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+/** Make sure today's counters are fresh. */
+export function rollDay(s: SaveData, date = todayKey()) {
+  if (s.today.date !== date) s.today = { date, counts: {}, claimed: [] };
+}
+
+export function dailyMissions(s: SaveData, date = todayKey()): Daily[] {
+  let h = 0;
+  for (const c of date) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const pool = [...DAILY_POOL];
+  const out: Daily[] = [];
+  while (out.length < 3 && pool.length) {
+    h = (h * 1103515245 + 12345) >>> 0;
+    out.push(pool.splice(h % pool.length, 1)[0]);
+  }
+  void s;
+  return out;
+}
+
+export function countToday(s: SaveData, key: string, n = 1) {
+  rollDay(s);
+  s.today.counts[key] = (s.today.counts[key] ?? 0) + n;
+}
+
+export function claimDailyMission(s: SaveData, d: Daily) {
+  rollDay(s);
+  if (s.today.claimed.includes(d.id) || (s.today.counts[d.key] ?? 0) < d.target) return false;
+  s.today.claimed.push(d.id);
+  s.gold += d.gold;
+  s.tickets += d.tickets;
   return true;
 }

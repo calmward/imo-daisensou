@@ -9,6 +9,7 @@ import { ALLY_MAP, isEvolved } from '../game/allies';
 import { ENEMY_MAP } from '../game/enemies';
 import { MUSIC } from '../game/music';
 import { applyLoss, applyWin, canLevelUp, type WinResult } from '../game/progress';
+import { countToday } from '../game/missions';
 import { battleMods } from '../game/research';
 import { STAGES, STAR_NAMES, starStage } from '../game/stages';
 import { FX } from './fx';
@@ -311,6 +312,11 @@ export class BattleScene implements Scene {
         const f = e.f;
         const ly = this.laneY(f.lane);
         void ly;
+        if (f.side === 1) {
+          countToday(this.app.save, 'kills');
+          if (f.s.thief) countToday(this.app.save, 'thieves');
+          if (f.boss) countToday(this.app.save, 'bosses');
+        }
         if (f.side === 0) {
           audio.sfx('die');
         } else {
@@ -337,6 +343,7 @@ export class BattleScene implements Scene {
         break;
       }
       case 'beam':
+        countToday(this.app.save, 'beams');
         this.beamCamT = 1.6;
         audio.sfx('beam');
         audio.say('いもビーム！');
@@ -405,6 +412,7 @@ export class BattleScene implements Scene {
         audio.sfx('deny');
         break;
       case 'wallet':
+        countToday(this.app.save, 'wallets');
         audio.sfx('wallet');
         fx.add({ kind: 'text', x: this.camX + this.L.field.w / this.L.scale * 0.2, y: -150, vy: -30, max: 1.2, size: 22, color: '#ffe14d', text: `おさいふ Lv.${this.b.walletLv}！` });
         if (this.tut === 'wallet') {
@@ -426,6 +434,7 @@ export class BattleScene implements Scene {
           }
         }
         if (e.f.side === 0) {
+          countToday(this.app.save, 'deploys');
           audio.sfx('spawn');
           fx.add({ kind: 'puff', x: e.f.x - 10, y: -10, max: 0.4, size: 22, color: '#fff' });
           if (this.tut === 'deploy') {
@@ -450,6 +459,7 @@ export class BattleScene implements Scene {
     if (win) {
       this.winRes = applyWin(save, stage, killGold, this.star);
       if (this.winRes.unlocked) this.app.lastNew = this.winRes.unlocked;
+      countToday(save, 'wins');
       if (stage.id === 1) save.tut.battle = true;
       save.lastStage = Math.min(STAGES.length, stage.id + (this.winRes.first ? 1 : 0));
       const bx = this.b.length + 70;

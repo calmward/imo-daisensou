@@ -17,6 +17,7 @@ export interface SaveData {
   daily: string; // last day the login bonus was claimed
   claimed: string[]; // mission ids already claimed
   seen: Record<string, number>; // enemy id -> times defeated/encountered
+  today: { date: string; counts: Record<string, number>; claimed: string[] };
   stats: { wins: number; losses: number; kills: number };
 }
 
@@ -41,6 +42,7 @@ export function newSave(): SaveData {
     daily: '',
     claimed: [],
     seen: {},
+    today: { date: '', counts: {}, claimed: [] },
     stats: { wins: 0, losses: 0, kills: 0 },
   };
 }
@@ -82,6 +84,9 @@ export function sanitize(d: unknown): SaveData {
   for (const [k, v] of Object.entries(obj(o.seen))) s.seen[k] = num(v, 0);
   for (const [k, v] of Object.entries(obj(o.research))) s.research[k] = num(v, 0, 0, 20);
   for (const [k, v] of Object.entries(obj(o.tut))) s.tut[k] = v === true;
+  const td = obj(o.today);
+  s.today = { date: typeof td.date === 'string' ? td.date : '', counts: {}, claimed: Array.isArray(td.claimed) ? td.claimed.filter((x): x is string => typeof x === 'string') : [] };
+  for (const [k, v] of Object.entries(obj(td.counts))) s.today.counts[k] = num(v, 0);
   const st = obj(o.stats);
   s.stats = { wins: num(st.wins, 0), losses: num(st.losses, 0), kills: num(st.kills, 0) };
   const deck = Array.isArray(o.deck) ? o.deck : [];
