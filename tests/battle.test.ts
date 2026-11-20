@@ -103,3 +103,20 @@ describe('progress & data', () => {
     expect(loadSave().units.jaga).toBe(1);
   });
 });
+
+import { sanitize } from '../src/game/save';
+describe('save sanitize', () => {
+  it('survives hostile/corrupt data', () => {
+    const s = sanitize({ tut: null, cleared: null, units: null, deck: 'jaga', gold: '100abc', research: null });
+    expect(s.gold).toBe(0);
+    expect(s.units.jaga).toBe(1);
+    expect(s.deck).toEqual(['jaga', 'sato']);
+    const t = sanitize({ units: { jaga: 999, sato: -5, bogus: 3 }, deck: ['jaga', 'jaga', 'bogus'], cleared: { 1: 1 } });
+    expect(t.units.jaga).toBe(30);
+    expect(t.units.sato).toBe(1);
+    expect(t.units.bogus).toBeUndefined();
+    expect(t.deck).toEqual(['jaga']);
+    expect(t.crowns[1]).toBe(1);
+    expect(sanitize(null).units.jaga).toBe(1);
+  });
+});

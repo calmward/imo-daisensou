@@ -1,4 +1,4 @@
-import { portrait } from '../art/index';
+import { portrait, silhouette } from '../art/index';
 import { ellipse, star } from '../art/kit';
 import { mapProp, THEMES } from '../art/scenery';
 import type { App, Scene } from '../core/app';
@@ -206,10 +206,8 @@ export class MapScene implements Scene {
       if (st.boss) {
         const bossId = st.spawns.find((sp) => sp.boss)?.enemy;
         if (bossId) {
-          ctx.save();
-          if (!open) ctx.filter = 'brightness(0.2)';
-          portrait(ctx, bossId, r * 0.1, -r - 18, 44, this.t, 1);
-          ctx.restore();
+          if (!open) silhouette(ctx, bossId, r * 0.1, -r - 18, 44, 1, '#1a1020');
+          else portrait(ctx, bossId, r * 0.1, -r - 18, 44, this.t, 1);
         }
         text(ctx, 'ボス', 0, -r - 2, 12, { color: '#ffe14d' });
       }
@@ -247,7 +245,7 @@ export class MapScene implements Scene {
     ctx.fillStyle = '#a34e00';
     ctx.fillRect(0, topH - 4, w, 4);
     const fs = topH * 0.36;
-    text(ctx, 'ステージを えらぼう', w < 500 ? w * 0.27 : w * 0.2, topH / 2, fs, { maxW: w * 0.45 });
+    text(ctx, w < 500 ? 'ステージ' : 'ステージを えらぼう', 12, topH / 2, fs, { align: 'left', maxW: w - Math.min(240, w * 0.48) - 30 });
     // resources
     const rx = w - 8;
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
@@ -396,7 +394,7 @@ export class MapScene implements Scene {
     }
     const bh = Math.min(58, ph * 0.16);
     if (cleared) {
-      const sh = bh * 0.62;
+      const sh = Math.max(42, bh * 0.7);
       const sy = py + ph - bh - 22 - sh;
       const sw = (pw - 40) / 3;
       for (let k = 1; k <= 3; k++) {

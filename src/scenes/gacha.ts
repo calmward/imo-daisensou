@@ -234,7 +234,7 @@ export class GachaScene implements Scene {
     const res = this.res!;
     const k = easeOutBack(Math.min(1, this.pt / 0.5));
     const pw = Math.min(360, w - 30),
-      ph = Math.min(330, h * 0.5);
+      ph = Math.min(330, h * 0.5, h - clamp(h * 0.1, 50, 72) * 2 - 60 - h * 0.1);
     const px = (w - pw) / 2,
       py = h * 0.1 + 10;
     ctx.save();

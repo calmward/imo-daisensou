@@ -95,3 +95,43 @@ export function portrait(ctx: Ctx, id: string, cx: number, cy: number, size: num
   const sc = size / 78 / tall;
   drawChar(ctx, id, cx, cy + size * 0.42, sc, { t, walk: t, state, atk: 0, hurt: false }, side, evo);
 }
+
+let scratch: HTMLCanvasElement | null = null;
+/**
+ * Draw something tinted (hit flash / freeze / silhouette) without ctx.filter, which is very slow on phones.
+ * `draw` paints around the origin; box = half-size of the area (in current ctx units) that may contain it.
+ */
+export function drawTinted(ctx: Ctx, box: number, color: string, amount: number, draw: (c: Ctx) => void) {
+  const m = ctx.getTransform();
+  const px = Math.max(0.5, Math.hypot(m.a, m.b));
+  const size = Math.min(1024, Math.ceil(box * 2 * px));
+  if (!scratch) scratch = document.createElement('canvas');
+  if (scratch.width < size || scratch.height < size) {
+    scratch.width = Math.max(scratch.width, size);
+    scratch.height = Math.max(scratch.height, size);
+  }
+  const c = scratch.getContext('2d')!;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = 'source-over';
+  c.globalAlpha = 1;
+  c.clearRect(0, 0, size, size);
+  c.setTransform(px, 0, 0, px, size / 2, size / 2);
+  draw(c);
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = 'source-atop';
+  c.globalAlpha = amount;
+  c.fillStyle = color;
+  c.fillRect(0, 0, size, size);
+  c.globalCompositeOperation = 'source-over';
+  c.globalAlpha = 1;
+  ctx.drawImage(scratch, 0, 0, size, size, -size / 2 / px, -size / 2 / px, size / px, size / px);
+}
+
+/** Dark "who's that?" silhouette of a character portrait. */
+export function silhouette(ctx: Ctx, id: string, cx: number, cy: number, size: number, side: 0 | 1 = 0, color = '#000', alpha = 1) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.globalAlpha *= alpha;
+  drawTinted(ctx, size * 0.75, color, 1, (c) => portrait(c, id, 0, 0, size, 0, side));
+  ctx.restore();
+}

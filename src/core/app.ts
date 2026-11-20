@@ -10,9 +10,11 @@ export interface Scene {
   render(ctx: CanvasRenderingContext2D, w: number, h: number): void;
   onDrag?(dx: number, dy: number, x: number, y: number): void;
   onPointerDown?(x: number, y: number): void;
-  onPointerUp?(x: number, y: number, dragged: boolean): void;
+  onPointerUp?(x: number, y: number, dragged: boolean, id?: number): void;
+  onPointerDownId?(x: number, y: number, id: number): void;
   onWheel?(dy: number): void;
   onBack?(): boolean; // return true if handled
+  onHide?(): void; // app went to background
 }
 
 interface PtrState {
@@ -54,14 +56,28 @@ export class App {
     canvas.addEventListener('pointerdown', (e) => this.onDown(e));
     canvas.addEventListener('pointermove', (e) => this.onMove(e));
     canvas.addEventListener('pointerup', (e) => this.onUp(e));
-    canvas.addEventListener('pointercancel', (e) => this.ptrs.delete(e.pointerId));
+    canvas.addEventListener('pointercancel', (e) => {
+      const st = this.ptrs.get(e.pointerId);
+      this.ptrs.delete(e.pointerId);
+      this.ui.pressedId = null;
+      if (st) this.scene.onPointerUp?.(st.lx, st.ly, true, e.pointerId);
+    });
+    // Chrome only treats pointerup/touchend as a user gesture for audio
+    const unlock = () => audio.unlock();
+    window.addEventListener('pointerup', unlock);
+    window.addEventListener('touchend', unlock);
+    window.addEventListener('keydown', unlock);
     canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
       this.scene.onWheel?.(e.deltaY);
     }, { passive: false });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) this.persist();
+      if (document.hidden) {
+        this.persist();
+        audio.suspend();
+        this.scene.onHide?.();
+      } else audio.resume();
     });
     window.addEventListener('popstate', () => {
       // Android back button: let the scene handle it, keep the app open
@@ -93,7 +109,7 @@ export class App {
   }
 
   resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, this.quality ?? 2);
     const w = window.innerWidth;
     const h = window.innerHeight;
     this.dpr = dpr;
@@ -129,6 +145,7 @@ export class App {
     this.ui.pointerX = x;
     this.ui.pointerY = y;
     this.scene.onPointerDown?.(x, y);
+    this.scene.onPointerDownId?.(x, y, e.pointerId);
   }
 
   private onMove(e: PointerEvent) {
@@ -164,17 +181,39 @@ export class App {
         reg.onTap();
       }
     }
-    this.scene.onPointerUp?.(x, y, st.dragging);
+    this.scene.onPointerUp?.(x, y, st.dragging, e.pointerId);
   }
 
   start() {
     const loop = (now: number) => {
+      requestAnimationFrame(loop);
       const dt = Math.min(0.05, (now - (this.last || now)) / 1000);
       this.last = now;
-      this.frame(dt);
-      requestAnimationFrame(loop);
+      try {
+        this.frame(dt);
+      } catch (e) {
+        // never let one bad frame freeze the game
+        console.error(e);
+        this.fadeDir = 0;
+        this.fade = 0;
+      }
+      this.adaptQuality(dt);
     };
     requestAnimationFrame(loop);
+  }
+
+  private slowT = 0;
+  private quality = 2;
+  /** Lower the canvas resolution on slow phones so the game stays smooth. */
+  private adaptQuality(dt: number) {
+    if (document.hidden) return;
+    if (dt > 0.028) this.slowT += dt;
+    else this.slowT = Math.max(0, this.slowT - dt * 0.5);
+    if (this.slowT > 2 && this.quality > 1) {
+      this.quality = this.quality > 1.5 ? 1.5 : 1;
+      this.slowT = 0;
+      this.resize();
+    }
   }
 
   private frame(dt: number) {

@@ -1,4 +1,4 @@
-import { drawChar, portrait } from '../art/index';
+import { drawChar, drawTinted, portrait } from '../art/index';
 import { ellipse, type Pose } from '../art/kit';
 import { drawBackground, drawEnemyBase, drawPlayerBase } from '../art/scenery';
 import type { App, Scene } from '../core/app';
@@ -150,7 +150,7 @@ export class BattleScene implements Scene {
       this.tut = 'wallet';
       this.tutT = 0;
     }
-    if ((this.tut === 'money' || this.tut === 'wallet') && b.beam >= 1 && this.tut !== 'wallet') {
+    if (this.tut === 'money' && b.beam >= 1) {
       this.tut = 'beam';
       this.tutT = 0;
     }
@@ -197,15 +197,24 @@ export class BattleScene implements Scene {
     }
   }
 
-  onPointerDown(x: number, y: number) {
+  private miniPtr = -1;
+  onPointerDownId(x: number, y: number, id: number) {
     const m = this.L?.mini;
-    if (m && x >= m.x - 4 && x <= m.x + m.w + 4 && y >= m.y - 12 && y <= m.y + m.h + 12 && !this.paused && !this.b.result) {
+    const pad = this.L?.portrait ? 12 : 6;
+    if (m && x >= m.x - 4 && x <= m.x + m.w + 4 && y >= m.y - pad && y <= m.y + m.h + pad && !this.paused && !this.b.result) {
       this.dragMini = true;
+      this.miniPtr = id;
       this.camFromMini(x);
     }
   }
-  onPointerUp() {
-    this.dragMini = false;
+  onPointerUp(_x: number, _y: number, _d: boolean, id?: number) {
+    if (id === undefined || id === this.miniPtr) {
+      this.dragMini = false;
+      this.miniPtr = -1;
+    }
+  }
+  onHide() {
+    if (!this.b.result) this.paused = true;
   }
 
   private camFromMini(x: number) {
@@ -435,7 +444,7 @@ export class BattleScene implements Scene {
       const gx = wallet.x + wallet.w + 6,
         gw = beam.x - 6 - gx;
       const units = grid(gx, by, gw, bottomH - 12, 5, 2, 5);
-      const hud = clamp(h * 0.11, 34, 52);
+      const hud = clamp(h * 0.12, 44, 56);
       return {
         portrait, field, scale, groundY, top: null,
         pause: { x: 6, y: 6, w: hud, h: hud },
@@ -538,7 +547,7 @@ export class BattleScene implements Scene {
 
   private drawFighter(ctx: CanvasRenderingContext2D, fi: Fighter, toX: (x: number) => number, toY: (y: number) => number, s: number) {
     const dir = fi.side === 0 ? 1 : -1;
-    const cx = fi.x - dir * fi.s.width * 0.5;
+    let drawX = fi.x;
     let yOff = this.laneY(fi.lane);
     let rot = 0;
     let alpha = 1;
@@ -563,11 +572,12 @@ export class BattleScene implements Scene {
       // fly back spinning with X eyes, then pop into a puff (see popDeaths)
       if (fi.t >= POP_T) return;
       const p = fi.t / POP_T;
-      fi.x = fi.kbFrom + (fi.kbTo - fi.kbFrom) * p;
+      drawX = fi.kbFrom + (fi.kbTo - fi.kbFrom) * p;
       yOff -= Math.sin(p * Math.PI * 0.9) * 46;
       rot = -dir * p * 3.2;
       state = 'dead';
     }
+    const cx = drawX - dir * fi.s.width * 0.5;
     const sx = toX(cx),
       sy = toY(yOff);
     if (sx < -200 || sx > this.L.field.w + 200) return;
@@ -584,10 +594,12 @@ export class BattleScene implements Scene {
     ctx.translate(sx, sy);
     if (rot) ctx.rotate(rot);
     const flashing = fi.flash > 0;
-    if (flashing) ctx.filter = 'brightness(1.8)';
-    else if (fi.freezeT > 0) ctx.filter = 'saturate(0.4) brightness(1.15) hue-rotate(160deg)';
-    drawChar(ctx, fi.id, 0, 0, sc, { t: this.t + fi.uid, walk: fi.walkT, state, atk, hurt: flashing, frozen: fi.freezeT > 0 }, fi.side, fi.evo);
-    ctx.filter = 'none';
+    const pose = { t: this.t + fi.uid, walk: fi.walkT, state, atk, hurt: flashing, frozen: fi.freezeT > 0 };
+    if (flashing || fi.freezeT > 0) {
+      const tint = flashing ? '#ffffff' : '#9be8ff';
+      ctx.translate(0, -40 * sc);
+      drawTinted(ctx, 100 * sc * Math.max(1, fi.s.width / 70), tint, flashing ? 0.6 : 0.45, (c) => drawChar(c, fi.id, 0, 40 * sc, sc, pose, fi.side, fi.evo));
+    } else drawChar(ctx, fi.id, 0, 0, sc, pose, fi.side, fi.evo);
     ctx.restore();
     ctx.globalAlpha = 1;
     if (fi.freezeT > 0 && fi.state !== 'dead') {
@@ -718,12 +730,12 @@ export class BattleScene implements Scene {
     const p = L.pause;
     ctx.fillRect(p.x + p.w * 0.32, p.y + p.h * 0.25, p.w * 0.12, p.h * 0.42);
     ctx.fillRect(p.x + p.w * 0.56, p.y + p.h * 0.25, p.w * 0.12, p.h * 0.42);
-    ui.add({ id: 'pause', r: p, onTap: () => (this.paused = true) });
+    if (!b.result) ui.add({ id: 'pause', r: p, onTap: () => (this.paused = true) });
     // speed
     const sp = this.app.save.speed2;
     drawButton(ctx, L.speed, sp ? STYLES.orange : STYLES.cream, ui.isPressed('speed'));
     text(ctx, sp ? '▶▶x2' : '▶x1', L.speed.x + L.speed.w / 2, L.speed.y + L.speed.h * 0.45, L.speed.h * 0.36, { color: sp ? '#fff' : '#5a3a12', stroke: sp ? '#a34e00' : 'none' });
-    ui.add({ id: 'speed', r: L.speed, onTap: () => { this.app.save.speed2 = !this.app.save.speed2; this.app.persist(); } });
+    if (!b.result) ui.add({ id: 'speed', r: L.speed, onTap: () => { this.app.save.speed2 = !this.app.save.speed2; this.app.persist(); } });
     // money
     const m = L.money;
     ctx.fillStyle = 'rgba(40,20,5,0.65)';
@@ -837,8 +849,10 @@ export class BattleScene implements Scene {
     text(ctx, maxed ? 'MAX' : `${b.walletCost}えん`, wl.x + wl.w / 2, wl.y + off + wl.h * 0.76, ws * 0.9, { color: canW ? '#fff' : '#ffd0d0', maxW: wl.w - 8 });
     if (canW) {
       ctx.save();
-      ctx.globalAlpha = 0.5 + Math.sin(t * 8) * 0.3;
-      text(ctx, '▲', wl.x + wl.w - ws, wl.y + off + ws, ws * 1.1, { color: '#ffe14d' });
+      ctx.globalAlpha = 0.25 + Math.sin(t * 8) * 0.2;
+      ctx.fillStyle = '#fffbe0';
+      rr(ctx, wl.x, wl.y + off, wl.w, wl.h - 6, 14);
+      ctx.fill();
       ctx.restore();
     }
     ui.add({ id: 'wallet', r: wl, onDown: () => this.tapWallet() });
@@ -908,6 +922,7 @@ export class BattleScene implements Scene {
     if (this.b.fireBeam() && this.tut === 'beam') {
       this.tut = 'done';
       this.app.save.tut.battle = true;
+      this.app.persist();
     }
   }
 
@@ -934,6 +949,7 @@ export class BattleScene implements Scene {
     let target: Rect | null = null;
     let msg = '';
     if (this.tut === 'deploy') {
+      if (this.b.money < this.b.slots[0].def.cost) this.b.money = this.b.slots[0].def.cost;
       target = L.units[0];
       msg = 'じゃがいもを タップして しゅつげき！';
     } else if (this.tut === 'money') {
@@ -1005,6 +1021,7 @@ export class BattleScene implements Scene {
     const k = Math.min(1, (this.resultT - 2.2) / 0.4);
     ctx.fillStyle = `rgba(0,0,0,${0.5 * k})`;
     ctx.fillRect(0, 0, w, h);
+    this.app.ui.add({ id: 'resultblock', r: { x: 0, y: 0, w, h }, sound: false });
     const win = this.b.result === 'win';
     const pw = Math.min(420, w - 24),
       ph = Math.min(400, h - 20);

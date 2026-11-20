@@ -61,13 +61,25 @@ class Audio {
       this.musicGain = ctx.createGain();
       this.musicGain.gain.value = 0.32;
       this.musicGain.connect(this.master);
-      const len = ctx.sampleRate * 1;
+      const len = ctx.sampleRate * 2;
       this.noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
       const d = this.noiseBuf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     }
     if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
     if (this.track && this.timer === null) this.startScheduler();
+  }
+
+  suspend() {
+    if (this.ctx && this.ctx.state === 'running') this.ctx.suspend();
+    if (this.timer !== null) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+  resume() {
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.track && this.timer === null && this.ctx) this.startScheduler();
   }
 
   setMuted(m: boolean) {
@@ -99,6 +111,7 @@ class Audio {
     const t = opts.at ?? ctx.currentTime;
     const src = ctx.createBufferSource();
     src.buffer = this.noiseBuf;
+    src.loop = true;
     const f = ctx.createBiquadFilter();
     f.type = opts.type ?? 'bandpass';
     f.frequency.setValueAtTime(opts.freq ?? 1200, t);

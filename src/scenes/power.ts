@@ -1,4 +1,4 @@
-import { portrait } from '../art/index';
+import { portrait, silhouette } from '../art/index';
 import { ellipse } from '../art/kit';
 import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
@@ -81,22 +81,23 @@ export class PowerScene implements Scene {
     ctx.fillRect(0, 0, w, topH);
     ctx.fillStyle = '#2a7a1e';
     ctx.fillRect(0, topH - 4, w, 4);
-    const back = { x: 8, y: 8, w: topH * 1.5, h: topH - 16 };
+    const bH = Math.max(44, topH - 12);
+    const back = { x: 6, y: (topH - bH) / 2, w: topH * 1.5, h: bH };
     const ob = drawButton(ctx, back, STYLES.cream, ui.isPressed('back'));
     text(ctx, '◀ もどる', back.x + back.w / 2, back.y + ob + (back.h - 6) / 2, back.h * 0.34, { color: '#5a3a12', stroke: 'none', maxW: back.w - 6 });
     ui.add({ id: 'back', r: back, onTap: () => this.leave2() });
     // tabs
-    const tabW = Math.min(150, (w - back.w - 200) / 2 + 40);
+    const gw = Math.min(150, w * 0.26);
+    const tabW = Math.min(150, (w - back.w - gw - 40) / 2);
     const tabs: ['units' | 'castle', string][] = [['units', 'なかま'], ['castle', 'おしろ']];
     tabs.forEach(([id, label], i) => {
-      const r = { x: back.x + back.w + 10 + i * (tabW + 6), y: 8, w: tabW, h: topH - 16 };
+      const r = { x: back.x + back.w + 8 + i * (tabW + 6), y: back.y, w: tabW, h: bH };
       const on = this.tab === id;
       const off = drawButton(ctx, r, on ? STYLES.orange : STYLES.cream, ui.isPressed('tab' + id));
       text(ctx, label, r.x + r.w / 2, r.y + off + (r.h - 6) / 2, r.h * 0.4, { color: on ? '#fff' : '#5a3a12', stroke: on ? undefined : 'none', maxW: r.w - 6 });
       ui.add({ id: 'tab' + id, r, onTap: () => { this.tab = id; this.scroll = 0; } });
     });
     // gold
-    const gw = Math.min(150, w * 0.28);
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
     rr(ctx, w - gw - 8, topH * 0.2, gw, topH * 0.56, topH * 0.28);
     ctx.fill();
@@ -156,11 +157,7 @@ export class PowerScene implements Scene {
         text(ctx, `Lv.${save.units[a.id]}`, r.x + r.w / 2, r.y + r.h - 12, clamp(r.w * 0.17, 10, 15), { color: '#fff' });
         if (canLevelUp(save, a.id)) text(ctx, '▲', r.x + r.w - 10, r.y + 16, 14, { color: '#7dff7d' });
       } else {
-        ctx.save();
-        ctx.filter = 'brightness(0)';
-        ctx.globalAlpha = 0.35;
-        portrait(ctx, a.id, r.x + r.w / 2, r.y + r.h * 0.44, r.w * 0.78, 0);
-        ctx.restore();
+        silhouette(ctx, a.id, r.x + r.w / 2, r.y + r.h * 0.44, r.w * 0.78, 0, '#000', 0.35);
         text(ctx, '？', r.x + r.w / 2, r.y + r.h * 0.42, r.w * 0.35, { color: '#fff' });
       }
       if (inDeck) {
@@ -172,7 +169,9 @@ export class PowerScene implements Scene {
         ctx.stroke();
         text(ctx, '✓', r.x + 13, r.y + 17, 13, { stroke: 'none' });
       }
-      ui.add({ id: 'card' + a.id, r, onTap: () => (this.sel = a.id) });
+      const top = Math.max(r.y, gy0),
+        bot = Math.min(r.y + r.h, gridA.y + gridA.h);
+      if (bot - top > 10) ui.add({ id: 'card' + a.id, r: { x: r.x, y: top, w: r.w, h: bot - top }, onTap: () => (this.sel = a.id) });
     });
     ctx.restore();
     if (this.maxScroll > 0) {
@@ -199,11 +198,7 @@ export class PowerScene implements Scene {
     ctx.fill();
     if (owned) portrait(ctx, a.id, px, py, ps, this.t * 1.5, 0, Math.sin(this.t * 0.7) > 0.6 ? 'attack' : 'walk', isEvolved(save.units[a.id]));
     else {
-      ctx.save();
-      ctx.filter = 'brightness(0)';
-      ctx.globalAlpha = 0.3;
-      portrait(ctx, a.id, px, py, ps, 0);
-      ctx.restore();
+      silhouette(ctx, a.id, px, py, ps, 0, '#000', 0.3);
     }
     const tx = px + ps * 0.62;
     const tw = r.x + r.w - tx - 10;
@@ -239,10 +234,11 @@ export class PowerScene implements Scene {
         ctx.fill();
         text(ctx, String(v), r.x + r.w - 14, y, lineH * 0.5, { align: 'right', color: '#5a3a12', stroke: 'none' });
       });
-      text(ctx, `コスト ${a.cost}えん　つぎまで ${a.cooldown}びょう`, r.x + 14, sy + 4 * lineH, lineH * 0.5, { align: 'left', color: '#8a5a22', stroke: 'none', maxW: r.w - 28 });
+      const bh0 = clamp(r.h * 0.14, 38, 60);
+      if (sy + 4.3 * lineH < r.y + r.h - bh0 - 14) text(ctx, `コスト ${a.cost}えん　つぎまで ${a.cooldown}びょう`, r.x + 14, sy + 4 * lineH, lineH * 0.5, { align: 'left', color: '#8a5a22', stroke: 'none', maxW: r.w - 28 });
       // desc
       const descY = sy + 4.9 * lineH;
-      const bh = clamp(r.h * 0.14, 38, 60);
+      const bh = Math.max(44, bh0);
       const descH = r.y + r.h - bh - 16 - descY;
       if (descH > 18) wrapText(ctx, a.desc, r.x + r.w / 2, descY + descH / 2, r.w - 28, Math.min(fs * 0.7, descH / 2.6), '#5a3a12');
       // buttons
@@ -306,9 +302,10 @@ export class PowerScene implements Scene {
       const fs = clamp(rh * 0.2, 11, 20);
       const icon = ['🏰', '💰', '👛', '⚡', '🔋', '🪙'][i];
       text(ctx, icon, r.x + rh * 0.35, r.y + rh / 2, rh * 0.4, { stroke: 'none' });
-      text(ctx, rd.name, r.x + rh * 0.7, r.y + rh * 0.28, fs, { align: 'left', color: '#ffd23a', maxW: r.w * 0.55 });
+      const textW = r.w - rh * 0.7 - Math.min(140, r.w * 0.3) - 26;
+      text(ctx, rd.name, r.x + rh * 0.7, r.y + rh * 0.28, fs, { align: 'left', color: '#ffd23a', maxW: textW });
       text(ctx, `Lv.${lv}/${rd.max}`, r.x + rh * 0.7, r.y + rh * 0.55, fs * 0.8, { align: 'left', color: '#fff', maxW: r.w * 0.3 });
-      text(ctx, rd.desc, r.x + rh * 0.7, r.y + rh * 0.8, fs * 0.62, { align: 'left', color: '#5a3a12', stroke: 'none', maxW: r.w * 0.55 });
+      text(ctx, rd.desc, r.x + rh * 0.7, r.y + rh * 0.8, fs * 0.62, { align: 'left', color: '#5a3a12', stroke: 'none', maxW: textW });
       const maxed = lv >= rd.max;
       const cost = researchCost(rd, lv);
       const can = canResearch(save, rd.id);
