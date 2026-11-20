@@ -18,7 +18,7 @@ export interface SaveData {
   daily: string; // last day the login bonus was claimed
   claimed: string[]; // mission ids already claimed
   seen: Record<string, number>; // enemy id -> times defeated/encountered
-  today: { date: string; counts: Record<string, number>; claimed: string[] };
+  today: { date: string; counts: Record<string, number>; claimed: string[]; ids?: string[] };
   stats: { wins: number; losses: number; kills: number };
 }
 

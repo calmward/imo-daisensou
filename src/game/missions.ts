@@ -99,6 +99,11 @@ export function rollDay(s: SaveData, date = todayKey()) {
 }
 
 export function dailyMissions(s: SaveData, date = todayKey()): Daily[] {
+  rollDay(s, date);
+  if (s.today.ids?.length) {
+    const fixed = s.today.ids.map((id) => DAILY_POOL.find((d) => d.id === id)).filter((d): d is Daily => !!d);
+    if (fixed.length) return fixed;
+  }
   let h = 0;
   for (const c of date) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   const cleared = Object.keys(s.cleared).length;
@@ -108,6 +113,7 @@ export function dailyMissions(s: SaveData, date = todayKey()): Daily[] {
     h = (h * 1103515245 + 12345) >>> 0;
     out.push(pool.splice(h % pool.length, 1)[0]);
   }
+  s.today.ids = out.map((d) => d.id); // keep today's set stable
   return out;
 }
 

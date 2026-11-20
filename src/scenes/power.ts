@@ -27,7 +27,8 @@ export class PowerScene implements Scene {
 
   constructor(private app: App, arg?: { tab?: 'units' | 'castle' }) {
     if (arg?.tab) this.tab = arg.tab;
-    this.sel = app.lastNew && app.save.units[app.lastNew] ? app.lastNew : app.save.deck[0] ?? 'jaga';
+    const weakest = [...app.save.deck].sort((a, b) => app.save.units[a] - app.save.units[b])[0];
+    this.sel = app.lastNew && app.save.units[app.lastNew] ? app.lastNew : weakest ?? 'jaga';
     app.lastNew = null;
   }
 
@@ -174,7 +175,13 @@ export class PowerScene implements Scene {
       }
       const top = Math.max(r.y, gy0),
         bot = Math.min(r.y + r.h, gridA.y + gridA.h);
-      if (bot - top > 10) ui.add({ id: 'card' + a.id, r: { x: r.x, y: top, w: r.w, h: bot - top }, onTap: () => (this.sel = a.id) });
+      if (bot - top > 10) ui.add({ id: 'card' + a.id, r: { x: r.x, y: top, w: r.w, h: bot - top }, onTap: () => {
+        if (owned) this.sel = a.id;
+        else {
+          const st = STAGES.find((x) => x.unlock === a.id);
+          this.popText = { s: a.gacha ? 'ガチャで でるかも！' : `ステージ ${st?.id} で なかまに なるよ`, t: 0 };
+        }
+      } });
     });
     ctx.restore();
     if (this.maxScroll > 0) {

@@ -55,6 +55,7 @@ export class BattleScene implements Scene {
   lastDanger = -99;
   rotateTip = 0;
   bossCamT = 0;
+  denyT: number[] = [];
   dangerT = 0;
   endHandled = false;
   winRes: WinResult | null = null;
@@ -567,7 +568,8 @@ export class BattleScene implements Scene {
     const rowH = clamp(avail * 0.36, 70, 130);
     const gridH = clamp(avail - rowH - pad, 120, 260);
     const gy = topH + fh + miniH + pad;
-    const units = grid(pad, gy, w - pad * 2, gridH, 5, 2, 6);
+    const rowsN = this.b.slots.length > 5 ? 2 : 1;
+    const units = grid(pad, gy, w - pad * 2, rowsN === 1 ? gridH * 0.8 : gridH, 5, rowsN, 6);
     const ry = gy + gridH + pad;
     const half = (w - pad * 3) / 2;
     return {
@@ -940,6 +942,11 @@ export class BattleScene implements Scene {
       this.readyPop[i] = pop + 1 / 60;
       const bounce = pop < 0.3 ? Math.sin((pop / 0.3) * Math.PI) * 0.08 : 0;
       ctx.save();
+      const dny = this.denyT[i] ?? 0;
+      if (dny > 0) {
+        this.denyT[i] = dny - 1 / 60;
+        ctx.translate(Math.sin(dny * 60) * 4, 0);
+      }
       if (bounce) {
         ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
         ctx.scale(1 + bounce, 1 + bounce);
@@ -978,7 +985,7 @@ export class BattleScene implements Scene {
       ctx.restore();
       // cost
       const cs = clamp(r.h * 0.25, 12, 18);
-      text(ctx, `${cost}えん`, r.x + r.w / 2, r.y + off + r.h - 3 - cs * 0.75, cs, { color: affordable ? '#fff' : '#ff8080', maxW: r.w - 6 });
+      text(ctx, `${cost}えん`, r.x + r.w / 2, r.y + off + r.h - 3 - cs * 0.75, cs * (dny > 0 ? 1.25 : 1), { color: affordable ? '#fff' : dny > 0 ? '#ff2020' : '#ff8080', maxW: r.w - 6 });
       if (slot.cd > 0) {
         ctx.fillStyle = '#3a2410';
         ctx.fillRect(r.x + 6, r.y + off + 5, r.w - 12, 5);
@@ -1059,7 +1066,7 @@ export class BattleScene implements Scene {
   private tapUnit(i: number) {
     if (this.paused || this.b.result) return;
     if (this.tut === 'wallet' || this.tut === 'beam') return;
-    this.b.deploy(i);
+    if (!this.b.deploy(i)) this.denyT[i] = 0.35;
   }
   private tapWallet() {
     if (this.paused || this.b.result) return;
@@ -1257,7 +1264,7 @@ export class BattleScene implements Scene {
         ctx.save();
         ctx.translate(w / 2, y + 2);
         ctx.scale(pulse, pulse);
-        text(ctx, `あたらしい なかま！「${ALLY_MAP[r.unlocked].name}」`, fs * 1.2, 0, fs * 0.85, { color: '#7dff7d', maxW: pw - fs * 4 });
+        text(ctx, `あたらしい なかま！「${ALLY_MAP[r.unlocked].name}」`, fs * 1.6, 0, fs * 0.85, { color: '#7dff7d', maxW: pw - fs * 5.5 });
         ctx.restore();
         ctx.save();
         ctx.fillStyle = 'rgba(255,240,120,0.6)';

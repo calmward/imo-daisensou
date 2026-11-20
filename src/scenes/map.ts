@@ -10,7 +10,7 @@ import { MUSIC } from '../game/music';
 import { highestUnlocked, isCleared } from '../game/save';
 import { BONUS_ID, STAGES, STAR_NAMES, ticketReward, WORLD_NAMES } from '../game/stages';
 import { todayKey } from '../game/missions';
-import { claimDaily } from '../game/progress';
+import { canLevelUp, claimDaily } from '../game/progress';
 import { claimable } from '../game/missions';
 import { drawGoldIcon, drawHand, wrapText } from './battle';
 
@@ -267,7 +267,7 @@ export class MapScene implements Scene {
     ctx.fillRect(0, by, w, botH);
     const bw = Math.min(180, (w - 50) / 4);
     const btns: [string, string, keyof typeof STYLES, () => void, boolean][] = [
-      ['power', 'パワーアップ', 'green', () => this.app.go('power'), save.gold >= 100 && !save.tut.power && isCleared(save, 1)],
+      ['power', 'つよくする', 'green', () => this.app.go('power'), isCleared(save, 1) && Object.keys(save.units).some((id) => canLevelUp(save, id))],
       ['gacha', 'ガチャ', 'pink', () => this.app.go('gacha'), save.tickets > 0],
       ['missions', 'ミッション', 'blue', () => this.app.go('missions'), claimable(save).length > 0],
       ['zukan', 'ずかん', 'purple', () => this.app.go('zukan'), false],
