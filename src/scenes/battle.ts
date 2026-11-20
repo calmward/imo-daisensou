@@ -1209,7 +1209,10 @@ export class BattleScene implements Scene {
       }
     } else {
       text(ctx, `きんいも +${this.lossGold}`, w / 2, y, fs, { color: '#ffe14d' });
-      y += fs * 1.5;
+      y += fs * 1.2;
+      const left = Math.ceil((this.b.eBase.hp / this.b.eBase.max) * 100);
+      text(ctx, left <= 40 ? `あと ちょっと！ てきの おしろ のこり ${left}%` : `てきの おしろ のこり ${left}%`, w / 2, y, fs * 0.7, { color: left <= 40 ? '#ff8a1f' : '#5a5a8a', stroke: 'none', maxW: pw - 30 });
+      y += fs * 1.1;
       const foe = Object.entries(this.b.killedBy).sort((a, c) => c[1] - a[1])[0]?.[0];
       if (foe) {
         const ed = ENEMY_MAP[foe];
