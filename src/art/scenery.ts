@@ -63,6 +63,7 @@ export function drawBackground(ctx: Ctx, w: number, h: number, groundY: number, 
   ctx.fillRect(0, groundY, w, h - groundY);
   ctx.fillStyle = th.accent;
   ctx.fillRect(0, groundY - 2, w, Math.max(4, 7 * scale));
+  drawGroundProps(ctx, w, groundY, camX, scale, world, t);
   // grass tufts & furrows scroll with camera
   ctx.strokeStyle = 'rgba(80,50,20,0.25)';
   ctx.lineWidth = Math.max(1, 3 * scale);
@@ -285,4 +286,167 @@ function drawCracks(ctx: Ctx, cx: number, cy: number, r: number, hpFrac: number)
     sets[i].forEach(([x, y], j) => (j ? ctx.lineTo(cx + x * r, cy + y * r) : ctx.moveTo(cx + x * r, cy + y * r)));
     ctx.stroke();
   }
+}
+
+function hash(n: number) {
+  const x = Math.sin(n * 127.1) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/** World-locked decorations along the horizon + butterflies. */
+function drawGroundProps(ctx: Ctx, w: number, groundY: number, camX: number, scale: number, world: number, t: number) {
+  const step = 90;
+  const first = Math.floor((camX - 100) / step);
+  const last = Math.ceil((camX + w / scale + 100) / step);
+  for (let i = first; i <= last; i++) {
+    const hsh = hash(i + world * 1000);
+    if (hsh < 0.35) continue;
+    const wx = i * step + hash(i * 3.3) * 50;
+    const x = (wx - camX) * scale;
+    const y = groundY - 1;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    const kind = hash(i * 7.7);
+    if (world === 0) {
+      if (kind < 0.05) scarecrow(ctx, t + i);
+      else if (kind < 0.7) potatoPlant(ctx, t + i);
+      else flower(ctx, ['#ff7eb6', '#ffe14d', '#fff'][i % 3], t + i);
+    } else if (world === 1) {
+      if (kind < 0.4) mushroom(ctx, i % 2 ? '#e8312f' : '#c8783a');
+      else if (kind < 0.7) acorn(ctx);
+      else flower(ctx, '#c49bff', t + i);
+    } else {
+      if (kind < 0.5) rock(ctx, hash(i * 1.9));
+      else if (kind < 0.8) shrub(ctx);
+      else flower(ctx, '#9be8ff', t + i);
+    }
+    ctx.restore();
+  }
+  // butterflies
+  for (let k = 0; k < 3; k++) {
+    const bx = ((k * 420 + t * 30 - camX * scale * 0.9) % (w + 200) + w + 200) % (w + 200) - 100;
+    const by = groundY - (60 + Math.sin(t * 2 + k) * 25 + k * 20) * scale;
+    const flap = Math.abs(Math.sin(t * 14 + k));
+    ctx.fillStyle = ['#ffb0d8', '#fff36a', '#b0e0ff'][k];
+    for (const d of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(bx + d * 4 * scale * flap, by, 5 * scale * flap + 1, 4 * scale + 1, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function potatoPlant(ctx: Ctx, t: number) {
+  const sw = Math.sin(t * 2) * 0.08;
+  for (const [a, l] of [[-0.6, 18], [0, 24], [0.6, 18]]) {
+    ctx.save();
+    ctx.rotate(a + sw);
+    ctx.beginPath();
+    ctx.ellipse(0, -l / 2, 5, l / 2, 0, 0, Math.PI * 2);
+    fillStroke(ctx, '#5cb83a', 1.5, '#2a6a1e');
+    ctx.restore();
+  }
+  // tiny potato peeking out of the soil
+  ellipse(ctx, 6, 2, 7, 5);
+  fillStroke(ctx, '#d9a75b', 1.5);
+}
+
+function scarecrow(ctx: Ctx, t: number) {
+  ctx.strokeStyle = '#7a4a22';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, -60);
+  ctx.moveTo(-22, -42);
+  ctx.lineTo(22, -42);
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(0, -66);
+  ctx.rotate(Math.sin(t) * 0.05);
+  ellipse(ctx, 0, 0, 10, 10);
+  fillStroke(ctx, '#f2dcb0', 2);
+  ctx.beginPath();
+  ctx.moveTo(-16, -4);
+  ctx.lineTo(0, -20);
+  ctx.lineTo(16, -4);
+  ctx.closePath();
+  fillStroke(ctx, '#e8b23a', 2);
+  ctx.fillStyle = OUT;
+  ellipse(ctx, -3, 1, 1.5, 1.5);
+  ctx.fill();
+  ellipse(ctx, 4, 1, 1.5, 1.5);
+  ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = '#5a8ad8';
+  ctx.fillRect(-8, -50, 16, 18);
+}
+
+function flower(ctx: Ctx, color: string, t: number) {
+  ctx.strokeStyle = '#3a8a2a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(Math.sin(t) * 3, -8, 0, -14);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    ellipse(ctx, Math.cos(a) * 4, -14 + Math.sin(a) * 4, 3, 3);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#ffd23a';
+  ellipse(ctx, 0, -14, 2.2, 2.2);
+  ctx.fill();
+}
+
+function mushroom(ctx: Ctx, cap: string) {
+  ctx.fillStyle = '#f6ecd6';
+  ctx.fillRect(-4, -14, 8, 14);
+  ctx.beginPath();
+  ctx.ellipse(0, -14, 13, 9, 0, Math.PI, 0);
+  ctx.closePath();
+  fillStroke(ctx, cap, 2);
+  ctx.fillStyle = '#fff';
+  ellipse(ctx, -5, -18, 2.5, 2);
+  ctx.fill();
+  ellipse(ctx, 4, -20, 2, 1.6);
+  ctx.fill();
+}
+
+function acorn(ctx: Ctx) {
+  ellipse(ctx, 0, -7, 7, 8);
+  fillStroke(ctx, '#c8783a', 2);
+  ctx.beginPath();
+  ctx.ellipse(0, -13, 8, 4, 0, Math.PI, 0);
+  ctx.closePath();
+  fillStroke(ctx, '#7a4a22', 2);
+}
+
+function rock(ctx: Ctx, r: number) {
+  const s = 10 + r * 12;
+  ctx.beginPath();
+  ctx.moveTo(-s, 0);
+  ctx.lineTo(-s * 0.7, -s * 0.8);
+  ctx.lineTo(s * 0.2, -s);
+  ctx.lineTo(s, -s * 0.3);
+  ctx.lineTo(s, 0);
+  ctx.closePath();
+  fillStroke(ctx, '#9a90a8', 2);
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.7, -s * 0.8);
+  ctx.lineTo(s * 0.2, -s);
+  ctx.lineTo(-s * 0.1, -s * 0.7);
+  ctx.fill();
+}
+
+function shrub(ctx: Ctx) {
+  for (const [x, r] of [[-8, 9], [0, 12], [9, 8]]) {
+    ellipse(ctx, x, -r * 0.8, r, r * 0.9);
+    fillStroke(ctx, '#6a8a6a', 1.5, '#2a4a2a');
+  }
+  ctx.fillStyle = '#fff';
+  ellipse(ctx, 0, -18, 8, 3);
+  ctx.fill();
 }

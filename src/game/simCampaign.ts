@@ -16,6 +16,7 @@ export interface StageLog {
   baseFrac: number;
   avgLv: number;
   win: boolean;
+  closest: number;
 }
 
 /** Spend gold: cheapest useful upgrade first, mixing unit levels and research. */
@@ -56,7 +57,7 @@ export function runCampaign(opts: { skill?: number; seed?: number; maxTries?: nu
   for (const st of STAGES) {
     let tries = 0;
     let grinds = 0;
-    let res = { win: false, time: 0, baseFrac: 0, enemyFrac: 1 };
+    let res = { win: false, time: 0, baseFrac: 0, enemyFrac: 1, closest: 1 };
     while (tries < (opts.maxTries ?? 10)) {
       chooseDeck(save);
       spendGold(save);
@@ -81,7 +82,7 @@ export function runCampaign(opts: { skill?: number; seed?: number; maxTries?: nu
       }
     }
     const avgLv = save.deck.reduce((s, id) => s + save.units[id], 0) / save.deck.length;
-    logs.push({ id: st.id, name: st.name, tries, grinds, time: Math.round(res.time), baseFrac: Math.round(res.baseFrac * 100) / 100, avgLv: Math.round(avgLv * 10) / 10, win: res.win });
+    logs.push({ id: st.id, name: st.name, tries, grinds, time: Math.round(res.time), baseFrac: Math.round(res.baseFrac * 100) / 100, avgLv: Math.round(avgLv * 10) / 10, win: res.win, closest: Math.round(res.closest * 100) / 100 });
     if (!res.win) break;
   }
   return { logs, save };

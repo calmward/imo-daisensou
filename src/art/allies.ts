@@ -3,11 +3,12 @@ import { arm, blob, blush, ellipse, eye, feet, fillStroke, motion, mouth, OUT, r
 
 type Drawer = (ctx: Ctx, p: Pose) => void;
 
-function face(ctx: Ctx, x: number, y: number, s: number, p: Pose, opts: { angry?: boolean; mouthKind?: Parameters<typeof mouth>[4] } = {}) {
+function face(ctx: Ctx, x: number, y: number, s: number, p: Pose, opts: { angry?: boolean; mouthKind?: Parameters<typeof mouth>[4]; sleepy?: boolean; sparkle?: boolean; sad?: boolean } = {}) {
   const atk = p.state === 'attack';
   const closed = p.state === 'kb' || p.state === 'dead';
-  eye(ctx, x - s * 0.55, y, s * 0.42, { look: 0.6, closed, angry: opts.angry || atk });
-  eye(ctx, x + s * 0.55, y, s * 0.42, { look: 0.6, closed, angry: opts.angry || atk });
+  const eo = { look: 0.6, closed, angry: opts.angry || atk, sleepy: opts.sleepy && !atk, sparkle: opts.sparkle, sad: opts.sad && !atk };
+  eye(ctx, x - s * 0.58, y, s * 0.48, eo);
+  eye(ctx, x + s * 0.58, y, s * 0.48, eo);
   blush(ctx, x - s * 0.95, y + s * 0.55, s * 0.3);
   blush(ctx, x + s * 0.98, y + s * 0.55, s * 0.3);
   mouth(ctx, x + s * 0.05, y + s * 0.75, s * 0.6, closed ? 'o' : atk ? 'open' : opts.mouthKind ?? 'smile');
@@ -75,7 +76,7 @@ const sato: Drawer = (ctx, p) => {
   ctx.quadraticCurveTo(6, -66, 14, -64);
   ctx.quadraticCurveTo(8, -58, 0, -56);
   fillStroke(ctx, '#6ccf4a', 2);
-  face(ctx, 4, -28, 9.5, p, { angry: true, mouthKind: 'flat' });
+  face(ctx, 4, -28, 9.5, p, { sleepy: true, mouthKind: 'flat' });
   ctx.restore();
 };
 
@@ -107,7 +108,7 @@ const chips: Drawer = (ctx, p) => {
   ctx.beginPath();
   ctx.arc(-4, -18, 12, 0.3, 1.6);
   ctx.stroke();
-  face(ctx, 3, -23, 8, p);
+  face(ctx, 3, -23, 8, p, { mouthKind: 'grin' });
   ctx.restore();
   // little legs
   arm(ctx, -6, -3 - hop, -7, 0, 3, '#e8b23a');
@@ -336,7 +337,7 @@ const murasaki: Drawer = (ctx, p) => {
   }
   ctx.fill();
   ctx.restore();
-  face(ctx, 4, -24, 9, p);
+  face(ctx, 4, -24, 9, p, { sparkle: true, mouthKind: 'cat' });
   // wand
   const wa = p.state === 'attack' ? (p.atk < 0.5 ? -0.8 : 0.5) : -0.2;
   ctx.save();
@@ -412,7 +413,7 @@ const butter: Drawer = (ctx, p) => {
   fillStroke(ctx, '#ffe866', 2.5);
   ctx.fillStyle = 'rgba(255,255,255,0.7)';
   ctx.fillRect(-6, -60, 8, 2.5);
-  face(ctx, 6, -28, 11, p, { mouthKind: 'smile' });
+  face(ctx, 6, -28, 11, p, { mouthKind: 'smile', sparkle: true });
   ctx.restore();
 };
 
@@ -534,6 +535,15 @@ const youkan: Drawer = (ctx, p) => {
   ctx.closePath();
   ctx.fill();
   face(ctx, 4, -30, 9.5, p, { angry: true, mouthKind: 'flat' });
+  // bamboo-leaf wrapper + wooden pick on top (和菓子)
+  ctx.beginPath();
+  ctx.moveTo(-28, -6);
+  ctx.quadraticCurveTo(0, 6, 28, -6);
+  ctx.lineTo(30, 0);
+  ctx.quadraticCurveTo(0, 12, -30, 0);
+  ctx.closePath();
+  fillStroke(ctx, '#6ab04c', 2);
+  arm(ctx, 10, -54, 18, -74, 3, '#e9c98a');
   ctx.restore();
 };
 

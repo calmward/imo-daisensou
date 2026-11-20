@@ -197,13 +197,22 @@ const mogura: Drawer = (ctx, p) => {
   ctx.rotate(m.lean);
   blob(ctx, 0, -24, 22, 22, 0.03, 1);
   fillStroke(ctx, radial(ctx, 0, -24, 22, '#8a6a5a', '#4a3226'));
-  // sunglasses
-  ctx.fillStyle = '#111';
+  // round little glasses (moles can't see well!)
+  for (const gx of [7, 18]) {
+    ellipse(ctx, gx, -31, 5, 5);
+    ctx.fillStyle = 'rgba(200,235,255,0.7)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = OUT;
+    ctx.stroke();
+    ellipse(ctx, gx + 1, -30.5, 1.8, 1.8);
+    ctx.fillStyle = OUT;
+    ctx.fill();
+  }
   ctx.beginPath();
-  ctx.rect(2, -34, 20, 7);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.fillRect(4, -33, 5, 2);
+  ctx.moveTo(12, -31);
+  ctx.lineTo(13, -31);
+  ctx.stroke();
   ellipse(ctx, 22, -22, 5, 4);
   ctx.fillStyle = '#ff8aa8';
   ctx.fill();

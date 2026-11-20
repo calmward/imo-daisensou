@@ -1,6 +1,6 @@
 import { ALLY_ART } from './allies';
 import { ENEMY_ART } from './enemies';
-import { star, type Ctx, type Pose } from './kit';
+import { faceMode, resetEyes, star, type Ctx, type Pose } from './kit';
 
 export function hasArt(id: string) {
   return !!(ALLY_ART[id] || ENEMY_ART[id]);
@@ -14,9 +14,42 @@ export function drawChar(ctx: Ctx, id: string, x: number, y: number, scale: numb
   ctx.translate(x, y);
   ctx.scale(side === 1 ? -scale : scale, scale);
   if (evo) evoAura(ctx, pose.t, TALL[id] ?? 1);
+  // squash & stretch: wind up (pull back), then lunge forward on the hit
+  if (pose.state === 'attack') {
+    const a = pose.atk;
+    if (a < 0.5) {
+      const k = a / 0.5;
+      ctx.translate(-5 * k, 0);
+      ctx.scale(1 - 0.12 * k, 1 + 0.1 * k);
+    } else if (a < 0.8) {
+      const k = 1 - (a - 0.5) / 0.3;
+      ctx.translate(12 * k, 0);
+      ctx.scale(1 + 0.2 * k, 1 - 0.12 * k);
+    }
+  }
+  faceMode.mode = pose.state === 'dead' ? 'dead' : pose.state === 'kb' ? 'kb' : '';
+  resetEyes();
   fn(ctx, pose);
+  faceMode.mode = '';
+  if (pose.state === 'kb' || pose.state === 'dead') sweat(ctx, pose.t, TALL[id] ?? 1);
   if (evo) evoSparkles(ctx, pose.t, TALL[id] ?? 1);
   ctx.restore();
+}
+
+function sweat(ctx: Ctx, t: number, tall: number) {
+  const h = 64 * tall;
+  ctx.fillStyle = '#9be8ff';
+  ctx.strokeStyle = '#3b6a9a';
+  ctx.lineWidth = 1.5;
+  for (const [dx, dy, ph] of [[-h * 0.45, -h * 0.85, 0], [h * 0.42, -h * 0.95, 1.7]]) {
+    const yy = dy + ((t * 30 + ph * 10) % 8);
+    ctx.beginPath();
+    ctx.moveTo(dx, yy - 7);
+    ctx.quadraticCurveTo(dx + 5, yy, dx, yy + 3);
+    ctx.quadraticCurveTo(dx - 5, yy, dx, yy - 7);
+    ctx.fill();
+    ctx.stroke();
+  }
 }
 
 /** Golden glow behind evolved ("スーパー") potatoes. */

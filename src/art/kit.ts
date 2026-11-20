@@ -11,6 +11,10 @@ export interface Pose {
 }
 
 export const OUT = '#3b2412';
+let eyeCount = 0;
+export function resetEyes() {
+  eyeCount = 0;
+}
 
 export function blob(ctx: Ctx, cx: number, cy: number, rx: number, ry: number, bumps = 0.06, seed = 1) {
   ctx.beginPath();
@@ -40,8 +44,35 @@ export function ellipse(ctx: Ctx, x: number, y: number, rx: number, ry: number, 
   ctx.ellipse(x, y, Math.max(0.1, rx), Math.max(0.1, ry), rot, 0, Math.PI * 2);
 }
 
+/** Global face override set by drawChar: knockback shows >< eyes, death shows X eyes. */
+export const faceMode = { mode: '' as '' | 'kb' | 'dead', side: 0 };
+
 /** Big shiny cartoon eye. look = horizontal pupil offset (-1..1). */
-export function eye(ctx: Ctx, x: number, y: number, r: number, opts: { look?: number; closed?: boolean; angry?: boolean; sad?: boolean; color?: string } = {}) {
+export function eye(ctx: Ctx, x: number, y: number, r: number, opts: { look?: number; closed?: boolean; angry?: boolean; sad?: boolean; color?: string; sleepy?: boolean; sparkle?: boolean } = {}) {
+  if (faceMode.mode) {
+    ctx.save();
+    ctx.lineWidth = Math.max(2, r * 0.45);
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = OUT;
+    ctx.beginPath();
+    const k = r * 0.75;
+    if (faceMode.mode === 'dead') {
+      ctx.moveTo(x - k, y - k);
+      ctx.lineTo(x + k, y + k);
+      ctx.moveTo(x + k, y - k);
+      ctx.lineTo(x - k, y + k);
+    } else {
+      // squeezed > < eyes
+      const left = (eyeCount++ % 2) === 0;
+      const d = left ? 1 : -1;
+      ctx.moveTo(x - d * k, y - k);
+      ctx.lineTo(x + d * k * 0.6, y);
+      ctx.lineTo(x - d * k, y + k);
+    }
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
   if (opts.closed) {
     ctx.beginPath();
     ctx.lineWidth = Math.max(2, r * 0.45);
@@ -66,6 +97,25 @@ export function eye(ctx: Ctx, x: number, y: number, r: number, opts: { look?: nu
   ctx.fill();
   ellipse(ctx, x + lk + r * 0.2, y + r * 0.3, r * 0.1, r * 0.1);
   ctx.fill();
+  if (opts.sparkle) {
+    star(ctx, x + lk - r * 0.15, y - r * 0.15, r * 0.42, 4, 0.35);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+  }
+  if (opts.sleepy) {
+    // heavy eyelid
+    ctx.beginPath();
+    ctx.ellipse(x, y, r * 1.05, r * 1.2, 0, Math.PI * 1.02, Math.PI * 1.98);
+    ctx.closePath();
+    ctx.fillStyle = opts.color === 'lid' ? '#8a5a3a' : '#7a5232';
+    ctx.fill();
+    ctx.lineWidth = Math.max(1.5, r * 0.25);
+    ctx.strokeStyle = OUT;
+    ctx.beginPath();
+    ctx.moveTo(x - r * 1.0, y);
+    ctx.lineTo(x + r * 1.0, y);
+    ctx.stroke();
+  }
   if (opts.angry || opts.sad) {
     ctx.beginPath();
     ctx.lineWidth = Math.max(2, r * 0.4);
@@ -84,7 +134,7 @@ export function blush(ctx: Ctx, x: number, y: number, r: number, color = 'rgba(2
   ctx.fill();
 }
 
-export function mouth(ctx: Ctx, x: number, y: number, w: number, kind: 'smile' | 'open' | 'o' | 'grr' | 'flat' | 'cat' | 'sad' = 'smile') {
+export function mouth(ctx: Ctx, x: number, y: number, w: number, kind: 'smile' | 'open' | 'o' | 'grr' | 'flat' | 'cat' | 'sad' | 'grin' = 'smile') {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.strokeStyle = OUT;
@@ -129,6 +179,21 @@ export function mouth(ctx: Ctx, x: number, y: number, w: number, kind: 'smile' |
       ctx.arc(x - w * 0.22, y - w * 0.1, w * 0.22, 0.1 * Math.PI, 0.9 * Math.PI);
       ctx.moveTo(x + w * 0.44, y - w * 0.1);
       ctx.arc(x + w * 0.22, y - w * 0.1, w * 0.22, 0.1 * Math.PI, 0.9 * Math.PI);
+      ctx.stroke();
+      break;
+    case 'grin':
+      ctx.moveTo(x - w * 0.55, y - w * 0.2);
+      ctx.quadraticCurveTo(x, y + w * 0.7, x + w * 0.55, y - w * 0.2);
+      ctx.closePath();
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.lineWidth = Math.max(1, w * 0.08);
+      for (const dx of [-0.2, 0.05, 0.3]) {
+        ctx.moveTo(x + dx * w, y - w * 0.15);
+        ctx.lineTo(x + dx * w, y + w * 0.25);
+      }
       ctx.stroke();
       break;
     case 'sad':
@@ -190,8 +255,8 @@ export function motion(p: Pose, speed = 10) {
   if (p.state === 'attack') {
     // windup leans back, strike lunges forward
     const a = p.atk;
-    lean = a < 0.5 ? -a * 0.25 : (1 - a) * 0.45;
-    squash = a < 0.5 ? 1 - a * 0.12 : 1 + (1 - a) * 0.1;
+    lean = a < 0.5 ? -a * 0.5 : (1 - a) * 0.7;
+    squash = a < 0.5 ? 1 - a * 0.25 : 1 + (1 - a) * 0.18;
   }
   return { bob, squash, lean, moving };
 }

@@ -30,6 +30,7 @@ interface Layout {
 
 const HIT_WORDS = ['ポカッ', 'ドカッ', 'バシッ', 'ボコッ', 'ガツン'];
 const STEP = 1 / 60;
+const POP_T = 0.42;
 
 type TutStep = 'deploy' | 'money' | 'wallet' | 'beam' | 'done';
 
@@ -46,6 +47,7 @@ export class BattleScene implements Scene {
   paused = false;
   banner: { text: string; sub?: string; t: number; color: string; dur: number } | null = null;
   flashT = 0;
+  hitStop = 0;
   endHandled = false;
   winRes: WinResult | null = null;
   lossGold = 0;
@@ -96,7 +98,8 @@ export class BattleScene implements Scene {
     }
     if (this.paused) return;
     const frozen = this.tutFrozen();
-    if (!frozen) {
+    if (this.hitStop > 0) this.hitStop -= dt;
+    else if (!frozen) {
       this.acc += dt * this.speed;
       let n = 0;
       while (this.acc >= STEP && n < 8) {
@@ -107,6 +110,7 @@ export class BattleScene implements Scene {
       if (n >= 8) this.acc = 0;
     }
     this.handleEvents();
+    this.popDeaths();
     this.fx.update(dt * (frozen ? 0.3 : 1));
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 30);
     if (this.flashT > 0) this.flashT -= dt;
@@ -209,6 +213,25 @@ export class BattleScene implements Scene {
     this.userCamT = 4;
   }
 
+  private popped = new Set<number>();
+  private popDeaths() {
+    const r = Math.random;
+    for (const f of [...this.b.allies, ...this.b.enemies]) {
+      if (f.state !== 'dead' || f.t < POP_T || this.popped.has(f.uid)) continue;
+      this.popped.add(f.uid);
+      const ly = this.laneY(f.lane);
+      const dir = f.side === 0 ? 1 : -1;
+      const cx = f.x - dir * f.s.width * 0.5;
+      const n = 7 + Math.round(f.size * 3);
+      for (let i = 0; i < n; i++)
+        this.fx.add({ kind: 'puff', x: cx + (r() - 0.5) * 30 * f.size, y: -30 * f.size + ly + (r() - 0.5) * 24, vx: (r() - 0.5) * 120, vy: -r() * 80, max: 0.55, size: 15 * f.size, color: f.side === 0 ? '#fff4dc' : '#f2ead8' });
+      for (let i = 0; i < 5; i++) this.fx.add({ kind: 'spark', x: cx, y: -30 * f.size + ly, vx: (r() - 0.5) * 260, vy: -r() * 260, max: 0.5, size: 10, color: f.side === 0 ? '#fff' : '#ffe14d', rot: r() * 6, vr: 10 });
+      if (f.side === 0) this.fx.add({ kind: 'soul', x: cx, y: -40 + ly, vy: -55, max: 1.6, size: 10 });
+      audio.sfx('pop');
+    }
+    if (this.popped.size > 500) this.popped.clear();
+  }
+
   private handleEvents() {
     const evs = this.b.events;
     this.b.events = [];
@@ -233,8 +256,9 @@ export class BattleScene implements Scene {
         for (let i = 0; i < n; i++)
           fx.add({ kind: 'spark', x: e.x + (r() - 0.5) * 20, y: y + ly + (r() - 0.5) * 20, vx: (r() - 0.5) * 160, vy: -r() * 160, max: 0.35, size: e.big ? 14 : 9, color: e.crit ? '#ff5f5f' : r() < 0.5 ? '#fff6a0' : '#ffffff', rot: r() * 6, vr: 8 });
         if (e.big || r() < 0.25) fx.add({ kind: 'flash', x: e.x, y: y + ly, max: 0.18, size: e.big ? 34 : 20, color: '#fffbe0' });
-        const dmgColor = e.targetSide === 1 ? '#ffffff' : '#ffb0b0';
-        fx.add({ kind: 'text', x: e.x + (r() - 0.5) * 16, y: y - 26 + ly, vy: -70, max: 0.7, size: e.big ? 20 : 14, color: dmgColor, text: String(e.dmg) });
+        const dmgColor = e.targetSide === 1 ? '#fff36a' : '#ffb0b0';
+        fx.add({ kind: 'text', x: e.x + (r() - 0.5) * 16, y: y - 26 + ly, vy: -70, max: 0.75, size: e.big ? 28 : 20, color: dmgColor, text: String(e.dmg) });
+        if (e.big) this.hitStop = Math.max(this.hitStop, 0.045);
         if (e.crit) {
           fx.add({ kind: 'text', x: e.x, y: y - 56 + ly, vy: -40, max: 0.9, size: 22, color: '#ff4040', stroke: '#fff', text: 'クリティカル！', rot: -0.1 });
           audio.sfx('crit');
@@ -248,17 +272,16 @@ export class BattleScene implements Scene {
       }
       case 'kb':
         fx.add({ kind: 'puff', x: e.f.x, y: -10 + this.laneY(e.f.lane), max: 0.4, size: 22, color: '#fff' });
+        for (let i = 0; i < 4; i++) fx.add({ kind: 'dirt', x: e.f.kbTo, y: -2 + this.laneY(e.f.lane), vx: (r() - 0.5) * 90, vy: -60 - r() * 60, grav: 400, max: 0.9, size: 4, color: '#c9a070' });
         if (!e.f.boss) audio.sfx('kb');
         break;
       case 'death': {
         const f = e.f;
         const ly = this.laneY(f.lane);
+        void ly;
         if (f.side === 0) {
-          fx.add({ kind: 'soul', x: f.x - 20, y: -40 + ly, vy: -55, max: 1.6, size: 10 });
           audio.sfx('die');
         } else {
-          for (let i = 0; i < 8; i++) fx.add({ kind: 'puff', x: f.x + 20 + (r() - 0.5) * 30, y: -20 + ly + (r() - 0.5) * 20, vx: (r() - 0.5) * 80, vy: -r() * 60, max: 0.6, size: 16 * f.size, color: '#f2ead8' });
-          for (let i = 0; i < 5; i++) fx.add({ kind: 'spark', x: f.x + 20, y: -30 + ly, vx: (r() - 0.5) * 240, vy: -r() * 240, max: 0.5, size: 10, color: '#ffe14d', rot: r() * 6, vr: 10 });
           audio.sfx('enemyDie');
           if (f.boss) {
             this.shake = 14;
@@ -301,6 +324,10 @@ export class BattleScene implements Scene {
         break;
       case 'burrow':
         for (let i = 0; i < 8; i++) fx.add({ kind: 'dirt', x: e.f.x + 20, y: -4, vx: (r() - 0.5) * 160, vy: -120 - r() * 120, grav: 600, max: 0.8, size: 5, color: '#7a4a22' });
+        break;
+      case 'rush':
+        this.banner = { text: 'てきの だいぐんだ！', sub: 'かべで まもろう！', t: 0, color: '#ff9a3a', dur: 1.8 };
+        audio.sfx('boss');
         break;
       case 'rage':
         this.banner = { text: 'てきが おこってきた！', sub: 'はやく おしろを こわそう！', t: 0, color: '#ff7a3a', dur: 2.4 };
@@ -384,8 +411,8 @@ export class BattleScene implements Scene {
       };
     }
     const topH = clamp(h * 0.07, 48, 64);
-    const scale = Math.min(w / 430, (h * 0.4) / 400);
-    const fh = Math.min(h * 0.42, 430 * scale);
+    const scale = Math.min(w / 400, (h * 0.38) / 310);
+    const fh = Math.min(h * 0.42, 310 * scale);
     const field = { x: 0, y: topH, w, h: fh };
     const groundY = field.y + field.h - 48 * scale;
     const rest = h - topH - fh;
@@ -451,8 +478,8 @@ export class BattleScene implements Scene {
     ctx.restore();
     // base HP labels
     const lblSize = clamp(15 * s * 1.4, 11, 18);
-    text(ctx, `${Math.ceil(b.pBase.hp)}/${b.pBase.max}`, toX(-70), toY(-250), lblSize, { color: '#fff' });
-    text(ctx, `${Math.ceil(b.eBase.hp)}/${b.eBase.max}`, toX(b.length + 70), toY(-268), lblSize, { color: '#ffd0d0' });
+    this.hpPlate(ctx, toX(-70), toY(-250), lblSize, b.pBase.hp, b.pBase.max, '#7dff7d');
+    this.hpPlate(ctx, toX(b.length + 70), toY(-268), lblSize, b.eBase.hp, b.eBase.max, '#ff6a6a');
 
     // fighters sorted by lane (back first)
     const all = [...b.enemies, ...b.allies].sort((a, c) => a.lane - c.lane);
@@ -493,13 +520,13 @@ export class BattleScene implements Scene {
       rot = -dir * 0.35 * Math.sin(p * Math.PI);
     }
     if (fi.state === 'dead') {
-      const p = Math.min(1, fi.t / 0.9);
-      const x = fi.kbFrom + (fi.kbTo - fi.kbFrom) * p;
-      fi.x = x;
-      yOff -= Math.sin(Math.min(1, p * 1.3) * Math.PI) * 50;
-      rot = -dir * p * 2.5;
-      alpha = 1 - p;
-      state = 'kb';
+      // fly back spinning with X eyes, then pop into a puff (see popDeaths)
+      if (fi.t >= POP_T) return;
+      const p = fi.t / POP_T;
+      fi.x = fi.kbFrom + (fi.kbTo - fi.kbFrom) * p;
+      yOff -= Math.sin(p * Math.PI * 0.9) * 46;
+      rot = -dir * p * 3.2;
+      state = 'dead';
     }
     const sx = toX(cx),
       sy = toY(yOff);
@@ -548,6 +575,22 @@ export class BattleScene implements Scene {
       ctx.fillStyle = '#ff5f5f';
       ctx.fillRect(sx - bw / 2, by, bw * (fi.hp / fi.maxHp), 4);
     }
+  }
+
+  private hpPlate(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, hp: number, max: number, color: string) {
+    const label = `${Math.ceil(hp)}/${max}`;
+    ctx.font = font(size);
+    const w = Math.max(ctx.measureText(label).width + 16, 70);
+    ctx.fillStyle = 'rgba(40,20,5,0.7)';
+    rr(ctx, x - w / 2, y - size * 0.9, w, size * 2.1, 8);
+    ctx.fill();
+    ctx.fillStyle = '#3a1a10';
+    rr(ctx, x - w / 2 + 5, y + size * 0.55, w - 10, size * 0.4, 3);
+    ctx.fill();
+    ctx.fillStyle = color;
+    rr(ctx, x - w / 2 + 5, y + size * 0.55, (w - 10) * Math.max(0, hp / max), size * 0.4, 3);
+    ctx.fill();
+    text(ctx, label, x, y - size * 0.1, size, { color: '#fff' });
   }
 
   private drawBeam(ctx: CanvasRenderingContext2D, toX: (x: number) => number, toY: (y: number) => number, s: number) {
@@ -646,6 +689,9 @@ export class BattleScene implements Scene {
     ctx.fillStyle = 'rgba(40,20,5,0.65)';
     rr(ctx, m.x, m.y, m.w, m.h, m.h / 2);
     ctx.fill();
+    ctx.fillStyle = b.money >= b.cap ? 'rgba(125,255,125,0.35)' : 'rgba(255,210,60,0.3)';
+    rr(ctx, m.x + 3, m.y + 3, Math.max(m.h, (m.w - 6) * (b.money / b.cap)), m.h - 6, (m.h - 6) / 2);
+    ctx.fill();
     ctx.fillStyle = '#ffd23a';
     ellipse(ctx, m.x + m.h / 2, m.y + m.h / 2, m.h * 0.34, m.h * 0.34);
     ctx.fill();
@@ -703,8 +749,9 @@ export class BattleScene implements Scene {
       rr(ctx, r.x, r.y + 3, r.w, r.h - 3, 10);
       ctx.fill();
       const g = ctx.createLinearGradient(0, r.y, 0, r.y + r.h);
-      g.addColorStop(0, ready ? '#fff8e0' : '#cfc4b0');
-      g.addColorStop(1, ready ? '#ffe2a0' : '#a89c88');
+      const cooling = slot.cd > 0;
+      g.addColorStop(0, ready ? '#fff8e0' : cooling ? '#cfc4b0' : '#efe4cc');
+      g.addColorStop(1, ready ? '#ffe2a0' : cooling ? '#a89c88' : '#d8c8a8');
       ctx.fillStyle = g;
       rr(ctx, r.x, r.y + off, r.w, r.h - 3, 10);
       ctx.fill();
@@ -718,7 +765,7 @@ export class BattleScene implements Scene {
       rr(ctx, r.x + 2, r.y + off + 2, r.w - 4, r.h - 7, 8);
       ctx.clip();
       const ps = Math.min(r.w * 0.95, (r.h - 3) * 0.85);
-      if (!ready) ctx.globalAlpha = 0.55;
+      if (!ready) ctx.globalAlpha = slot.cd > 0 ? 0.55 : 0.85;
       portrait(ctx, slot.def.id, r.x + r.w / 2, r.y + off + (r.h - 3) * 0.42, ps, t * (ready ? 1 : 0), 0, ready ? 'idle' : 'portrait', isEvolved(slot.level));
       ctx.globalAlpha = 1;
       // cooldown overlay
@@ -959,8 +1006,12 @@ export class BattleScene implements Scene {
     let y = py + ph * 0.55;
     if (win && this.winRes) {
       const r = this.winRes;
-      drawGoldIcon(ctx, px + pw * 0.22, y, fs * 0.7);
-      text(ctx, `きんいも +${r.gold}`, px + pw * 0.3, y, fs, { color: '#ffe14d', align: 'left' });
+      // count-up for a satisfying reward moment
+      const cnt = Math.min(1, Math.max(0, (this.resultT - 2.7) / 1.0));
+      const shown = Math.round(r.gold * cnt);
+      if (cnt > 0 && cnt < 1 && Math.floor(this.resultT * 15) !== Math.floor((this.resultT - 1 / 60) * 15)) audio.sfx('coin');
+      drawGoldIcon(ctx, px + pw * 0.22, y, fs * 0.7 * (1 + (cnt < 1 ? Math.sin(this.t * 30) * 0.08 : 0)));
+      text(ctx, `きんいも +${shown}`, px + pw * 0.3, y, fs * (cnt >= 1 ? 1.1 : 1), { color: '#ffe14d', align: 'left' });
       y += fs * 1.5;
       if (r.tickets) {
         text(ctx, `🎟 ガチャけん +${r.tickets}`, w / 2, y, fs * 0.9, { color: '#ff9ccf' });

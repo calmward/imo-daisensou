@@ -52,7 +52,8 @@ export type BEvent =
   | { type: 'end'; win: boolean }
   | { type: 'deny' }
   | { type: 'wallet' }
-  | { type: 'rage' };
+  | { type: 'rage' }
+  | { type: 'rush' };
 
 export interface Slot {
   def: AllyDef;
@@ -111,6 +112,8 @@ export class Battle {
   spawned = 0;
   private uid = 1;
   private spawns: SpawnState[];
+  private rushQueue: { t: number; enemy: string; mult: number }[] = [];
+  private rushIdx = 0;
 
   constructor(stage: StageDef, deck: { id: string; level: number }[], mods: BattleMods, seed = 1) {
     this.stage = stage;
@@ -413,7 +416,21 @@ export class Battle {
     }
   }
 
+  private stepRushes() {
+    const rushes = this.stage.rushes ?? [];
+    while (this.rushIdx < rushes.length && this.time >= rushes[this.rushIdx].at) {
+      const r = rushes[this.rushIdx++];
+      for (let i = 0; i < r.count; i++) this.rushQueue.push({ t: this.time + 1.5 + i * 0.45, enemy: r.enemy, mult: r.mult });
+      this.events.push({ type: 'rush' });
+    }
+    while (this.rushQueue.length && this.time >= this.rushQueue[0].t) {
+      const q = this.rushQueue.shift()!;
+      this.spawnEnemy(q.enemy, q.mult);
+    }
+  }
+
   private stepSpawns() {
+    this.stepRushes();
     const frac = this.eBase.hp / this.eBase.max;
     const maxE = this.stage.maxEnemies ?? 16;
     const alive = this.enemies.filter((e) => e.state !== 'dead').length;

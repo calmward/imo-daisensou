@@ -56,12 +56,15 @@ export class Bot {
 
 export function simulate(b: Battle, maxTime = 600, skill = 1, dt = 1 / 30) {
   const bot = new Bot(b, { skill });
+  let minEnemyX = b.length;
   while (!b.result && b.time < maxTime) {
     bot.step(dt);
     b.update(dt);
+    for (const e of b.enemies) if (e.state !== 'dead' && e.x < minEnemyX) minEnemyX = e.x;
     b.events.length = 0;
   }
   return {
+    closest: minEnemyX / b.length,
     win: b.result === 'win',
     time: b.time,
     baseFrac: b.pBase.hp / b.pBase.max,

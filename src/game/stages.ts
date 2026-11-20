@@ -1,5 +1,6 @@
 import type { SpawnEntry, StageDef } from './types';
 import { TUNING } from './tuning';
+import { ENEMY_MAP } from './enemies';
 
 // Helper to keep the stage table compact.
 // e(enemy, start, [min,max] interval, count?, mult?, trigger?)
@@ -123,6 +124,8 @@ const RAW: Raw[] = [
     spawns: [e('nezumi', 2, [4, 6], 0, 320), boss('daiou', 100, 0.95, 3), e('inoshishi', 10, [16, 20], 0, 280, 0.95), e('kamakiri', 15, [14, 18], 0, 300, 0.95), e('okarasu', 30, [60, 60], 2, 140, 0.5)] },
 ];
 
+const VALLEYS = new Set([9, 16, 21, 28, 34]);
+
 export const STAGES: StageDef[] = RAW.map((r, i) => ({
   id: i + 1,
   name: r.name,
@@ -135,7 +138,20 @@ export const STAGES: StageDef[] = RAW.map((r, i) => ({
   boss: r.boss,
   maxEnemies: r.max,
   tip: r.tip,
+  rushes: makeRushes(i + 1, r, TUNING[i] ?? 1),
 }));
+
+function makeRushes(id: number, r: Raw, tune: number) {
+  if (id <= 2 || VALLEYS.has(id)) return [];
+  // the fastest regular enemy of the stage charges in as a big group
+  const regular = r.spawns.filter((s) => !ENEMY_MAP[s.enemy].boss && s.trigger === undefined);
+  if (!regular.length) return [];
+  const pick = regular.reduce((a, b) => (ENEMY_MAP[b.enemy].speed > ENEMY_MAP[a.enemy].speed ? b : a));
+  const mult = Math.round(((pick.mult ?? 100) * r.d * tune) / 100);
+  const count = Math.min(9, 4 + Math.floor(id / 7));
+  const times = r.boss ? [60, 140] : [45, 100, 155];
+  return times.map((at) => ({ at, enemy: pick.enemy, count, mult }));
+}
 
 /** Gacha tickets awarded on first clear */
 export function ticketReward(stage: StageDef): number {

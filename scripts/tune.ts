@@ -15,18 +15,18 @@ const LIMIT = (_id: number) => 420;
 const VALLEY = new Set([9, 16, 21, 28, 34]);
 function target(id: number) {
   const st = STAGES[id - 1];
-  if (VALLEY.has(id)) return 0.55; // factor relative to the max-beatable factor
-  if (st.boss) return 0.82;
+  if (VALLEY.has(id)) return 0.5; // factor relative to the max-beatable factor
+  if (st.boss) return 0.95;
   if (id <= 3) return 0.45;
   // slow sawtooth inside each world: rises towards boss
   const pos = ((id - 1) % 12) / 11;
-  return 0.58 + 0.2 * pos;
+  return 0.72 + 0.2 * pos;
 }
 
 function trial(save: SaveData, id: number, f: number, seed: number) {
   const base = STAGES[id - 1];
   const prev = TUNING[id - 1] ?? 1;
-  const st = { ...base, spawns: base.spawns.map((s) => ({ ...s, mult: Math.round(((s.mult ?? 100) / prev) * f) })) };
+  const st = { ...base, spawns: base.spawns.map((s) => ({ ...s, mult: Math.round(((s.mult ?? 100) / prev) * f) })), rushes: (base.rushes ?? []).map((r) => ({ ...r, mult: Math.round((r.mult / prev) * f) })) };
   const b = new Battle(st, save.deck.map((d) => ({ id: d, level: save.units[d] })), battleMods(save.research), seed);
   return simulate(b, LIMIT(id), SKILL);
 }
@@ -47,7 +47,7 @@ for (const st of STAGES) {
   }
   let f = Math.round(lo * target(st.id) * 1000) / 1000;
   // keep battles short enough for kids: ~4 min max for bosses, ~3 min otherwise
-  const cap = st.boss ? 240 : 190;
+  const cap = st.boss ? 260 : 200;
   for (let k = 0; k < 12; k++) {
     const ts = [11, 23].map((sd) => trial(save, st.id, f, sd).time);
     if (Math.max(...ts) <= cap) break;

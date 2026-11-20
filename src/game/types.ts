@@ -68,10 +68,18 @@ export interface StageDef {
   length: number; // distance between bases
   baseHp: number;
   spawns: SpawnEntry[];
+  rushes?: Rush[]; // timed big waves that create danger spikes
   reward: number; // きんいも on first clear
   unlock?: string; // ally id unlocked on first clear
   boss?: boolean;
   maxEnemies?: number;
   tip?: string; // hint text shown before start
   baseKind?: string; // enemy base art
+}
+
+export interface Rush {
+  at: number; // seconds
+  enemy: string;
+  count: number;
+  mult: number;
 }

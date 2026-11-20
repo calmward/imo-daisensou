@@ -93,9 +93,9 @@ export class GachaScene implements Scene {
     const topH = clamp(h * 0.1, 50, 68);
     text(ctx, 'いもガチャ', w / 2, topH * 0.55, topH * 0.5, { color: '#fff', stroke: '#a3205f' });
     // resources
-    text(ctx, `🎟 ガチャけん ${save.tickets}まい`, 12, topH * 0.55, clamp(w * 0.035, 12, 18), { align: 'left', color: '#fff', stroke: '#a3205f' });
-    drawGoldIcon(ctx, w - 110, topH * 0.55, 8);
-    text(ctx, `${save.gold}`, w - 12, topH * 0.55, clamp(w * 0.035, 12, 18), { align: 'right', color: '#ffe14d', stroke: '#a3205f' });
+    text(ctx, `🎟 ガチャけん ${save.tickets}まい`, 12, topH * 1.25, clamp(w * 0.035, 12, 18), { align: 'left', color: '#fff', stroke: '#a3205f' });
+    drawGoldIcon(ctx, w - 110, topH * 1.25, 8);
+    text(ctx, `${save.gold}`, w - 12, topH * 1.25, clamp(w * 0.035, 12, 18), { align: 'right', color: '#ffe14d', stroke: '#a3205f' });
 
     // machine
     const ms = Math.min(w * 0.42, h * 0.32);
