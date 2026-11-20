@@ -96,3 +96,18 @@ export function claimDaily(save: SaveData, today: string): { gold: number; ticke
   save.tickets += 1;
   return { gold, tickets: 1 };
 }
+
+/** Bonus stage win: big reward + ticket once per day, small reward after. */
+export function applyBonusWin(save: SaveData, stage: StageDef, killGold: number): WinResult {
+  const d = new Date();
+  const today = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  if (save.today.date !== today) save.today = { date: today, counts: {}, claimed: [] };
+  const first = !save.today.counts.bonus;
+  save.today.counts.bonus = (save.today.counts.bonus ?? 0) + 1;
+  const gold = (first ? stage.reward * 2 : Math.round(stage.reward * 0.3 / 10) * 10) + killGold;
+  save.gold += gold;
+  const tickets = first ? 1 : 0;
+  save.tickets += tickets;
+  save.stats.wins++;
+  return { gold, tickets, first, star: 1 };
+}

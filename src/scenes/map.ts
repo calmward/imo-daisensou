@@ -8,7 +8,8 @@ import { ENEMY_MAP } from '../game/enemies';
 import { ALLIES } from '../game/allies';
 import { MUSIC } from '../game/music';
 import { highestUnlocked, isCleared } from '../game/save';
-import { STAGES, STAR_NAMES, ticketReward, WORLD_NAMES } from '../game/stages';
+import { BONUS_ID, STAGES, STAR_NAMES, ticketReward, WORLD_NAMES } from '../game/stages';
+import { todayKey } from '../game/missions';
 import { claimDaily } from '../game/progress';
 import { claimable } from '../game/missions';
 import { drawGoldIcon, drawHand, wrapText } from './battle';
@@ -293,6 +294,21 @@ export class MapScene implements Scene {
     if (!save.tut.power && isCleared(save, 2) && save.gold >= 150 && !this.popup) {
       const r = { x: (w - totalW) / 2, y: by + 10, w: bw, h: botH - 20 };
       drawHand(ctx, r.x + r.w * 0.6, r.y + r.h * 0.4 + Math.abs(Math.sin(this.t * 5)) * 10, 24);
+    }
+    // daily bonus festival stage (after the first boss)
+    if (isCleared(save, 6)) {
+      const fr = { x: w - 112, y: topH + 8, w: 104, h: 52 };
+      const done = (save.today.date === todayKey() && save.today.counts.bonus) || 0;
+      const off = drawButton(ctx, fr, done ? STYLES.cream : STYLES.pink, ui.isPressed('fest'), 14);
+      text(ctx, 'いもまつり', fr.x + fr.w / 2, fr.y + off + 16, 15, { color: done ? '#a3205f' : '#fff', stroke: done ? 'none' : undefined });
+      text(ctx, done ? 'あしたも きてね' : '🎟 きょうの ボーナス', fr.x + fr.w / 2, fr.y + off + 34, 10, { color: done ? '#a3205f' : '#fff36a', stroke: done ? 'none' : '#a3205f', maxW: fr.w - 8 });
+      if (!done) {
+        ellipse(ctx, fr.x + fr.w - 4, fr.y + 4 + Math.sin(this.t * 6) * 3, 10, 10);
+        ctx.fillStyle = '#ff3b3b';
+        ctx.fill();
+        text(ctx, '!', fr.x + fr.w - 4, fr.y + 4 + Math.sin(this.t * 6) * 3, 13, { stroke: 'none' });
+      }
+      if (!this.popup && !this.daily) ui.add({ id: 'fest', r: fr, onTap: () => { audio.sfx('whistle'); this.app.go('battle', BONUS_ID); } });
     }
     if (this.popup) this.drawPopup(ctx, w, h);
     if (this.daily) this.drawDaily(ctx, w, h);

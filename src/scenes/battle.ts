@@ -8,10 +8,10 @@ import { ATTACK_BACKSWING, Battle, KB_TIME, WALLET_MAX_LV, type BEvent, type Fig
 import { ALLY_MAP, isEvolved } from '../game/allies';
 import { ENEMY_MAP } from '../game/enemies';
 import { MUSIC } from '../game/music';
-import { applyLoss, applyWin, canLevelUp, type WinResult } from '../game/progress';
+import { applyBonusWin, applyLoss, applyWin, canLevelUp, type WinResult } from '../game/progress';
 import { countToday } from '../game/missions';
 import { battleMods } from '../game/research';
-import { STAGES, STAR_NAMES, starStage } from '../game/stages';
+import { BONUS_ID, bonusStage, STAGES, STAR_NAMES, starStage } from '../game/stages';
 import { FX } from './fx';
 
 interface Layout {
@@ -70,7 +70,7 @@ export class BattleScene implements Scene {
     const stageId = typeof arg === 'number' ? arg : arg.id;
     this.star = typeof arg === 'number' ? 1 : arg.star ?? 1;
     this.stageId = stageId;
-    const stage = starStage(STAGES[stageId - 1], this.star);
+    const stage = stageId === BONUS_ID ? bonusStage(Object.keys(app.save.cleared).length) : starStage(STAGES[stageId - 1], this.star);
     const save = app.save;
     const deck = save.deck.map((id) => ({ id, level: save.units[id] ?? 1 }));
     this.b = new Battle(stage, deck, battleMods(save.research), (Date.now() & 0xffff) + stageId);
@@ -482,7 +482,7 @@ export class BattleScene implements Scene {
     this.shake = 20;
     this.flashT = 0.4;
     if (win) {
-      this.winRes = applyWin(save, stage, killGold, this.star);
+      this.winRes = stage.id === BONUS_ID ? applyBonusWin(save, stage, killGold) : applyWin(save, stage, killGold, this.star);
       if (this.winRes.unlocked) this.app.lastNew = this.winRes.unlocked;
       countToday(save, 'wins');
       if (stage.id === 1) save.tut.battle = true;
@@ -1253,7 +1253,7 @@ export class BattleScene implements Scene {
     const bh = Math.min(54, ph * 0.15);
     const by = py + ph - bh - 16;
     const bw = (pw - 48) / 2;
-    const next = STAGES[this.stageId] && win;
+    const next = this.stageId !== BONUS_ID && STAGES[this.stageId] && win;
     const b1 = { x: px + 16, y: by, w: bw, h: bh };
     const b2 = { x: px + 32 + bw, y: by, w: bw, h: bh };
     if (k >= 1) {

@@ -184,3 +184,26 @@ export function starStage(stage: StageDef, star: number): StageDef {
     rushes: (stage.rushes ?? []).map((r) => ({ ...r, mult: Math.round(r.mult * m), count: r.count + star })),
   };
 }
+
+/** Daily bonus stage: swarms of weak, coin-rich enemies. Scales with progress. */
+export const BONUS_ID = 100;
+export function bonusStage(progress: number): StageDef {
+  const p = Math.max(1, Math.min(STAGES.length, progress));
+  const m = Math.round(80 + p * 12);
+  return {
+    id: BONUS_ID,
+    name: 'いもまつり（ボーナス）',
+    world: Math.min(2, Math.floor((p - 1) / 12)),
+    length: 1500,
+    baseHp: 3000 + p * 700,
+    spawns: [
+      { enemy: 'ari', start: 1, interval: [0.8, 1.4], count: 0, mult: m },
+      { enemy: 'nezumi', start: 4, interval: [1.5, 2.5], count: 0, mult: m },
+      { enemy: 'metal', start: 20, interval: [25, 30], count: 3, mult: 100 },
+    ],
+    reward: 300 + p * 30,
+    maxEnemies: 30,
+    tip: 'てきが いっぱい！ たおして おかねを ためよう！ 1にち 1かい、ガチャけんが もらえるよ',
+    rushes: [],
+  };
+}
