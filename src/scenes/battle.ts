@@ -538,7 +538,7 @@ export class BattleScene implements Scene {
     if (!portrait) {
       const bottomH = clamp(h * 0.34, 96, 190);
       const field = { x: 0, y: 0, w, h: h - bottomH };
-      const scale = Math.min(field.h / 345, w / 520);
+      const scale = Math.min(field.h / 300, w / 470);
       const groundY = field.y + field.h - 48 * scale;
       const by = h - bottomH + 6;
       const sideW = clamp(w * 0.14, 84, 150);
@@ -772,7 +772,8 @@ export class BattleScene implements Scene {
     const w = Math.max(ctx.measureText(label).width + 16, 70);
     const f = this.L.field;
     x = clamp(x, f.x + w / 2 + 4, f.x + f.w - w / 2 - 4);
-    y = Math.max(y, f.y + size * 1.1 + (this.L.portrait ? 4 : this.L.pause.h + 14));
+    // pin the plates to the top of the field so they never cover the castles
+    y = f.y + size * 1.1 + (this.L.portrait ? 4 : this.L.pause.h + 14);
     ctx.fillStyle = 'rgba(40,20,5,0.7)';
     rr(ctx, x - w / 2, y - size * 0.9, w, size * 2.1, 8);
     ctx.fill();
@@ -1100,17 +1101,17 @@ export class BattleScene implements Scene {
       const slide = (1 - Math.min(1, bn.t / 0.3)) * w;
       ctx.translate(-slide, 0);
       ctx.fillStyle = '#7a0a0a';
-      ctx.fillRect(0, cy - 56, w, 112);
+      ctx.fillRect(0, cy - 40, w, 80);
       ctx.fillStyle = '#c0201a';
       for (let x = -120; x < w + 120; x += 60) {
         ctx.beginPath();
-        ctx.moveTo(x + ((bn.t * 120) % 60), cy - 56);
-        ctx.lineTo(x + 30 + ((bn.t * 120) % 60), cy - 56);
-        ctx.lineTo(x - 30 + ((bn.t * 120) % 60), cy + 56);
-        ctx.lineTo(x - 60 + ((bn.t * 120) % 60), cy + 56);
+        ctx.moveTo(x + ((bn.t * 120) % 60), cy - 40);
+        ctx.lineTo(x + 30 + ((bn.t * 120) % 60), cy - 40);
+        ctx.lineTo(x - 30 + ((bn.t * 120) % 60), cy + 40);
+        ctx.lineTo(x - 60 + ((bn.t * 120) % 60), cy + 40);
         ctx.fill();
       }
-      const ps = 100;
+      const ps = 76;
       portrait(ctx, bn.boss, w * 0.16 + Math.sin(this.t * 40) * 3, cy, ps, this.t * 2, 1, 'attack');
       ctx.restore();
     }
