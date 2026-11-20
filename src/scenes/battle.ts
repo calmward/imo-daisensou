@@ -93,7 +93,10 @@ export class BattleScene implements Scene {
   }
 
   onBack() {
-    if (this.b.result) return true;
+    if (this.b.result) {
+      if (this.resultT > 2.6) this.app.go('map');
+      return true;
+    }
     this.paused = !this.paused;
     return true;
   }
@@ -151,7 +154,7 @@ export class BattleScene implements Scene {
     if (this.tut === 'done') return;
     this.tutT += dt;
     const b = this.b;
-    if (this.tut === 'money' && this.tutT > 4 && b.money >= b.walletCost) {
+    if (this.tut === 'money' && this.tutT > 4 && b.walletLv === 1 && b.money >= b.walletCost) {
       this.tut = 'wallet';
       this.tutT = 0;
     }
@@ -689,7 +692,7 @@ export class BattleScene implements Scene {
     const w = Math.max(ctx.measureText(label).width + 16, 70);
     const f = this.L.field;
     x = clamp(x, f.x + w / 2 + 4, f.x + f.w - w / 2 - 4);
-    y = Math.max(y, f.y + (this.L.portrait ? 30 : this.L.pause.h + 30));
+    y = Math.max(y, f.y + size * 1.1 + (this.L.portrait ? 4 : this.L.pause.h + 14));
     ctx.fillStyle = 'rgba(40,20,5,0.7)';
     rr(ctx, x - w / 2, y - size * 0.9, w, size * 2.1, 8);
     ctx.fill();
@@ -787,12 +790,12 @@ export class BattleScene implements Scene {
     const p = L.pause;
     ctx.fillRect(p.x + p.w * 0.32, p.y + p.h * 0.25, p.w * 0.12, p.h * 0.42);
     ctx.fillRect(p.x + p.w * 0.56, p.y + p.h * 0.25, p.w * 0.12, p.h * 0.42);
-    if (!b.result) ui.add({ id: 'pause', r: p, onTap: () => (this.paused = true) });
+    if (!b.result && !this.paused) ui.add({ id: 'pause', r: p, onTap: () => (this.paused = true) });
     // speed
     const sp = this.app.save.speed2;
     drawButton(ctx, L.speed, sp ? STYLES.orange : STYLES.cream, ui.isPressed('speed'));
     text(ctx, sp ? '▶▶x2' : '▶x1', L.speed.x + L.speed.w / 2, L.speed.y + L.speed.h * 0.45, L.speed.h * 0.36, { color: sp ? '#fff' : '#5a3a12', stroke: sp ? '#a34e00' : 'none' });
-    if (!b.result) ui.add({ id: 'speed', r: L.speed, onTap: () => { this.app.save.speed2 = !this.app.save.speed2; this.app.persist(); } });
+    if (!b.result && !this.paused) ui.add({ id: 'speed', r: L.speed, onTap: () => { this.app.save.speed2 = !this.app.save.speed2; this.app.persist(); } });
     // money
     const m = L.money;
     ctx.fillStyle = 'rgba(40,20,5,0.65)';
@@ -1089,6 +1092,7 @@ export class BattleScene implements Scene {
   private drawPause(ctx: CanvasRenderingContext2D, w: number, h: number) {
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(0, 0, w, h);
+    this.app.ui.add({ id: 'pauseblock', r: { x: 0, y: 0, w, h }, sound: false });
     const pw = Math.min(340, w - 40),
       ph = Math.min(360, h - 30);
     const px = (w - pw) / 2,

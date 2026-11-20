@@ -74,8 +74,9 @@ export function sanitize(d: unknown): SaveData {
   s.speed2 = o.speed2 === true;
   s.daily = typeof o.daily === 'string' ? o.daily : '';
   s.claimed = Array.isArray(o.claimed) ? o.claimed.filter((x): x is string => typeof x === 'string') : [];
-  for (const [k, v] of Object.entries(obj(o.cleared))) if (+k > 0) s.cleared[+k] = num(v, 0);
-  for (const [k, v] of Object.entries(obj(o.crowns))) if (+k > 0) s.crowns[+k] = num(v, 0, 0, 3);
+  const okId = (k: string) => Number.isInteger(+k) && +k >= 1 && +k <= 36;
+  for (const [k, v] of Object.entries(obj(o.cleared))) if (okId(k) && num(v, 0) > 0) s.cleared[+k] = num(v, 0);
+  for (const [k, v] of Object.entries(obj(o.crowns))) if (okId(k) && s.cleared[+k]) s.crowns[+k] = num(v, 0, 0, 3);
   for (const k of Object.keys(s.cleared)) if (!s.crowns[+k]) s.crowns[+k] = 1;
   const units: Record<string, number> = {};
   for (const [k, v] of Object.entries(obj(o.units))) if (ALLY_MAP[k]) units[k] = num(v, 1, 1, MAX_LEVEL);

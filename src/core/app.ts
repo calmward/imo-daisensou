@@ -92,6 +92,7 @@ export class App {
   }
 
   go(name: string, arg?: any, instant = false) {
+    if (this.next && !instant) return; // a transition is already running
     const s = this.factories[name](arg);
     if (instant || !this.scene) {
       this.scene?.leave?.();
@@ -116,8 +117,14 @@ export class App {
 
   resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, this.quality ?? 2);
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    // keep clear of notches / punch-hole cameras
+    const inner = document.getElementById('safe-in')?.getBoundingClientRect();
+    const left = inner ? Math.round(inner.left) : 0;
+    const top = inner ? Math.round(inner.top) : 0;
+    const w = inner && inner.width > 100 ? Math.round(inner.width) : window.innerWidth;
+    const h = inner && inner.height > 100 ? Math.round(inner.height) : window.innerHeight;
+    this.canvas.style.left = left + 'px';
+    this.canvas.style.top = top + 'px';
     this.dpr = dpr;
     this.w = w;
     this.h = h;
@@ -180,7 +187,7 @@ export class App {
     const { x, y } = this.pos(e);
     this.ui.pressedId = null;
     if (!st) return;
-    if (!st.dragging && st.regionId && !st.downFired) {
+    if (!st.dragging && st.regionId && !st.downFired && this.fadeDir === 0) {
       const reg = this.ui.hit(x, y);
       if (reg && reg.id === st.regionId && reg.onTap) {
         if (reg.sound !== false) audio.sfx('tap');

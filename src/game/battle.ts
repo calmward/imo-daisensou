@@ -386,7 +386,6 @@ export class Battle {
     }
     if (f.freezeT > 0) {
       f.freezeT -= dt;
-      f.atkCd -= dt * 0.0;
       return;
     }
     if (f.slowT > 0) f.slowT -= dt;
@@ -461,7 +460,7 @@ export class Battle {
     this.stepRushes();
     const frac = this.eBase.hp / this.eBase.max;
     const maxE = this.stage.maxEnemies ?? 16;
-    const alive = this.enemies.filter((e) => e.state !== 'dead').length;
+    let alive = this.enemies.filter((e) => e.state !== 'dead').length;
     this.stage.spawns.forEach((sp, i) => {
       const st = this.spawns[i];
       if (!st.active) {
@@ -478,6 +477,7 @@ export class Battle {
           return;
         }
         this.spawnEnemy(sp.enemy, sp.mult ?? 100);
+        alive++;
         st.spawned++;
         const iv = sp.interval ?? [10, 10];
         // when potatoes besiege the castle, the enemies get scared and come out slower
@@ -528,7 +528,14 @@ export class Battle {
 
     if (this.eBase.hp <= 0) {
       this.result = 'win';
-      for (const e of this.enemies) if (e.state !== 'dead') this.damage(e, e.hp + 1, null, false);
+      // remaining enemies flee/vanish (no rewards, not counted as kills)
+      for (const e of this.enemies)
+        if (e.state !== 'dead') {
+          e.state = 'dead';
+          e.t = 0;
+          e.kbFrom = e.x;
+          e.kbTo = e.x + 70;
+        }
       this.events.push({ type: 'end', win: true });
     } else if (this.pBase.hp <= 0) {
       this.result = 'lose';

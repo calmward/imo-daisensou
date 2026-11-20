@@ -24,7 +24,8 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   if (req.mode === 'navigate') {
     // network first for the page so updates arrive, cache fallback offline
-    e.respondWith(fetch(req).then((r) => { if (r.ok) { const cp = r.clone(); caches.open(CACHE).then((c) => c.put('index.html', cp)); } return r; }).catch(() => caches.match('index.html', { ignoreVary: true })));
+    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 3500));
+    e.respondWith(Promise.race([fetch(req), timeout]).then((r) => { if (r.ok) { const cp = r.clone(); caches.open(CACHE).then((c) => c.put('index.html', cp)); } return r; }).catch(() => caches.match('index.html', { ignoreVary: true })));
     return;
   }
   e.respondWith(caches.match(req, { ignoreVary: true, ignoreSearch: true }).then((hit) => hit || fetch(req).then((r) => { if (r.ok) { const cp = r.clone(); caches.open(CACHE).then((c) => c.put(req, cp)); } return r; })));

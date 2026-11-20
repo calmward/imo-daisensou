@@ -108,9 +108,10 @@ export class GachaScene implements Scene {
     text(ctx, `${save.gold}`, w - 12, topH * 1.25, clamp(w * 0.035, 12, 18), { align: 'right', color: '#ffe14d', stroke: '#a3205f' });
 
     // machine
-    const ms = Math.min(w * 0.42, h * 0.32);
-    const mx = w / 2,
-      my = h * 0.42;
+    const land = w > h;
+    const ms = land ? Math.min(w * 0.3, h * 0.36) : Math.min(w * 0.42, h * 0.32);
+    const mx = land ? w * 0.28 : w / 2,
+      my = land ? h * 0.5 : h * 0.42;
     this.drawMachine(ctx, mx, my, ms);
 
     // capsule anim
@@ -165,20 +166,22 @@ export class GachaScene implements Scene {
     // buttons
     if (this.phase === 'idle' || this.phase === 'reveal') {
       const bh = clamp(h * 0.1, 50, 72);
-      const bw = Math.min(300, w * 0.6);
-      const r = { x: (w - bw) / 2, y: h - bh * 2 - 30, w: bw, h: bh };
+      const land = w > h;
+      const cx = land ? w * 0.74 : w / 2;
+      const bw = Math.min(300, land ? w * 0.4 : w * 0.6);
+      const r = { x: cx - bw / 2, y: land ? h * 0.3 : h - bh * 2 - 30, w: bw, h: bh };
       const can = canGacha(save);
       const off = drawButton(ctx, r, can ? STYLES.pink : STYLES.gray, ui.isPressed('pull'), 18);
-      text(ctx, this.phase === 'reveal' ? 'もういっかい！' : 'ガチャを まわす！', w / 2, r.y + off + bh * 0.32, bh * 0.32, { maxW: bw - 10 });
-      text(ctx, save.tickets > 0 ? 'ガチャけん 1まい' : this.confirmT > 0 ? `きんいも ${GACHA_GOLD_COST} つかう？ もういちど タップ！` : `きんいも ${GACHA_GOLD_COST}`, w / 2, r.y + off + bh * 0.66, bh * 0.22, { color: this.confirmT > 0 ? '#fff36a' : can ? '#fff' : '#ffd0d0', maxW: bw - 10 });
+      text(ctx, this.phase === 'reveal' ? 'もういっかい！' : 'ガチャを まわす！', cx, r.y + off + bh * 0.32, bh * 0.32, { maxW: bw - 10 });
+      text(ctx, save.tickets > 0 ? 'ガチャけん 1まい' : this.confirmT > 0 ? `きんいも ${GACHA_GOLD_COST} つかう？ もういちど タップ！` : `きんいも ${GACHA_GOLD_COST}`, cx, r.y + off + bh * 0.66, bh * 0.22, { color: this.confirmT > 0 ? '#fff36a' : can ? '#fff' : '#ffd0d0', maxW: bw - 10 });
       ui.add({ id: 'pull', r, onTap: () => this.pull(), sound: false });
-      const back = { x: (w - bw) / 2, y: h - bh - 16, w: bw, h: bh * 0.8 };
+      const back = { x: cx - bw / 2, y: land ? r.y + bh + 14 : h - Math.max(44, bh * 0.8) - 12, w: bw, h: Math.max(44, bh * 0.8) };
       const ob = drawButton(ctx, back, STYLES.cream, ui.isPressed('gback'));
-      text(ctx, 'マップに もどる', w / 2, back.y + ob + (back.h - 6) / 2, back.h * 0.34, { color: '#5a3a12', stroke: 'none' });
+      text(ctx, 'マップに もどる', cx, back.y + ob + (back.h - 6) / 2, back.h * 0.34, { color: '#5a3a12', stroke: 'none' });
       ui.add({ id: 'gback', r: back, onTap: () => this.app.go('map') });
       if (this.phase === 'idle') {
         const fs = clamp(w * 0.03, 11, 15);
-        text(ctx, 'でるかも: スイートポテト・いもようかん・いもにんじゃ・ハッシュドポテト・コロッケ・ポテトサラダ・マッシュポテト・だいがくいも・キングさつまいも', w / 2, r.y - fs * 1.2, fs, { color: '#fff', stroke: '#a3205f', maxW: w - 20 });
+        text(ctx, 'でるかも: スイートポテト・いもようかん・いもにんじゃ・ハッシュドポテト・コロッケ・ポテトサラダ・マッシュポテト・だいがくいも・キングさつまいも', cx, land ? back.y + back.h + fs * 1.6 : r.y - fs * 1.2, fs, { color: '#fff', stroke: '#a3205f', maxW: land ? w * 0.48 : w - 20 });
       }
     }
   }
@@ -243,11 +246,13 @@ export class GachaScene implements Scene {
   private drawReveal(ctx: CanvasRenderingContext2D, w: number, h: number) {
     const res = this.res!;
     const k = easeOutBack(Math.min(1, this.pt / 0.5));
-    const pw = Math.min(360, w - 30),
-      ph = Math.min(330, h * 0.5, h - clamp(h * 0.1, 50, 72) * 2 - 60 - h * 0.1);
+    const land = w > h;
+    const pw = Math.min(360, land ? w * 0.46 : w - 30),
+      ph = land ? Math.min(330, h - 30) : Math.min(330, h * 0.5, h - clamp(h * 0.1, 50, 72) * 2 - 60 - h * 0.1);
     const px = (w - pw) / 2,
-      py = h * 0.1 + 10;
+      py = land ? (h - ph) / 2 : h * 0.1 + 10;
     ctx.save();
+    if (land) ctx.translate(w * 0.27 - w / 2, 0);
     ctx.translate(w / 2, py + ph / 2);
     ctx.scale(k, k);
     ctx.translate(-w / 2, -(py + ph / 2));

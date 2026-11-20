@@ -79,7 +79,7 @@ export class MissionScene implements Scene {
       ctx.fill();
       text(ctx, `${cur}/${d.target}`, lx + 20 + bw, y + rh * 0.68, fs * 0.75, { align: 'left', color: '#5a3a12', stroke: 'none' });
       text(ctx, `🎟${d.tickets}`, lx + lw - btnW - 20, y + rh / 2, fs * 0.9, { align: 'right', color: '#d0407a', stroke: 'none' });
-      const br = { x: lx + lw - btnW - 10, y: y + rh * 0.18, w: btnW, h: rh * 0.64 };
+      const br = { x: lx + lw - btnW - 10, y: y + (rh - Math.max(44, rh * 0.64)) / 2, w: btnW, h: Math.max(44, rh * 0.64) };
       if (got) text(ctx, 'もらった', br.x + br.w / 2, y + rh / 2, fs * 0.8, { color: '#999', stroke: 'none' });
       else {
         const off = drawButton(ctx, br, done ? STYLES.orange : { ...STYLES.gray, disabled: true }, ui.isPressed('d' + d.id), 12);
@@ -131,7 +131,7 @@ export class MissionScene implements Scene {
       drawGoldIcon(ctx, rx + 8, y + rh * 0.35, fs * 0.5);
       text(ctx, `${mi.gold}`, rx + 22, y + rh * 0.35, fs * 0.8, { align: 'left', color: '#c87a00', stroke: 'none' });
       if (mi.tickets) text(ctx, `🎟${mi.tickets}`, rx + 8, y + rh * 0.7, fs * 0.8, { align: 'left', color: '#d0407a', stroke: 'none' });
-      const br = { x: lx + lw - btnW - 10, y: y + rh * 0.18, w: btnW, h: rh * 0.64 };
+      const br = { x: lx + lw - btnW - 10, y: y + (rh - Math.max(44, rh * 0.64)) / 2, w: btnW, h: Math.max(44, rh * 0.64) };
       if (got) text(ctx, 'もらった', br.x + br.w / 2, y + rh / 2, fs * 0.8, { color: '#999', stroke: 'none' });
       else {
         const off = drawButton(ctx, br, done ? STYLES.orange : { ...STYLES.gray, disabled: true }, ui.isPressed('m' + mi.id), 12);
@@ -156,7 +156,7 @@ export class MissionScene implements Scene {
     hg.addColorStop(1, '#3d97f0');
     ctx.fillStyle = hg;
     ctx.fillRect(0, 0, w, topH);
-    const back = { x: 8, y: 8, w: topH * 1.5, h: topH - 16 };
+    const back = { x: 6, y: (topH - Math.max(44, topH - 12)) / 2, w: topH * 1.5, h: Math.max(44, topH - 12) };
     const ob = drawButton(ctx, back, STYLES.cream, ui.isPressed('back'));
     text(ctx, '◀ もどる', back.x + back.w / 2, back.y + ob + (back.h - 6) / 2, back.h * 0.34, { color: '#5a3a12', stroke: 'none' });
     ui.add({ id: 'back', r: back, onTap: () => this.app.go('map') });

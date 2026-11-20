@@ -56,6 +56,10 @@ export class MapScene implements Scene {
   }
 
   onBack() {
+    if (this.daily) {
+      this.daily = null;
+      return true;
+    }
     if (this.popup) {
       this.popup = null;
       return true;
@@ -88,6 +92,7 @@ export class MapScene implements Scene {
     this.vel = -d * 30;
   }
   onWheel(dy: number) {
+    if (this.popup || this.daily) return;
     this.scroll += dy;
   }
 
@@ -395,7 +400,7 @@ export class MapScene implements Scene {
     }
     const bh = Math.min(58, ph * 0.16);
     if (cleared) {
-      const sh = Math.max(42, bh * 0.7);
+      const sh = Math.max(46, bh * 0.7);
       const sy = py + ph - bh - 22 - sh;
       const sw = (pw - 40) / 3;
       for (let k = 1; k <= 3; k++) {
