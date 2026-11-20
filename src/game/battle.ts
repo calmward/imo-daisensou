@@ -132,7 +132,8 @@ export class Battle {
     this.slots = deck.map((d) => {
       const def = ALLY_MAP[d.id];
       const m = levelMult(d.level);
-      const evoCrit = isEvolved(d.level) ? 0.08 : 0;
+      const evo = isEvolved(d.level);
+      const evoCrit = evo ? 0.08 : 0;
       return { def, level: d.level, stats: { ...def, hp: Math.round(def.hp * m), atk: Math.round(def.atk * m), crit: (def.crit ?? 0) + evoCrit }, cd: 0 };
     });
     this.spawns = stage.spawns.map((_, idx) => ({ idx, next: 0, spawned: 0, active: false, activatedAt: 0 }));
@@ -151,10 +152,16 @@ export class Battle {
     return walletUpgradeCost(this.walletLv);
   }
 
+  /** evolved potatoes are 15% cheaper */
+  slotCost(i: number) {
+    const s = this.slots[i];
+    return isEvolved(s.level) ? Math.round(s.def.cost * 0.85) : s.def.cost;
+  }
+
   canDeploy(i: number): boolean {
     const s = this.slots[i];
     if (!s || this.result) return false;
-    return s.cd <= 0 && this.money >= s.def.cost && this.allies.filter((a) => a.state !== 'dead').length < MAX_ALLIES;
+    return s.cd <= 0 && this.money >= this.slotCost(i) && this.allies.filter((a) => a.state !== 'dead').length < MAX_ALLIES;
   }
 
   deploy(i: number): Fighter | null {
@@ -163,8 +170,8 @@ export class Battle {
       return null;
     }
     const s = this.slots[i];
-    this.money -= s.def.cost;
-    s.cd = s.def.cooldown;
+    this.money -= this.slotCost(i);
+    s.cd = s.def.cooldown * (isEvolved(s.level) ? 0.85 : 1);
     const f = this.makeFighter(0, s.def.id, s.stats, -14 + this.rng.range(-6, 6), s.def.size * (isEvolved(s.level) ? 1.1 : 1), 0);
     f.evo = isEvolved(s.level);
     this.allies.push(f);

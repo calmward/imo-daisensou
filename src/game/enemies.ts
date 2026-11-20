@@ -34,7 +34,7 @@ export const ENEMIES: EnemyDef[] = [
   { id: 'dorobou', name: 'いもどろぼう', desc: 'いもを ぬすみに くる アライグマ。なかまを むしして おしろに まっしぐら！ はやく たおそう！', traits: ['beast'], reward: 120,
     hp: 420, atk: 150, range: 90, speed: 70, atkInterval: 1.0, foreswing: 0.2, kb: 1, area: false, width: 44, size: 0.9, thief: true, burrow: 99999 },
   { id: 'kame', name: 'カメ', desc: 'かたい こうらの バリア！ よわい こうげきは はじかれる。つよい いちげきで こうらを わろう！', traits: ['beast'], reward: 300,
-    hp: 1400, atk: 70, range: 120, speed: 20, atkInterval: 2.0, foreswing: 0.4, kb: 2, area: false, width: 60, size: 1.05, barrier: 110 },
+    hp: 1400, atk: 70, range: 120, speed: 20, atkInterval: 2.0, foreswing: 0.4, kb: 2, area: false, width: 60, size: 1.05, barrier: 200 },
   // ---- bosses ----
   { id: 'kabuto', name: 'カブトムシ', desc: 'もりの つよい むし。つので まとめて ふっとばす！', traits: ['bug', 'boss'], reward: 1000, boss: true,
     hp: 5000, atk: 180, range: 160, speed: 30, atkInterval: 2.4, foreswing: 0.5, kb: 3, area: true, width: 90, size: 1.6, shockwave: true },

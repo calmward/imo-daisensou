@@ -53,6 +53,7 @@ export class BattleScene implements Scene {
   thiefWarned = false;
   spawnTime = new Map<number, number>();
   lastDanger = -99;
+  rotateTip = 0;
   dangerT = 0;
   endHandled = false;
   winRes: WinResult | null = null;
@@ -92,6 +93,7 @@ export class BattleScene implements Scene {
     const st = this.b.stage;
     this.banner = { text: st.boss ? 'ボス ステージ！' : 'スタート！', sub: `${st.id === BONUS_ID ? '' : st.id + '. '}${st.name}${this.star > 1 ? '（' + STAR_NAMES[this.star] + '）' : ''}`, t: 0, color: st.boss ? '#ff5f5f' : '#ffd23a', dur: 2.2 };
     audio.sfx('whistle');
+    this.rotateTip = this.app.h > this.app.w * 1.1 && (this.app.save.stats.wins + this.app.save.stats.losses) < 8 ? 5 : 0;
     setTimeout(() => audio.say(st.boss ? 'ボスステージだ！ しゅつげき！' : 'しゅつげき！'), 300);
   }
 
@@ -625,6 +627,17 @@ export class BattleScene implements Scene {
     }
     ctx.restore();
 
+    if (this.rotateTip > 0 && !this.paused && !this.tutFrozen()) {
+      this.rotateTip -= 1 / 60;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, this.rotateTip);
+      const tw = Math.min(300, w - 20);
+      rr(ctx, (w - tw) / 2, L.field.y + L.field.h - 48, tw, 34, 17);
+      ctx.fillStyle = 'rgba(40,20,5,0.75)';
+      ctx.fill();
+      text(ctx, '📱↻ よこに すると ひろく みえるよ', w / 2, L.field.y + L.field.h - 31, 14, { color: '#fff', stroke: 'none', maxW: tw - 16 });
+      ctx.restore();
+    }
     if (this.dangerT > 0) {
       this.dangerT -= 1 / 60;
       const a = 0.5 + Math.sin(this.t * 14) * 0.3;
@@ -907,7 +920,8 @@ export class BattleScene implements Scene {
         return;
       }
       const ready = b.canDeploy(i);
-      const affordable = b.money >= slot.def.cost;
+      const cost = b.slotCost(i);
+      const affordable = b.money >= cost;
       const pressed = ui.isPressed('u' + i);
       const off = pressed ? 3 : 0;
       if (ready && !this.wasReady[i]) this.readyPop[i] = 0;
@@ -954,7 +968,7 @@ export class BattleScene implements Scene {
       ctx.restore();
       // cost
       const cs = clamp(r.h * 0.25, 12, 18);
-      text(ctx, `${slot.def.cost}えん`, r.x + r.w / 2, r.y + off + r.h - 3 - cs * 0.75, cs, { color: affordable ? '#fff' : '#ff8080', maxW: r.w - 6 });
+      text(ctx, `${cost}えん`, r.x + r.w / 2, r.y + off + r.h - 3 - cs * 0.75, cs, { color: affordable ? '#fff' : '#ff8080', maxW: r.w - 6 });
       if (slot.cd > 0) {
         ctx.fillStyle = '#3a2410';
         ctx.fillRect(r.x + 6, r.y + off + 5, r.w - 12, 5);

@@ -21,7 +21,8 @@ export interface WinResult {
 export function applyWin(save: SaveData, stage: StageDef, killGold: number, star = 1, rnd: () => number = Math.random): WinResult {
   const first = star === 1 ? !save.cleared[stage.id] : (save.crowns[stage.id] ?? 0) < star;
   const starBonus = [1, 1, 1.6, 2.4][star];
-  const gold = Math.round((stageReward(stage, first) * starBonus) / 10) * 10 + killGold;
+  const replayBoost = !first && star > 1 ? 1.75 : 1;
+  const gold = Math.round((stageReward(stage, first) * starBonus * replayBoost) / 10) * 10 + killGold;
   save.gold += gold;
   save.cleared[stage.id] = (save.cleared[stage.id] ?? 0) + 1;
   save.crowns[stage.id] = Math.max(save.crowns[stage.id] ?? 0, star);
