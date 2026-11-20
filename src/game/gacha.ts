@@ -3,6 +3,8 @@ import type { SaveData } from './save';
 import type { Rarity } from './types';
 
 export const GACHA_GOLD_COST = 1200;
+/** every PITY pulls without SR/UR guarantees one */
+export const PITY = 10;
 
 export const GACHA_POOL: Record<Rarity, string[]> = {
   N: [],
@@ -29,7 +31,9 @@ export function rollGacha(save: SaveData, rnd: () => number = Math.random): Gach
   save.gachaCount = pulls + 1;
   const r = rnd();
   let rarity: Rarity;
+  save.pity = (save.pity ?? 0) + 1;
   if (pulls === 0) rarity = 'R';
+  else if (save.pity >= PITY) rarity = r < 0.25 ? 'UR' : 'SR';
   else if (r < 0.04) rarity = 'UR';
   else if (r < 0.16) rarity = 'SR';
   else if (r < 0.7) rarity = 'R';
@@ -46,6 +50,7 @@ export function rollGacha(save: SaveData, rnd: () => number = Math.random): Gach
     save.gold += amount;
     return { kind: 'gold', amount, rarity };
   }
+  if (rarity === 'SR' || rarity === 'UR') save.pity = 0;
   const pool = GACHA_POOL[rarity];
   let candidates = pool;
   if (pulls === 0) candidates = pool.filter((id) => !save.units[id]);

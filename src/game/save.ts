@@ -13,6 +13,7 @@ export interface SaveData {
   speed2: boolean;
   lastStage: number;
   gachaCount: number;
+  pity: number; // pulls since the last SR/UR
   crowns: Record<number, number>; // stage id -> highest ★ cleared (1..3)
   daily: string; // last day the login bonus was claimed
   claimed: string[]; // mission ids already claimed
@@ -38,6 +39,7 @@ export function newSave(): SaveData {
     speed2: false,
     lastStage: 1,
     gachaCount: 0,
+    pity: 0,
     crowns: {},
     daily: '',
     claimed: [],
@@ -69,6 +71,7 @@ export function sanitize(d: unknown): SaveData {
   s.gold = num(o.gold, 0);
   s.tickets = num(o.tickets, 0, 0, 9999);
   s.gachaCount = num(o.gachaCount, 0);
+  s.pity = num(o.pity, 0, 0, 10);
   s.lastStage = num(o.lastStage, 1, 1, 999);
   s.muted = o.muted === true;
   s.speed2 = o.speed2 === true;

@@ -134,7 +134,7 @@ export const STAGES: StageDef[] = RAW.map((r, i) => ({
   name: r.name,
   world: Math.floor(i / 12),
   length: r.len,
-  baseHp: i >= 12 ? Math.round(r.hp * 0.7) : r.hp,
+  baseHp: i >= 19 ? Math.round(r.hp * 0.56) : i >= 12 ? Math.round(r.hp * 0.7) : r.hp,
   spawns: withThieves(i + 1, r).map((s) => ({ ...s, mult: Math.round(((s.mult ?? 100) * r.d * (TUNING[i] ?? 1)) / 100) })),
   reward: Math.round((150 + 60 * i + (r.boss ? 300 + 40 * i : 0)) / 10) * 10,
   unlock: r.unlock,
@@ -174,7 +174,9 @@ export const STAR_NAMES = ['', 'ふつう', 'むずかしい', 'げきむず'];
 
 export function starStage(stage: StageDef, star: number): StageDef {
   if (star <= 1) return stage;
-  const m = STAR_MULT[star];
+  // early stages get a much bigger boost (the player is far stronger than they were the first time)
+  const early = (STAGES.length - stage.id) / STAGES.length;
+  const m = STAR_MULT[star] * (1 + early * (star === 2 ? 0.8 : 1.2));
   return {
     ...stage,
     baseHp: Math.round(stage.baseHp * (1 + (m - 1) * 0.5)),

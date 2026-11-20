@@ -442,6 +442,19 @@ export class BattleScene implements Scene {
           const seen = this.app.save.seen;
           if (!seen[e.f.id]) {
             seen[e.f.id] = 1;
+            const intro: Record<string, string> = {
+              mogura: 'じめんに もぐって うしろに くるよ！',
+              kaeru: 'ぴょーんと とびこえて くるよ！',
+              metal: 'クリティカルで しか ダメージが はいらない！',
+              kame: 'よわい こうげきは はじかれる！ つよい いちげきで わろう',
+              hachi: 'とおくから はりを とばしてくる！',
+              fukurou: 'にらまれると うごけなくなるよ！',
+              hebi: 'とおくまで かみついてくる！',
+            };
+            if (intro[e.f.id] && !this.banner) {
+              this.banner = { text: `${ENEMY_MAP[e.f.id].name}が きた！`, sub: intro[e.f.id], t: 0, color: '#9be8ff', dur: 2.6 };
+              this.userCamT = 0;
+            }
             fx.add({ kind: 'text', x: e.f.x - 30, y: -120, vy: -20, max: 1.6, size: 16, color: '#9be8ff', text: 'ずかんに とうろく！' });
           }
         }

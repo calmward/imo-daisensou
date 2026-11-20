@@ -98,18 +98,18 @@ export const ALLIES: AllyDef[] = [
   {
     id: 'mash', name: 'マッシュポテト', role: 'ふわふわ', rarity: 'SR', gacha: true,
     desc: 'ふわっふわの おおきな からだで うけとめて、てきを おそくする。',
-    cost: 600, cooldown: 16.0, hp: 4200, atk: 90, range: 150, speed: 32, atkInterval: 2.2, foreswing: 0.4, kb: 2, area: true, width: 76, size: 1.3,
+    cost: 520, cooldown: 13.0, hp: 5200, atk: 140, range: 150, speed: 32, atkInterval: 2.2, foreswing: 0.4, kb: 2, area: true, width: 76, size: 1.3,
     effect: { kind: 'slow', chance: 0.6, dur: 3 },
   },
   {
     id: 'daigaku', name: 'だいがくいも', role: 'エース', rarity: 'SR', gacha: true,
     desc: 'あまくて つよい エース！ みつの こうげきで まとめて たおす。',
-    cost: 750, cooldown: 20.0, hp: 2200, atk: 260, range: 190, speed: 60, atkInterval: 1.7, foreswing: 0.35, kb: 3, area: true, width: 66, size: 1.3,
+    cost: 650, cooldown: 16.0, hp: 2800, atk: 380, range: 200, speed: 60, atkInterval: 1.7, foreswing: 0.35, kb: 3, area: true, width: 66, size: 1.3,
   },
   {
     id: 'king', name: 'キングさつまいも', role: 'でんせつ', rarity: 'UR', gacha: true,
     desc: 'いもの おうさま！ すべてを なぎはらう でんせつの いも。ボスに つよい！',
-    cost: 1800, cooldown: 60.0, hp: 7000, atk: 950, range: 300, speed: 35, atkInterval: 3.0, foreswing: 0.6, kb: 3, area: true, width: 90, size: 1.8, strongVs: ['boss'],
+    cost: 1200, cooldown: 35.0, hp: 9000, atk: 1400, range: 320, speed: 35, atkInterval: 3.0, foreswing: 0.6, kb: 3, area: true, width: 90, size: 1.8, strongVs: ['boss'],
   },
 ];
 
@@ -121,7 +121,7 @@ export function levelMult(lv: number): number {
 }
 
 /** At this level a potato evolves ("しんか") into its super form. */
-export const EVOLVE_LV = 10;
+export const EVOLVE_LV = 7;
 
 export function isEvolved(lv: number) {
   return lv >= EVOLVE_LV;
