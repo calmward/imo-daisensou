@@ -13,6 +13,8 @@ export interface SaveData {
   speed2: boolean;
   lastStage: number;
   gachaCount: number;
+  crowns: Record<number, number>; // stage id -> highest ★ cleared (1..3)
+  daily: string; // last day the login bonus was claimed
   stats: { wins: number; losses: number; kills: number };
 }
 
@@ -33,6 +35,8 @@ export function newSave(): SaveData {
     speed2: false,
     lastStage: 1,
     gachaCount: 0,
+    crowns: {},
+    daily: '',
     stats: { wins: 0, losses: 0, kills: 0 },
   };
 }
@@ -54,6 +58,7 @@ export function loadSave(): SaveData {
     if (!raw) return base;
     const d = JSON.parse(raw) as Partial<SaveData>;
     const s: SaveData = { ...base, ...d, stats: { ...base.stats, ...(d.stats ?? {}) } };
+    for (const id of Object.keys(s.cleared)) if (!s.crowns[+id]) s.crowns[+id] = 1;
     // sanitize: drop unknown units, keep deck valid
     for (const id of Object.keys(s.units)) if (!ALLY_MAP[id]) delete s.units[id];
     s.deck = s.deck.filter((id, i, arr) => s.units[id] && arr.indexOf(id) === i).slice(0, DECK_SIZE);

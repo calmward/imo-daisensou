@@ -158,3 +158,18 @@ export function ticketReward(stage: StageDef): number {
   if (stage.boss) return 2;
   return stage.id % 3 === 0 ? 1 : 0;
 }
+
+/** ★2 / ★3 versions of a stage: same layout, much stronger enemies. */
+export const STAR_MULT = [1, 1, 1.8, 3.0];
+export const STAR_NAMES = ['', 'ふつう', 'むずかしい', 'げきむず'];
+
+export function starStage(stage: StageDef, star: number): StageDef {
+  if (star <= 1) return stage;
+  const m = STAR_MULT[star];
+  return {
+    ...stage,
+    baseHp: Math.round(stage.baseHp * (1 + (m - 1) * 0.5)),
+    spawns: stage.spawns.map((s) => ({ ...s, mult: Math.round((s.mult ?? 100) * m) })),
+    rushes: (stage.rushes ?? []).map((r) => ({ ...r, mult: Math.round(r.mult * m), count: r.count + star })),
+  };
+}

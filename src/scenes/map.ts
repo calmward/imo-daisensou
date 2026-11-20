@@ -7,7 +7,8 @@ import { clamp, drawButton, easeOutBack, panel, rr, STYLES, text, type Rect } fr
 import { ENEMY_MAP } from '../game/enemies';
 import { MUSIC } from '../game/music';
 import { highestUnlocked, isCleared } from '../game/save';
-import { STAGES, ticketReward, WORLD_NAMES } from '../game/stages';
+import { STAGES, STAR_NAMES, ticketReward, WORLD_NAMES } from '../game/stages';
+import { claimDaily } from '../game/progress';
 import { drawGoldIcon, drawHand, wrapText } from './battle';
 
 const SPACING = 96;
@@ -35,8 +36,21 @@ export class MapScene implements Scene {
   private focus: number;
   private inited = false;
 
+  popStar = 1;
+  daily: { gold: number; tickets: number } | null = null;
+  dailyT = 0;
+
   enter() {
     audio.playMusic('map', MUSIC.map);
+    const d = new Date();
+    const today = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    if (isCleared(this.app.save, 1)) {
+      this.daily = claimDaily(this.app.save, today);
+      if (this.daily) {
+        this.app.persist();
+        audio.sfx('fanfare');
+      }
+    }
   }
 
   onBack() {
@@ -50,6 +64,7 @@ export class MapScene implements Scene {
 
   update(dt: number) {
     this.t += dt;
+    this.dailyT += dt;
     this.popT += dt;
     if (this.vel) {
       this.scroll += this.vel * dt;
@@ -178,19 +193,22 @@ export class MapScene implements Scene {
         ctx.fill();
       }
       if (cleared) {
-        star(ctx, r * 0.75, -r * 0.7, 9);
-        ctx.fillStyle = '#fff36a';
-        ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#a36a00';
-        ctx.stroke();
+        const crowns = save.crowns[st.id] ?? 1;
+        for (let c = 0; c < 3; c++) {
+          star(ctx, (c - 1) * 13, r + 9 - (c === 1 ? 3 : 0), 7);
+          ctx.fillStyle = c < crowns ? ['#fff36a', '#ffb000', '#ff5fa8'][c] : 'rgba(0,0,0,0.25)';
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = c < crowns ? '#a36a00' : 'rgba(0,0,0,0.2)';
+          ctx.stroke();
+        }
       }
       ctx.restore();
       if (cur) {
         // marching potato hero marks the next stage
         portrait(ctx, 'jaga', p.x, p.y - r - 26 - Math.abs(Math.sin(this.t * 4)) * 6, 40, this.t, 0, 'walk');
       }
-      if (open) ui.add({ id: 'st' + st.id, r: { x: p.x - r - 6, y: p.y - r - 6, w: r * 2 + 12, h: r * 2 + 12 }, onTap: () => { this.popup = st.id; this.popT = 0; } });
+      if (open) ui.add({ id: 'st' + st.id, r: { x: p.x - r - 6, y: p.y - r - 6, w: r * 2 + 12, h: r * 2 + 12 }, onTap: () => { this.popup = st.id; this.popT = 0; this.popStar = 1; } });
     }
     // top bar
     const g = ctx.createLinearGradient(0, 0, 0, topH);
@@ -245,6 +263,36 @@ export class MapScene implements Scene {
       drawHand(ctx, r.x + r.w * 0.6, r.y + r.h * 0.4 + Math.abs(Math.sin(this.t * 5)) * 10, 24);
     }
     if (this.popup) this.drawPopup(ctx, w, h);
+    if (this.daily) this.drawDaily(ctx, w, h);
+  }
+
+  private drawDaily(ctx: CanvasRenderingContext2D, w: number, h: number) {
+    const ui = this.app.ui;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, 0, w, h);
+    const pw = Math.min(360, w - 30),
+      ph = Math.min(300, h - 30);
+    const px = (w - pw) / 2,
+      py = (h - ph) / 2;
+    const k = easeOutBack(Math.min(1, this.dailyT / 0.4));
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(k, k);
+    ctx.translate(-w / 2, -h / 2);
+    panel(ctx, { x: px, y: py, w: pw, h: ph }, '#fff6dd', '#ff8a1f');
+    const fs = Math.min(26, pw * 0.075);
+    text(ctx, 'きょうの ボーナス！', w / 2, py + fs * 1.3, fs, { color: '#ffd23a' });
+    portrait(ctx, 'jaga', px + pw * 0.22, py + ph * 0.45, ph * 0.3, this.t * 2, 0, 'walk');
+    drawGoldIcon(ctx, px + pw * 0.48, py + ph * 0.38, fs * 0.5);
+    text(ctx, `+${this.daily!.gold}`, px + pw * 0.56, py + ph * 0.38, fs, { align: 'left', color: '#ffe14d' });
+    text(ctx, `🎟 ガチャけん +${this.daily!.tickets}`, px + pw * 0.45, py + ph * 0.55, fs * 0.8, { align: 'left', color: '#ff9ccf', maxW: pw * 0.52 });
+    text(ctx, 'まいにち あそぶと もらえるよ', w / 2, py + ph * 0.7, fs * 0.6, { color: '#5a3a12', stroke: 'none' });
+    const r = { x: px + pw * 0.2, y: py + ph - 70, w: pw * 0.6, h: 54 };
+    const off = drawButton(ctx, r, STYLES.orange, ui.isPressed('dailyok'));
+    text(ctx, 'やったー！', w / 2, r.y + off + 24, 22);
+    ctx.restore();
+    ui.add({ id: 'dailyblock', r: { x: 0, y: 0, w, h }, sound: false });
+    ui.add({ id: 'dailyok', r, onTap: () => (this.daily = null) });
   }
 
   private drawPopup(ctx: CanvasRenderingContext2D, w: number, h: number) {
@@ -284,17 +332,20 @@ export class MapScene implements Scene {
     let y = py + fs * 3.9 + es * 1.35;
     const cleared = isCleared(save, st.id);
     drawGoldIcon(ctx, px + 30, y, fs * 0.45);
-    text(ctx, `ほうしゅう: きんいも ${cleared ? Math.round(st.reward * 0.4 / 10) * 10 : st.reward}${cleared ? '' : '（はじめて）'}`, px + 46, y, fs * 0.62, { align: 'left', color: '#5a3a12', stroke: 'none', maxW: pw - 60 });
+    const ps = this.popStar;
+    const firstStar = ps === 1 ? !cleared : (save.crowns[st.id] ?? 0) < ps;
+    const rw = Math.round(((firstStar ? st.reward : st.reward * 0.4) * [1, 1, 1.6, 2.4][ps]) / 10) * 10;
+    text(ctx, `ほうしゅう: きんいも ${rw}${firstStar ? '（はじめて）' : ''}`, px + 46, y, fs * 0.62, { align: 'left', color: '#5a3a12', stroke: 'none', maxW: pw - 60 });
     y += fs * 1.1;
-    const tk = ticketReward(st);
-    if (!cleared && (tk || st.unlock)) {
+    const tk = ps > 1 ? (firstStar ? ps - 1 : 0) : ticketReward(st);
+    if (firstStar && (tk || (st.unlock && ps === 1))) {
       const parts = [];
       if (tk) parts.push(`ガチャけん ${tk}まい`);
-      if (st.unlock) parts.push('あたらしい なかま');
+      if (st.unlock && ps === 1) parts.push('あたらしい なかま');
       text(ctx, `＋ ${parts.join('・')}`, px + 46, y, fs * 0.62, { align: 'left', color: '#c0392b', stroke: 'none', maxW: pw - 60 });
       y += fs * 1.1;
     }
-    if (st.tip) {
+    if (st.tip && (!cleared || ph > 360)) {
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       const tipH = Math.max(36, py + ph - 80 - y);
       rr(ctx, px + 14, y, pw - 28, Math.min(tipH, 56), 10);
@@ -302,10 +353,23 @@ export class MapScene implements Scene {
       wrapText(ctx, '💡 ' + st.tip, w / 2, y + Math.min(tipH, 56) / 2, pw - 44, fs * 0.58, '#5a3a12');
     }
     const bh = Math.min(58, ph * 0.16);
+    if (cleared) {
+      const sh = bh * 0.62;
+      const sy = py + ph - bh - 22 - sh;
+      const sw = (pw - 40) / 3;
+      for (let k = 1; k <= 3; k++) {
+        const r = { x: px + 14 + (k - 1) * (sw + 6), y: sy, w: sw, h: sh };
+        const open = k === 1 || (save.crowns[st.id] ?? 1) >= k - 1;
+        const sel = this.popStar === k;
+        const off = drawButton(ctx, r, open ? (sel ? [STYLES.blue, STYLES.orange, STYLES.pink][k - 1] : STYLES.cream) : { ...STYLES.gray, disabled: true }, ui.isPressed('star' + k), 10);
+        text(ctx, (open ? '' : '🔒') + STAR_NAMES[k] + '★'.repeat(k), r.x + r.w / 2, r.y + off + (sh - 6) / 2, sh * 0.34, { color: sel ? '#fff' : '#5a3a12', stroke: sel ? undefined : 'none', maxW: sw - 6 });
+        if (open) ui.add({ id: 'star' + k, r, onTap: () => (this.popStar = k) });
+      }
+    }
     const go = { x: px + pw * 0.38, y: py + ph - bh - 14, w: pw * 0.56, h: bh };
     const off = drawButton(ctx, go, STYLES.orange, ui.isPressed('go'));
     text(ctx, 'しゅつげき！', go.x + go.w / 2, go.y + off + (bh - 6) / 2, bh * 0.4);
-    ui.add({ id: 'go', r: go, onTap: () => { audio.sfx('whistle'); this.app.go('battle', st.id); } });
+    ui.add({ id: 'go', r: go, onTap: () => { audio.sfx('whistle'); this.app.go('battle', { id: st.id, star: this.popStar }); } });
     const cl = { x: px + pw * 0.06, y: go.y, w: pw * 0.28, h: bh };
     const off2 = drawButton(ctx, cl, STYLES.cream, ui.isPressed('close'));
     text(ctx, 'とじる', cl.x + cl.w / 2, cl.y + off2 + (bh - 6) / 2, bh * 0.32, { color: '#5a3a12', stroke: 'none' });

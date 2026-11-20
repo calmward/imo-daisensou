@@ -66,7 +66,7 @@ export function runCampaign(opts: { skill?: number; seed?: number; maxTries?: nu
       res = simulate(b, 600, skill);
       const killGold = Math.min(200, b.kills * 2);
       if (res.win) {
-        applyWin(save, st, killGold);
+        applyWin(save, st, killGold, 1, () => 1);
         break;
       }
       applyLoss(save, st, killGold);
@@ -77,7 +77,7 @@ export function runCampaign(opts: { skill?: number; seed?: number; maxTries?: nu
         spendGold(save);
         const pb = new Battle(prev, save.deck.map((id) => ({ id, level: save.units[id] })), battleMods(save.research), seed++);
         const pr = simulate(pb, 600, skill);
-        if (pr.win) applyWin(save, prev, Math.min(200, pb.kills * 2));
+        if (pr.win) applyWin(save, prev, Math.min(200, pb.kills * 2), 1, () => 1);
         grinds++;
       }
     }

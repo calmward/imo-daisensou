@@ -10,7 +10,7 @@ import { ENEMY_MAP } from '../game/enemies';
 import { MUSIC } from '../game/music';
 import { applyLoss, applyWin, type WinResult } from '../game/progress';
 import { battleMods } from '../game/research';
-import { STAGES } from '../game/stages';
+import { STAGES, STAR_NAMES, starStage } from '../game/stages';
 import { FX } from './fx';
 
 interface Layout {
@@ -60,9 +60,12 @@ export class BattleScene implements Scene {
   beamReadyPlayed = false;
   lastMoney = 0;
 
-  constructor(private app: App, stageId: number) {
+  star = 1;
+  constructor(private app: App, arg: number | { id: number; star?: number }) {
+    const stageId = typeof arg === 'number' ? arg : arg.id;
+    this.star = typeof arg === 'number' ? 1 : arg.star ?? 1;
     this.stageId = stageId;
-    const stage = STAGES[stageId - 1];
+    const stage = starStage(STAGES[stageId - 1], this.star);
     const save = app.save;
     const deck = save.deck.map((id) => ({ id, level: save.units[id] ?? 1 }));
     this.b = new Battle(stage, deck, battleMods(save.research), (Date.now() & 0xffff) + stageId);
@@ -79,7 +82,7 @@ export class BattleScene implements Scene {
   enter() {
     audio.playMusic('battle', MUSIC.battle);
     const st = this.b.stage;
-    this.banner = { text: st.boss ? 'ボス ステージ！' : 'スタート！', sub: `${st.id}. ${st.name}`, t: 0, color: st.boss ? '#ff5f5f' : '#ffd23a', dur: 2.2 };
+    this.banner = { text: st.boss ? 'ボス ステージ！' : 'スタート！', sub: `${st.id}. ${st.name}${this.star > 1 ? '（' + STAR_NAMES[this.star] + '）' : ''}`, t: 0, color: st.boss ? '#ff5f5f' : '#ffd23a', dur: 2.2 };
     audio.sfx('whistle');
   }
 
@@ -371,7 +374,7 @@ export class BattleScene implements Scene {
     this.shake = 20;
     this.flashT = 0.4;
     if (win) {
-      this.winRes = applyWin(save, stage, killGold);
+      this.winRes = applyWin(save, stage, killGold, this.star);
       if (stage.id === 1) save.tut.battle = true;
       save.lastStage = Math.min(STAGES.length, stage.id + (this.winRes.first ? 1 : 0));
       const bx = this.b.length + 70;
@@ -949,7 +952,7 @@ export class BattleScene implements Scene {
     const bh = Math.min(56, ph * 0.17);
     const items: [string, string, keyof typeof STYLES, () => void][] = [
       ['resume', 'つづける', 'green', () => (this.paused = false)],
-      ['retry', 'やりなおす', 'orange', () => this.app.go('battle', this.stageId)],
+      ['retry', 'やりなおす', 'orange', () => this.app.go('battle', { id: this.stageId, star: this.star })],
       ['quit', 'マップに もどる', 'blue', () => this.app.go('map')],
       ['sound', audio.muted ? 'おと: オフ' : 'おと: オン', 'cream', () => { audio.setMuted(!audio.muted); this.app.save.muted = audio.muted; this.app.persist(); }],
     ];
@@ -1026,10 +1029,26 @@ export class BattleScene implements Scene {
         ctx.restore();
         y += fs * 1.4;
       }
+      if (r.chest && this.resultT > 3.9) {
+        const k2 = easeOutBack(Math.min(1, (this.resultT - 3.9) / 0.4));
+        ctx.save();
+        ctx.translate(w / 2, y);
+        ctx.scale(k2, k2);
+        drawChest(ctx, -fs * 4.2, 0, fs * 0.9, this.t);
+        text(ctx, r.chest.kind === 'ticket' ? 'たからばこ！ ガチャけん +1' : `たからばこ！ きんいも +${r.chest.amount}`, fs * 0.6, 0, fs * 0.85, { color: '#ffd23a', maxW: pw - fs * 5 });
+        ctx.restore();
+        y += fs * 1.4;
+      }
     } else {
       text(ctx, `きんいも +${this.lossGold}`, w / 2, y, fs, { color: '#ffe14d' });
       y += fs * 1.5;
-      wrapText(ctx, 'パワーアップで なかまを つよくしよう！', w / 2, y + 4, pw - 30, fs * 0.8, '#3a3a6a');
+      const foe = Object.entries(this.b.killedBy).sort((a, c) => c[1] - a[1])[0]?.[0];
+      if (foe) {
+        const ed = ENEMY_MAP[foe];
+        portrait(ctx, foe, px + pw * 0.16, y + fs * 0.9, fs * 2.6, this.t, 1);
+        text(ctx, `ニガテな てき: ${ed.name}`, px + pw * 0.3, y + fs * 0.3, fs * 0.8, { align: 'left', color: '#ff8080', maxW: pw * 0.66 });
+        wrapText(ctx, counterHint(foe, this.app.save.units), px + pw * 0.63, y + fs * 1.6, pw * 0.64, fs * 0.62, '#3a3a6a');
+      } else wrapText(ctx, 'パワーアップで なかまを つよくしよう！', w / 2, y + 4, pw - 30, fs * 0.8, '#3a3a6a');
     }
     // buttons
     const ui = this.app.ui;
@@ -1045,7 +1064,7 @@ export class BattleScene implements Scene {
       ui.add({ id: 'r1', r: b1, onTap: () => this.app.go(win ? 'map' : 'power') });
       const o2 = drawButton(ctx, b2, next ? STYLES.orange : STYLES.green, ui.isPressed('r2'));
       text(ctx, next ? 'つぎの ステージ' : 'もういちど', b2.x + bw / 2, b2.y + o2 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
-      ui.add({ id: 'r2', r: b2, onTap: () => this.app.go(next ? 'map' : 'battle', next ? { focus: this.stageId + 1, open: true } : this.stageId) });
+      ui.add({ id: 'r2', r: b2, onTap: () => this.app.go(next ? 'map' : 'battle', next ? { focus: this.star > 1 ? this.stageId : this.stageId + 1, open: this.star === 1 } : { id: this.stageId, star: this.star }) });
     }
     ctx.restore();
   }
@@ -1129,4 +1148,43 @@ export function wrapText(ctx: CanvasRenderingContext2D, s: string, cx: number, c
   const y0 = cy - ((lines.length - 1) * lh) / 2;
   lines.forEach((l, i) => text(ctx, l, cx, y0 + i * lh, size, { color, stroke: 'none' }));
   return lines.length * lh;
+}
+
+const TRAIT_NAME: Record<string, string> = { bug: 'むし', bird: 'とり', beast: 'けもの', boss: 'ボス' };
+
+/** Suggest an owned potato that is strong against this enemy. */
+export function counterHint(enemyId: string, owned: Record<string, number>): string {
+  const e = ENEMY_MAP[enemyId];
+  const traits = e.traits ?? [];
+  const counter = Object.keys(owned).map((id) => ALLY_MAP[id]).find((a) => a && a.strongVs?.some((t) => traits.includes(t)));
+  if (counter) return `${TRAIT_NAME[counter.strongVs!.find((t) => traits.includes(t))!]}に つよい「${counter.name}」を だそう！`;
+  if (e.range >= 200) return 'とおくから うってくる てき。しゃていの ながい なかまで たおそう！';
+  if (e.burrow) return 'もぐって くるよ。うしろにも なかまを だそう！';
+  return 'パワーアップで なかまを つよくしよう！';
+}
+
+function drawChest(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, t: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(255,230,100,0.5)';
+  ctx.beginPath();
+  ctx.arc(0, -s * 0.2, s * 1.4 + Math.sin(t * 6) * 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#a0522d';
+  rr(ctx, -s, -s * 0.4, s * 2, s * 1.1, s * 0.15);
+  ctx.fill();
+  ctx.strokeStyle = '#3b2412';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#c8783a';
+  ctx.save();
+  ctx.translate(0, -s * 0.4);
+  ctx.rotate(-0.4);
+  rr(ctx, -s, -s * 0.5, s * 2, s * 0.5, s * 0.2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = '#ffd23a';
+  ctx.fillRect(-s * 0.15, -s * 0.3, s * 0.3, s * 0.35);
+  ctx.restore();
 }

@@ -109,6 +109,8 @@ export class Battle {
   bossCount = 0;
   bossAlive = false;
   kills = 0;
+  /** which enemy defeated how many potatoes (for the loss hint) */
+  killedBy: Record<string, number> = {};
   spawned = 0;
   private uid = 1;
   private spawns: SpawnState[];
@@ -286,6 +288,7 @@ export class Battle {
       target.kbFrom = target.x;
       target.kbTo = target.x + (target.side === 0 ? -1 : 1) * 70;
       this.events.push({ type: 'death', f: target });
+      if (target.side === 0 && src) this.killedBy[src.id] = (this.killedBy[src.id] ?? 0) + 1;
       if (target.side === 1) {
         this.kills++;
         if (target.reward > 0) {
