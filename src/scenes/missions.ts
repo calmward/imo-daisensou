@@ -1,9 +1,12 @@
+import { portrait } from '../art/index';
 import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
 import { clamp, drawButton, panel, rr, STYLES, text } from '../core/ui';
 import { claim, isDone, MISSIONS } from '../game/missions';
 import { MUSIC } from '../game/music';
 import { drawGoldIcon } from './battle';
+
+const ICONS: Record<string, string> = { c: 'jaga', k: 'ari', u: 'potesala', l: 'satsu', evo: 'king', r: '🏰', g: '🎰', s: '⭐', w: '🏆' };
 
 export class MissionScene implements Scene {
   name = 'missions';
@@ -45,8 +48,8 @@ export class MissionScene implements Scene {
       return ra - rb;
     });
     const rh = clamp(h * 0.12, 58, 76);
-    const lw = Math.min(640, w - 16);
-    const lx = (w - lw) / 2;
+    let lw = Math.min(640, w - 16);
+    let lx = (w - lw) / 2;
     this.maxScroll = Math.max(0, list.length * (rh + 8) + 16 - (h - topH));
     ctx.save();
     ctx.beginPath();
@@ -57,8 +60,20 @@ export class MissionScene implements Scene {
       if (y > h || y + rh < topH) return;
       const done = isDone(save, mi);
       const got = save.claimed.includes(mi.id);
+      const wig = done && !got ? Math.sin(this.t * 10 + i) * 1.5 : 0;
+      ctx.save();
+      ctx.translate(wig, 0);
       panel(ctx, { x: lx, y, w: lw, h: rh }, got ? '#e8e8e8' : done ? '#fff6c8' : '#fffaf0', got ? '#aaa' : done ? '#ffb000' : '#5a8ab0', 12);
       const fs = clamp(rh * 0.24, 12, 18);
+      // category icon
+      const icon = ICONS[mi.id.replace(/[0-9a-z]*$/, '')] ?? ICONS[mi.id[0]];
+      const ix = lx + rh * 0.5;
+      if (icon && icon.length > 2) portrait(ctx, icon, ix, y + rh / 2, rh * 0.8, got ? 0 : this.t + i, icon === 'ari' ? 1 : 0);
+      else text(ctx, icon ?? '⭐', ix, y + rh / 2, rh * 0.45, { stroke: 'none' });
+      const lx0 = lx;
+      lx = lx + rh * 0.9;
+      const lwSaved = lw;
+      lw = lw - rh * 0.9;
       const btnW = Math.min(100, lw * 0.24);
       const rx = lx + lw - btnW - 18 - Math.min(70, lw * 0.18);
       text(ctx, mi.label, lx + 14, y + rh * 0.32, fs, { align: 'left', color: got ? '#888' : '#3a3a6a', stroke: 'none', maxW: rx - lx - 20 });
@@ -72,8 +87,8 @@ export class MissionScene implements Scene {
       ctx.fill();
       text(ctx, `${a}/${b}`, lx + 22 + bw, y + rh * 0.68, fs * 0.75, { align: 'left', color: '#3a3a6a', stroke: 'none' });
       // reward
-      drawGoldIcon(ctx, rx + 8, y + rh * 0.35, fs * 0.35);
-      text(ctx, `${mi.gold}`, rx + 18, y + rh * 0.35, fs * 0.8, { align: 'left', color: '#c87a00', stroke: 'none' });
+      drawGoldIcon(ctx, rx + 8, y + rh * 0.35, fs * 0.5);
+      text(ctx, `${mi.gold}`, rx + 22, y + rh * 0.35, fs * 0.8, { align: 'left', color: '#c87a00', stroke: 'none' });
       if (mi.tickets) text(ctx, `🎟${mi.tickets}`, rx + 8, y + rh * 0.7, fs * 0.8, { align: 'left', color: '#d0407a', stroke: 'none' });
       const br = { x: lx + lw - btnW - 10, y: y + rh * 0.18, w: btnW, h: rh * 0.64 };
       if (got) text(ctx, 'もらった', br.x + br.w / 2, y + rh / 2, fs * 0.8, { color: '#999', stroke: 'none' });
@@ -89,6 +104,9 @@ export class MissionScene implements Scene {
             }
           } });
       }
+      lx = lx0;
+      lw = lwSaved;
+      ctx.restore();
     });
     ctx.restore();
     // header
