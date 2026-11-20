@@ -1040,7 +1040,7 @@ export class BattleScene implements Scene {
     const deck = this.b.slots.slice(0, 5);
     deck.forEach((s, i) => {
       const cx = px + pw * (0.18 + i * 0.16);
-      portrait(ctx, s.def.id, cx, py + ph * 0.37, Math.min(64, pw * 0.15), this.t * (win ? 2 : 0.3) + i, 0, win ? 'walk' : 'idle');
+      portrait(ctx, s.def.id, cx, py + ph * 0.37 - (win ? Math.abs(Math.sin(this.t * 5 + i * 0.9)) * 14 : 0), Math.min(64, pw * 0.15), this.t * (win ? 2 : 0.3) + i, 0, win ? 'walk' : 'kb', isEvolved(s.level));
     });
     const fs = Math.min(22, pw * 0.055);
     let y = py + ph * 0.55;
