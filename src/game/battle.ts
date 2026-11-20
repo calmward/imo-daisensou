@@ -124,6 +124,8 @@ export class Battle {
     this.stage = stage;
     this.mods = mods;
     this.rng = new Rng(seed);
+    // after the tutorial stages everyone starts with a slightly bigger wallet (kids often forget it)
+    if (stage.id >= 3) this.walletLv = 2;
     this.money = Math.min(mods.startMoney, this.cap);
     this.pBase = { hp: mods.castleHp, max: mods.castleHp, hitT: 0 };
     this.eBase = { hp: stage.baseHp, max: stage.baseHp, hitT: 0 };

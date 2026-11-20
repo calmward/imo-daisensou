@@ -22,6 +22,7 @@ export class PowerScene implements Scene {
   scroll = 0;
   maxScroll = 0;
   popText: { s: string; t: number } | null = null;
+  confirmRemove: string | null = null;
   private gridArea: Rect = { x: 0, y: 0, w: 0, h: 0 };
 
   constructor(private app: App, arg?: { tab?: 'units' | 'castle' }) {
@@ -268,11 +269,17 @@ export class PowerScene implements Scene {
       const inDeck = save.deck.includes(a.id);
       const dR = { x: r.x + r.w * 0.58, y: by, w: r.w * 0.42 - 10, h: bh };
       const off2 = drawButton(ctx, dR, inDeck ? STYLES.blue : STYLES.orange, ui.isPressed('deck'));
-      text(ctx, inDeck ? 'はずす' : 'へんせいに いれる', dR.x + dR.w / 2, dR.y + off2 + (bh - 6) / 2, bh * 0.28, { maxW: dR.w - 8 });
+      text(ctx, inDeck ? (this.confirmRemove === a.id ? 'ほんとに はずす？' : 'はずす') : 'へんせいに いれる', dR.x + dR.w / 2, dR.y + off2 + (bh - 6) / 2, bh * 0.28, { maxW: dR.w - 8 });
       ui.add({ id: 'deck', r: dR, onTap: () => {
         if (inDeck) {
-          if (save.deck.length > 1) save.deck = save.deck.filter((d) => d !== a.id);
-          else audio.sfx('deny');
+          if (save.deck.length <= 1) audio.sfx('deny');
+          else if (this.confirmRemove !== a.id) {
+            this.confirmRemove = a.id;
+            this.popText = { s: 'もういちど おすと はずすよ', t: 0 };
+          } else {
+            save.deck = save.deck.filter((d) => d !== a.id);
+            this.confirmRemove = null;
+          }
         } else if (save.deck.length < DECK_SIZE) save.deck.push(a.id);
         else this.popText = { s: '10たいまで だよ', t: 0 };
         this.app.persist();

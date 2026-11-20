@@ -52,6 +52,8 @@ export class BattleScene implements Scene {
   beamCamT = 0;
   thiefWarned = false;
   spawnTime = new Map<number, number>();
+  lastDanger = -99;
+  dangerT = 0;
   endHandled = false;
   winRes: WinResult | null = null;
   lossGold = 0;
@@ -162,6 +164,11 @@ export class BattleScene implements Scene {
     if (this.tut === 'money' && b.beam >= 1) {
       this.tut = 'beam';
       this.tutT = 0;
+    }
+    if (this.tut === 'beam' && this.tutT > 7) {
+      this.tut = 'done';
+      this.app.save.tut.battle = true;
+      this.app.persist();
     }
     if (this.tut === 'wallet' && this.tutT > 7) {
       this.tut = 'money';
@@ -351,6 +358,11 @@ export class BattleScene implements Scene {
         audio.sfx('coin');
         break;
       case 'baseHit': {
+        if (e.side === 0 && this.camX > 60 && this.t - this.lastDanger > 6) {
+          this.lastDanger = this.t;
+          this.dangerT = 2.2;
+          audio.sfx('deny');
+        }
         const bx = e.side === 1 ? this.b.length + 70 : -70;
         for (let i = 0; i < 2; i++)
           fx.add({ kind: 'debris', x: bx + (r() - 0.5) * 60, y: -60 - r() * 80, vx: (r() - 0.5) * 200, vy: -100 - r() * 100, grav: 600, max: 1.0, size: 8, color: e.side === 1 ? '#6a4a2a' : '#c0446a', rot: r() * 6, vr: 10 });
@@ -613,6 +625,16 @@ export class BattleScene implements Scene {
     }
     ctx.restore();
 
+    if (this.dangerT > 0) {
+      this.dangerT -= 1 / 60;
+      const a = 0.5 + Math.sin(this.t * 14) * 0.3;
+      const g = ctx.createLinearGradient(L.field.x, 0, L.field.x + 90, 0);
+      g.addColorStop(0, `rgba(255,40,40,${a})`);
+      g.addColorStop(1, 'rgba(255,40,40,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(L.field.x, L.field.y, 90, L.field.h);
+      text(ctx, '◀ おしろが あぶない！', L.field.x + 10, L.field.y + L.field.h * 0.55, clamp(L.field.h * 0.08, 14, 22), { align: 'left', color: '#fff', stroke: '#c00000' });
+    }
     this.drawBossBar(ctx, L);
     this.drawHud(ctx, L, w);
     this.drawControls(ctx, L);
@@ -793,7 +815,7 @@ export class BattleScene implements Scene {
     if (!boss) return;
     const bw = Math.min(360, L.field.w * 0.5);
     const x = L.field.x + (L.field.w - bw) / 2;
-    const y = L.field.y + (L.portrait ? 8 : 52);
+    const y = L.field.y + (L.portrait ? 48 : L.pause.h + 50);
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     rr(ctx, x - 4, y - 4, bw + 8, 24, 8);
     ctx.fill();
@@ -1191,6 +1213,7 @@ export class BattleScene implements Scene {
       portrait(ctx, s.def.id, cx, py + ph * 0.37 - (win ? Math.abs(Math.sin(this.t * 5 + i * 0.9)) * 14 : 0), Math.min(64, pw * Math.max(step, 0.1)), this.t * (win ? 2 : 0.3) + i, 0, win ? 'walk' : 'kb', isEvolved(s.level));
     });
     const fs = Math.min(22, pw * 0.055);
+    const by = py + ph - Math.min(54, ph * 0.15) - 16;
     let y = py + ph * 0.55;
     if (win && this.winRes) {
       const r = this.winRes;
@@ -1215,16 +1238,16 @@ export class BattleScene implements Scene {
         ctx.save();
         ctx.fillStyle = 'rgba(255,240,120,0.6)';
         ctx.beginPath();
-        ctx.arc(px + fs * 1.6, y - fs * 0.2, fs * 1.3 + Math.sin(this.t * 6) * 2, 0, Math.PI * 2);
+        ctx.arc(px + fs * 2.2, y - fs * 0.2, fs * 1.3 + Math.sin(this.t * 6) * 2, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
-        portrait(ctx, r.unlocked, px + fs * 1.6, y - fs * 0.3, fs * 2.4, this.t * 2, 0, 'walk');
+        portrait(ctx, r.unlocked, px + fs * 2.2, y - fs * 0.3, fs * 2.4, this.t * 2, 0, 'walk');
         y += fs * 1.6;
       }
       const secs = Math.floor(this.b.time);
       if (this.b.kills) text(ctx, `たおした てき ${this.b.kills}ひき ・ じかん ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, w / 2, y, fs * 0.62, { color: '#8a5a22', stroke: 'none', maxW: pw - 30 });
       y += fs * 1.1;
-      if (this.resultT > 4.2 && Object.keys(this.app.save.units).some((id) => canLevelUp(this.app.save, id))) {
+      if (this.resultT > 4.2 && !r.chest && y < by - fs * 1.2 && Object.keys(this.app.save.units).some((id) => canLevelUp(this.app.save, id))) {
         const pulse = 1 + Math.sin(this.t * 5) * 0.04;
         ctx.save();
         ctx.translate(w / 2, y);
@@ -1233,7 +1256,7 @@ export class BattleScene implements Scene {
         ctx.restore();
         y += fs * 1.1;
       }
-      if (r.chest && this.resultT > 3.9) {
+      if (r.chest && this.resultT > 3.9 && y < by - fs * 0.8) {
         const k2 = easeOutBack(Math.min(1, (this.resultT - 3.9) / 0.4));
         ctx.save();
         ctx.translate(w / 2, y);
@@ -1261,18 +1284,20 @@ export class BattleScene implements Scene {
     // buttons
     const ui = this.app.ui;
     const bh = Math.min(54, ph * 0.15);
-    const by = py + ph - bh - 16;
     const bw = (pw - 48) / 2;
     const next = this.stageId !== BONUS_ID && STAGES[this.stageId] && win;
     const b1 = { x: px + 16, y: by, w: bw, h: bh };
     const b2 = { x: px + 32 + bw, y: by, w: bw, h: bh };
     if (k >= 1) {
+      const armed = this.resultT > 3.6; // ignore leftover spam-taps right after the panel appears
+      if (!armed) ctx.globalAlpha = 0.5;
       const o1 = drawButton(ctx, b1, STYLES.blue, ui.isPressed('r1'));
       text(ctx, win ? 'マップへ' : 'パワーアップ', b1.x + bw / 2, b1.y + o1 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
-      ui.add({ id: 'r1', r: b1, onTap: () => this.app.go(win ? 'map' : 'power') });
+      if (armed) ui.add({ id: 'r1', r: b1, onTap: () => this.app.go(win ? 'map' : 'power') });
       const o2 = drawButton(ctx, b2, next ? STYLES.orange : STYLES.green, ui.isPressed('r2'));
       text(ctx, next ? 'つぎの ステージ' : 'もういちど', b2.x + bw / 2, b2.y + o2 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
-      ui.add({ id: 'r2', r: b2, onTap: () => this.app.go(next ? 'map' : 'battle', next ? { focus: this.star > 1 ? this.stageId : this.stageId + 1, open: this.star === 1 } : { id: this.stageId, star: this.star }) });
+      ctx.globalAlpha = 1;
+      if (armed) ui.add({ id: 'r2', r: b2, onTap: () => this.app.go(next ? 'map' : 'battle', next ? { focus: this.star > 1 ? this.stageId : this.stageId + 1, open: this.star === 1 } : { id: this.stageId, star: this.star }) });
     }
     ctx.restore();
   }

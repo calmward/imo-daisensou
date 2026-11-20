@@ -79,7 +79,7 @@ for (const st of STAGES) {
     f = f2;
   }
   // hand adjustments for spikes found by the multi-skill campaign test
-  const ADJUST: Record<number, number> = { 12: 0.88, 20: 0.85, 29: 0.88 };
+  const ADJUST: Record<number, number> = { 3: 0.6, 12: 0.88, 18: 0.88, 20: 0.85, 29: 0.88 };
   f = Math.round(f * (ADJUST[st.id] ?? 1) * 1000) / 1000;
   out.push(f);
   const r = trial(save, st.id, f, 99);

@@ -32,6 +32,7 @@ export class GachaScene implements Scene {
     this.t += dt;
     this.pt += dt;
     if (this.confirmT > 0) this.confirmT -= dt;
+    if (this.msg && (this.msg.t += dt) > 1.5) this.msg = null;
     if (this.phase === 'spin' && this.pt > 1.3) this.setPhase('drop');
     if (this.phase === 'drop' && this.pt > 1.0) this.setPhase('open');
     if (this.phase === 'open' && this.pt > 0.9) {
@@ -58,10 +59,12 @@ export class GachaScene implements Scene {
   }
 
   confirmT = 0;
+  msg: { s: string; t: number } | null = null;
   private pull() {
     const save = this.app.save;
     if (!canGacha(save)) {
       audio.sfx('deny');
+      this.msg = { s: 'きんいもが たりないよ', t: 0 };
       return;
     }
     if (save.tickets <= 0 && this.confirmT <= 0) {
@@ -175,6 +178,7 @@ export class GachaScene implements Scene {
       text(ctx, this.phase === 'reveal' ? 'もういっかい！' : 'ガチャを まわす！', cx, r.y + off + bh * 0.32, bh * 0.32, { maxW: bw - 10 });
       text(ctx, save.tickets > 0 ? 'ガチャけん 1まい' : this.confirmT > 0 ? `きんいも ${GACHA_GOLD_COST} つかう？ もういちど タップ！` : `きんいも ${GACHA_GOLD_COST}`, cx, r.y + off + bh * 0.66, bh * 0.22, { color: this.confirmT > 0 ? '#fff36a' : can ? '#fff' : '#ffd0d0', maxW: bw - 10 });
       ui.add({ id: 'pull', r, onTap: () => this.pull(), sound: false });
+      if (this.msg) text(ctx, this.msg.s, cx, r.y - 40, 22, { color: '#fff', stroke: '#c00040' });
       const back = { x: cx - bw / 2, y: land ? r.y + bh + 14 : h - Math.max(44, bh * 0.8) - 12, w: bw, h: Math.max(44, bh * 0.8) };
       const ob = drawButton(ctx, back, STYLES.cream, ui.isPressed('gback'));
       text(ctx, 'マップに もどる', cx, back.y + ob + (back.h - 6) / 2, back.h * 0.34, { color: '#5a3a12', stroke: 'none' });
