@@ -349,7 +349,7 @@ export class MapScene implements Scene {
     const ui = this.app.ui;
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(0, 0, w, h);
-    ui.add({ id: 'popbg', r: { x: 0, y: 0, w, h }, onTap: () => (this.popup = null), sound: false });
+    ui.add({ id: 'popbg', r: { x: 0, y: 0, w, h }, onTap: () => { if (this.popT > 0.3) this.popup = null; }, sound: false });
     const pw = Math.min(460, w - 24),
       ph = Math.min(400, h - 24);
     const px = (w - pw) / 2,

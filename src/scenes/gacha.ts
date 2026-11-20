@@ -188,10 +188,10 @@ export class GachaScene implements Scene {
       text(ctx, 'マップに もどる', cx, back.y + ob + (back.h - 6) / 2, back.h * 0.34, { color: '#5a3a12', stroke: 'none' });
       ui.add({ id: 'gback', r: back, onTap: () => this.app.go('map') });
       const left = PITY - (save.pity ?? 0);
-      text(ctx, left <= 1 ? 'つぎは スーパーレア いじょう かくてい！' : `あと ${left}かいで スーパーレア いじょう かくてい！`, cx, land ? back.y + back.h + 14 : r.y - clamp(w * 0.03, 11, 15) * 1.2 - 22, clamp(w * 0.032, 12, 16), { color: '#fff36a', stroke: '#a3205f', maxW: bw + 40 });
+      text(ctx, left <= 1 ? 'つぎは スーパーレア いじょう かくてい！' : `あと ${left}かいで スーパーレア いじょう かくてい！`, cx, land ? back.y + back.h + 14 : r.y - 14, clamp(w * 0.032, 12, 16), { color: '#fff36a', stroke: '#a3205f', maxW: bw + 40 });
       if (this.phase === 'idle') {
         const fs = clamp(w * 0.03, 11, 15);
-        text(ctx, 'でるかも: スイートポテト・いもようかん・いもにんじゃ・ハッシュドポテト・コロッケ・ポテトサラダ・マッシュポテト・だいがくいも・キングさつまいも', cx, land ? back.y + back.h + 40 : r.y - fs * 1.2, fs, { color: '#fff', stroke: '#a3205f', maxW: land ? w * 0.48 : w - 20 });
+        wrapText(ctx, 'でるかも: スイートポテト・いもようかん・いもにんじゃ・ハッシュドポテト・コロッケ・ポテトサラダ・マッシュポテト・だいがくいも・キングさつまいも', cx, land ? back.y + back.h + 48 : r.y - fs * 4.4 - 16, land ? w * 0.46 : w - 24, Math.max(12, fs), '#7a1a4a');
       }
     }
   }

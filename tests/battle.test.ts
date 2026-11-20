@@ -120,3 +120,12 @@ describe('save sanitize', () => {
     expect(sanitize(null).units.jaga).toBe(1);
   });
 });
+
+describe('save round trip', () => {
+  it('keeps today\'s daily mission ids and older 10-unit decks', () => {
+    const s = sanitize({ today: { date: '2026-1-1', counts: { kills: 3 }, claimed: ['dk'], ids: ['dk', 'db', 'dw'] }, units: { jaga: 1, sato: 1, chips: 1, satsu: 1, kenpi: 1, fry: 1, yaki: 1 }, deck: ['jaga', 'sato', 'chips', 'satsu', 'kenpi', 'fry', 'yaki'] });
+    expect(s.today.ids).toEqual(['dk', 'db', 'dw']);
+    expect(s.today.counts.kills).toBe(3);
+    expect(s.deck.length).toBe(7);
+  });
+});

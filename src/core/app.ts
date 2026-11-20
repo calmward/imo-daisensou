@@ -182,7 +182,9 @@ export class App {
         this.ui.pressedId = null;
       }
     }
-    if (st.dragging && !st.downFired) this.scene.onDrag?.(dx, dy, x, y);
+    // only the first finger scrolls (two fingers would double the speed)
+    const firstId = this.ptrs.keys().next().value;
+    if (st.dragging && !st.downFired && e.pointerId === firstId) this.scene.onDrag?.(dx, dy, x, y);
   }
 
   private onUp(e: PointerEvent) {
@@ -221,11 +223,20 @@ export class App {
 
   private slowT = 0;
   private quality = 2;
+  private fastT = 0;
   /** Lower the canvas resolution on slow phones so the game stays smooth. */
   private adaptQuality(dt: number) {
     if (document.hidden) return;
     if (dt > 0.028) this.slowT += dt;
     else this.slowT = Math.max(0, this.slowT - dt * 0.5);
+    if (dt < 0.02) this.fastT += dt;
+    else this.fastT = 0;
+    if (this.fastT > 15 && this.quality < 2) {
+      // things are smooth again: restore sharpness
+      this.quality = this.quality < 1.5 ? 1.5 : 2;
+      this.fastT = 0;
+      this.resize();
+    }
     if (this.slowT > 2 && this.quality > 1) {
       this.quality = this.quality > 1.5 ? 1.5 : 1;
       this.slowT = 0;

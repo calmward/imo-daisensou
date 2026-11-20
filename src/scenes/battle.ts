@@ -1187,7 +1187,7 @@ export class BattleScene implements Scene {
     panel(ctx, { x: px, y: py, w: pw, h: ph });
     text(ctx, 'ちょっと きゅうけい', w / 2, py + ph * 0.12, Math.min(26, pw * 0.08), { color: '#ffe14d' });
     const ui = this.app.ui;
-    const bh = Math.min(56, ph * 0.17);
+    const bh = Math.max(40, Math.min(56, (ph * 0.72 - 30) / 4));
     const items: [string, string, keyof typeof STYLES, () => void][] = [
       ['resume', 'つづける', 'green', () => (this.paused = false)],
       ['retry', 'やりなおす', 'orange', () => this.app.go('battle', { id: this.stageId, star: this.star })],
@@ -1294,15 +1294,15 @@ export class BattleScene implements Scene {
         y += fs * 1.1;
       }
       if (r.chest && this.resultT > 3.9) {
-        y = Math.min(y, by - fs * 0.9);
+        // treasure chest badge in the panel's top-right corner (never overlaps the reward lines)
         const k2 = easeOutBack(Math.min(1, (this.resultT - 3.9) / 0.4));
         ctx.save();
-        ctx.translate(w / 2, y);
+        ctx.translate(px + pw - fs * 2.6, py + fs * 2.2);
         ctx.scale(k2, k2);
-        drawChest(ctx, -fs * 4.2, 0, fs * 0.9, this.t);
-        text(ctx, r.chest.kind === 'ticket' ? 'たからばこ！ ガチャけん +1' : `たからばこ！ きんいも +${r.chest.amount}`, fs * 0.6, 0, fs * 0.85, { color: '#ffd23a', maxW: pw - fs * 5 });
+        ctx.rotate(0.08);
+        drawChest(ctx, 0, 0, fs * 0.9, this.t);
+        text(ctx, r.chest.kind === 'ticket' ? '🎟+1' : `+${r.chest.amount}`, 0, fs * 1.3, fs * 0.7, { color: '#ffd23a' });
         ctx.restore();
-        y += fs * 1.4;
       }
     } else {
       text(ctx, `きんいも +${this.lossGold}`, w / 2, y, fs, { color: '#ffe14d' });
@@ -1311,13 +1311,14 @@ export class BattleScene implements Scene {
       text(ctx, left <= 40 ? `あと ちょっと！ てきの おしろ のこり ${left}%` : `てきの おしろ のこり ${left}%`, w / 2, y, fs * 0.7, { color: left <= 40 ? '#ff8a1f' : '#5a5a8a', stroke: 'none', maxW: pw - 30 });
       y += fs * 1.1;
       const foe = Object.entries(this.b.killedBy).sort((a, c) => c[1] - a[1])[0]?.[0];
-      if (foe) {
+      const room = by - y;
+      if (foe && room > fs * 3) {
         const ed = ENEMY_MAP[foe];
         portrait(ctx, foe, px + pw * 0.16, y + fs * 0.9, fs * 2.6, this.t, 1);
         void 0;
         text(ctx, `ニガテな てき: ${ed.name}`, px + pw * 0.3, y + fs * 0.3, fs * 0.8, { align: 'left', color: '#ff8080', maxW: pw * 0.66 });
         wrapText(ctx, counterHint(foe, this.app.save.units), px + pw * 0.63, y + fs * 1.6, pw * 0.64, fs * 0.62, '#3a3a6a');
-      } else wrapText(ctx, 'パワーアップで なかまを つよくしよう！', w / 2, y + 4, pw - 30, fs * 0.8, '#3a3a6a');
+      } else if (room > fs * 1.6) wrapText(ctx, 'パワーアップで なかまを つよくしよう！', w / 2, y + 4, pw - 30, fs * 0.8, '#3a3a6a');
     }
     // buttons
     const ui = this.app.ui;

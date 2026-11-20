@@ -95,12 +95,12 @@ export function sanitize(d: unknown): SaveData {
   for (const [k, v] of Object.entries(obj(o.research))) if (RES.includes(k)) s.research[k] = num(v, 0, 0, 20);
   for (const [k, v] of Object.entries(obj(o.tut))) s.tut[k] = v === true;
   const td = obj(o.today);
-  s.today = { date: typeof td.date === 'string' ? td.date : '', counts: {}, claimed: Array.isArray(td.claimed) ? td.claimed.filter((x): x is string => typeof x === 'string') : [] };
+  s.today = { date: typeof td.date === 'string' ? td.date : '', counts: {}, claimed: Array.isArray(td.claimed) ? td.claimed.filter((x): x is string => typeof x === 'string') : [], ids: Array.isArray(td.ids) ? td.ids.filter((x): x is string => typeof x === 'string') : undefined };
   for (const [k, v] of Object.entries(obj(td.counts))) s.today.counts[k] = num(v, 0);
   const st = obj(o.stats);
   s.stats = { wins: num(st.wins, 0), losses: num(st.losses, 0), kills: num(st.kills, 0) };
   const deck = Array.isArray(o.deck) ? o.deck : [];
-  s.deck = deck.filter((id, i): id is string => typeof id === 'string' && Object.prototype.hasOwnProperty.call(s.units, id) && deck.indexOf(id) === i).slice(0, deckSize(s));
+  s.deck = deck.filter((id, i): id is string => typeof id === 'string' && Object.prototype.hasOwnProperty.call(s.units, id) && deck.indexOf(id) === i).slice(0, DECK_SIZE);
   if (!s.deck.length) s.deck = Object.keys(s.units).slice(0, deckSize(s));
   return s;
 }
