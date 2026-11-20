@@ -45,10 +45,11 @@ export class BattleScene implements Scene {
   acc = 0;
   t = 0;
   paused = false;
-  banner: { text: string; sub?: string; t: number; color: string; dur: number } | null = null;
+  banner: { text: string; sub?: string; t: number; color: string; dur: number; boss?: string } | null = null;
   flashT = 0;
   hitStop = 0;
   beamCamT = 0;
+  thiefWarned = false;
   endHandled = false;
   winRes: WinResult | null = null;
   lossGold = 0;
@@ -356,7 +357,9 @@ export class BattleScene implements Scene {
         break;
       }
       case 'boss':
-        this.banner = { text: 'ボスが あらわれた！', sub: ENEMY_MAP[e.f.id]?.name, t: 0, color: '#ff5f5f', dur: 2.4 };
+        this.banner = { text: 'ボスが あらわれた！', sub: ENEMY_MAP[e.f.id]?.name, t: 0, color: '#ff5f5f', dur: 2.6, boss: e.f.id };
+        fx.add({ kind: 'ring', x: e.f.x, y: 0, max: 0.8, size: 300, color: '#c9a070' });
+        fx.add({ kind: 'text', x: e.f.x - 40, y: -140, vy: -10, max: 1.4, size: 34, color: '#ff4040', stroke: '#fff', text: 'ドーン！' });
         audio.say('ボスが きたぞ！');
         audio.sfx('boss');
         this.userCamT = 0;
@@ -410,6 +413,11 @@ export class BattleScene implements Scene {
         }
         break;
       case 'spawn':
+        if (e.f.side === 1 && e.f.s.thief && !this.thiefWarned) {
+          this.thiefWarned = true;
+          this.banner = { text: 'いもどろぼうが きた！', sub: 'おしろの ちかくで やっつけよう！', t: 0, color: '#ff7a7a', dur: 2.4 };
+          audio.say('どろぼうだ！');
+        }
         if (e.f.side === 1) {
           const seen = this.app.save.seen;
           if (!seen[e.f.id]) {
@@ -462,7 +470,7 @@ export class BattleScene implements Scene {
     if (!portrait) {
       const bottomH = clamp(h * 0.34, 96, 190);
       const field = { x: 0, y: 0, w, h: h - bottomH };
-      const scale = Math.min(field.h / 400, w / 560);
+      const scale = Math.min(field.h / 345, w / 520);
       const groundY = field.y + field.h - 48 * scale;
       const by = h - bottomH + 6;
       const sideW = clamp(w * 0.14, 84, 150);
@@ -510,7 +518,7 @@ export class BattleScene implements Scene {
   }
 
   private laneY(lane: number) {
-    return lane * 16 - 6;
+    return lane * 22 - 8;
   }
 
   // ---------- render ----------
@@ -545,7 +553,7 @@ export class BattleScene implements Scene {
     ctx.save();
     ctx.translate(toX(b.length), L.groundY);
     ctx.scale(s, s);
-    drawEnemyBase(ctx, eFrac, this.t, b.eBase.hitT, b.stage.world, eDestroyed);
+    drawEnemyBase(ctx, eFrac, this.t, b.eBase.hitT, b.stage.id === 36 ? 3 : b.stage.world, eDestroyed);
     ctx.restore();
     // base HP labels
     const lblSize = clamp(15 * s * 1.4, 11, 18);
@@ -983,13 +991,38 @@ export class BattleScene implements Scene {
     const appear = easeOutBack(Math.min(1, bn.t / 0.35));
     const alpha = k > 0.8 ? (1 - k) / 0.2 : 1;
     const cy = L.field.y + L.field.h * 0.38;
+    if (bn.boss) {
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.45;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(L.field.x, L.field.y, L.field.w, L.field.h);
+      ctx.globalAlpha = alpha;
+      const slide = (1 - Math.min(1, bn.t / 0.3)) * w;
+      ctx.translate(-slide, 0);
+      ctx.fillStyle = '#7a0a0a';
+      ctx.fillRect(0, cy - 56, w, 112);
+      ctx.fillStyle = '#c0201a';
+      for (let x = -120; x < w + 120; x += 60) {
+        ctx.beginPath();
+        ctx.moveTo(x + ((bn.t * 120) % 60), cy - 56);
+        ctx.lineTo(x + 30 + ((bn.t * 120) % 60), cy - 56);
+        ctx.lineTo(x - 30 + ((bn.t * 120) % 60), cy + 56);
+        ctx.lineTo(x - 60 + ((bn.t * 120) % 60), cy + 56);
+        ctx.fill();
+      }
+      const ps = 100;
+      portrait(ctx, bn.boss, w * 0.16 + Math.sin(this.t * 40) * 3, cy, ps, this.t * 2, 1, 'attack');
+      ctx.restore();
+    }
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.fillRect(0, cy - 44, w, 88);
-    ctx.translate(w / 2, cy - 6);
+    if (!bn.boss) {
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(0, cy - 44, w, 88);
+    }
+    ctx.translate(w / 2 + (bn.boss ? w * 0.08 : 0), cy - 6);
     ctx.scale(appear, appear);
-    const size = clamp(w * 0.08, 26, 54);
+    const size = clamp(Math.min(w * 0.08, L.field.h * 0.16), 22, 54);
     text(ctx, bn.text, 0, 0, size, { color: bn.color, lw: size * 0.25 });
     if (bn.sub) text(ctx, bn.sub, 0, size * 0.85, size * 0.45, { color: '#fff' });
     ctx.restore();

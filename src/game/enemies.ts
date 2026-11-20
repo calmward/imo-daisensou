@@ -2,15 +2,15 @@ import type { EnemyDef } from './types';
 
 export const ENEMIES: EnemyDef[] = [
   { id: 'ari', name: 'ありんこ', desc: 'ちいさな あり。むれで やってくる。', traits: ['bug'], reward: 30,
-    hp: 90, atk: 10, range: 100, speed: 40, atkInterval: 1.2, foreswing: 0.25, kb: 2, area: false, width: 34, size: 0.7 },
+    hp: 90, atk: 10, range: 100, speed: 40, atkInterval: 1.2, foreswing: 0.25, kb: 2, area: false, width: 34, size: 0.85 },
   { id: 'nezumi', name: 'ネズミ', desc: 'すばしっこい ネズミ。', traits: ['beast'], reward: 50,
-    hp: 140, atk: 16, range: 100, speed: 85, atkInterval: 0.9, foreswing: 0.2, kb: 2, area: false, width: 36, size: 0.75 },
+    hp: 140, atk: 16, range: 100, speed: 85, atkInterval: 0.9, foreswing: 0.2, kb: 2, area: false, width: 36, size: 0.88 },
   { id: 'kemushi', name: 'けむし', desc: 'のろのろ だけど タフな けむし。', traits: ['bug'], reward: 80,
     hp: 420, atk: 14, range: 100, speed: 22, atkInterval: 2.0, foreswing: 0.4, kb: 2, area: false, width: 60, size: 0.9 },
   { id: 'karasu', name: 'カラス', desc: 'いもを ねらう くろい とり。', traits: ['bird'], reward: 120,
     hp: 260, atk: 34, range: 130, speed: 70, atkInterval: 1.4, foreswing: 0.3, kb: 3, area: false, width: 46, size: 0.95 },
   { id: 'hachi', name: 'ハチ', desc: 'とおくから はりを とばす。', traits: ['bug'], reward: 140,
-    hp: 230, atk: 38, range: 210, speed: 60, atkInterval: 1.5, foreswing: 0.3, kb: 3, area: false, width: 40, size: 0.8 },
+    hp: 230, atk: 38, range: 210, speed: 60, atkInterval: 1.5, foreswing: 0.3, kb: 3, area: false, width: 40, size: 0.92 },
   { id: 'mogura', name: 'モグラ', desc: 'じめんに もぐって うしろに まわりこむ！', traits: ['beast'], reward: 220,
     hp: 650, atk: 55, range: 110, speed: 45, atkInterval: 1.8, foreswing: 0.35, kb: 2, area: false, width: 52, size: 1.0, burrow: 260 },
   { id: 'katatsumuri', name: 'カタツムリ', desc: 'からが かたい。とっても おそい。', traits: ['bug'], reward: 300,

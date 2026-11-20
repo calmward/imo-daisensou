@@ -187,15 +187,8 @@ export function drawPlayerBase(ctx: Ctx, hpFrac: number, t: number, hitT: number
   ctx.restore();
 }
 
-const ENEMY_BASE_COLORS = [
-  { body: ['#9a7a5a', '#5a3a22'], roof: '#3a2a1a' },
-  { body: ['#7a5a3a', '#3a2412'], roof: '#2a5a2a' },
-  { body: ['#9a90a8', '#5a506a'], roof: '#3a2a4a' },
-];
-
-/** Enemy fortress — a spiky stump tower. Base at (0,0), extends right. */
-export function drawEnemyBase(ctx: Ctx, hpFrac: number, t: number, hitT: number, world: number, destroyed: number) {
-  const c = ENEMY_BASE_COLORS[world % 3];
+/** Enemy fortress with a face. Base at (0,0), extends right. kind: 0 anthill, 1 crow tree, 2 rock den, 3 final palace */
+export function drawEnemyBase(ctx: Ctx, hpFrac: number, t: number, hitT: number, kind: number, destroyed: number) {
   ctx.save();
   if (hitT > 0) ctx.translate(Math.sin(t * 90) * 3, 0);
   if (destroyed > 0) {
@@ -203,68 +196,167 @@ export function drawEnemyBase(ctx: Ctx, hpFrac: number, t: number, hitT: number,
     ctx.rotate(destroyed * 0.15);
     ctx.globalAlpha = Math.max(0, 1 - destroyed * 0.5);
   }
-  ellipse(ctx, 70, 0, 90, 22);
+  const worried = hpFrac < 0.4 || hitT > 0;
+  ellipse(ctx, 70, 0, 95, 22);
   fillStroke(ctx, '#5a3a22', 3);
-  ctx.beginPath();
-  ctx.moveTo(24, 0);
-  ctx.lineTo(30, -150);
-  ctx.lineTo(110, -150);
-  ctx.lineTo(116, 0);
-  ctx.closePath();
-  const g = ctx.createLinearGradient(24, 0, 116, 0);
-  g.addColorStop(0, c.body[0]);
-  g.addColorStop(1, c.body[1]);
-  fillStroke(ctx, g, 4);
-  // wood rings / stones
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-  ctx.lineWidth = 3;
-  for (let i = 0; i < 5; i++) {
+  let faceY = -95;
+  if (kind === 0) {
+    // giant anthill
     ctx.beginPath();
-    ctx.moveTo(28, -20 - i * 28);
-    ctx.lineTo(112, -24 - i * 28);
+    ctx.moveTo(-10, 0);
+    ctx.quadraticCurveTo(10, -150, 70, -175);
+    ctx.quadraticCurveTo(130, -150, 150, 0);
+    ctx.closePath();
+    fillStroke(ctx, radial(ctx, 50, -120, 140, '#c8925a', '#7a4a22'), 4);
+    ctx.fillStyle = '#3a2412';
+    for (const [x, y, r] of [[40, -40, 9], [105, -60, 8], [70, -140, 7], [30, -100, 6]]) {
+      ellipse(ctx, x, y, r, r * 0.8);
+      ctx.fill();
+    }
+    // ant guard antennae on top
+    ctx.strokeStyle = OUT;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(62, -172);
+    ctx.quadraticCurveTo(56, -195, 46, -198);
+    ctx.moveTo(78, -172);
+    ctx.quadraticCurveTo(84, -195, 94, -198);
+    ctx.stroke();
+    faceY = -100;
+  } else if (kind === 1) {
+    // angry tree with a crow nest
+    ctx.beginPath();
+    ctx.moveTo(25, 0);
+    ctx.lineTo(35, -150);
+    ctx.lineTo(105, -150);
+    ctx.lineTo(118, 0);
+    ctx.closePath();
+    fillStroke(ctx, radial(ctx, 60, -80, 100, '#8a5a32', '#4a2a12'), 4);
+    for (const [x, y, r] of [[70, -185, 70], [20, -160, 40], [125, -160, 42]]) {
+      ellipse(ctx, x, y, r, r * 0.6);
+      fillStroke(ctx, '#2f7a3a', 3, '#1a3a1a');
+    }
+    // nest
+    ellipse(ctx, 70, -222, 30, 12);
+    fillStroke(ctx, '#a07a4a', 3);
+    ctx.save();
+    ctx.translate(70, -238);
+    ctx.scale(0.7, 0.7);
+    ellipse(ctx, 0, 0, 14, 12);
+    fillStroke(ctx, '#23233a', 2);
+    ctx.beginPath();
+    ctx.moveTo(-12, -2);
+    ctx.lineTo(-24, 2);
+    ctx.lineTo(-12, 5);
+    fillStroke(ctx, '#ffb340', 2);
+    ctx.restore();
+    faceY = -85;
+  } else if (kind === 2) {
+    // rock den
+    ctx.beginPath();
+    ctx.moveTo(-5, 0);
+    ctx.lineTo(10, -110);
+    ctx.lineTo(45, -165);
+    ctx.lineTo(100, -160);
+    ctx.lineTo(135, -100);
+    ctx.lineTo(148, 0);
+    ctx.closePath();
+    fillStroke(ctx, radial(ctx, 60, -110, 140, '#a8a0b8', '#5a506a'), 4);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.moveTo(45, -165);
+    ctx.lineTo(100, -160);
+    ctx.lineTo(90, -145);
+    ctx.lineTo(70, -152);
+    ctx.lineTo(52, -142);
+    ctx.closePath();
+    ctx.fill();
+    // cave mouth
+    ctx.fillStyle = '#1a1020';
+    ctx.beginPath();
+    ctx.ellipse(70, -5, 30, 34, 0, Math.PI, 0);
+    ctx.fill();
+    faceY = -105;
+  } else {
+    // イモクイ大王の宮殿
+    ctx.beginPath();
+    ctx.rect(15, -170, 110, 170);
+    fillStroke(ctx, radial(ctx, 70, -100, 120, '#9a6ac8', '#4a2a6a'), 4);
+    for (const x of [15, 125]) {
+      ctx.beginPath();
+      ctx.rect(x - 16, -200, 32, 200);
+      fillStroke(ctx, '#5a3a7a', 3);
+      ctx.beginPath();
+      ctx.moveTo(x - 20, -200);
+      ctx.lineTo(x, -235);
+      ctx.lineTo(x + 20, -200);
+      ctx.closePath();
+      fillStroke(ctx, '#e8312f', 3);
+    }
+    // big fork & knife emblem
+    ctx.strokeStyle = '#ffd23a';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(55, -160);
+    ctx.lineTo(55, -130);
+    ctx.moveTo(85, -160);
+    ctx.lineTo(85, -130);
+    ctx.stroke();
+    faceY = -90;
+  }
+  // the face
+  const ey = faceY;
+  for (const [ex, d] of [[48, 1], [92, -1]] as [number, number][]) {
+    ellipse(ctx, ex, ey, 13, 15);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = OUT;
+    ctx.stroke();
+    ellipse(ctx, ex - 4, ey + 3, 7, 8);
+    ctx.fillStyle = kind === 3 ? '#e8312f' : '#2a1a0e';
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (worried) {
+      ctx.moveTo(ex - 14, ey - 16 - d * 0);
+      ctx.lineTo(ex + 14, ey - 24);
+      ctx.moveTo(ex - 14 * d, ey - 24);
+    } else {
+      ctx.moveTo(ex - 15 * d, ey - 26);
+      ctx.lineTo(ex + 13 * d, ey - 16);
+    }
     ctx.stroke();
   }
-  // spiky roof
+  // mouth with fangs / worried wobble
   ctx.beginPath();
-  ctx.moveTo(18, -146);
-  for (let i = 0; i <= 6; i++) ctx.lineTo(18 + i * 17, i % 2 ? -186 : -158);
-  ctx.lineTo(122, -146);
-  ctx.closePath();
-  fillStroke(ctx, c.roof, 3);
-  // angry face window
-  ctx.fillStyle = '#ffe14d';
-  ctx.beginPath();
-  ctx.moveTo(44, -112);
-  ctx.lineTo(62, -104);
-  ctx.lineTo(44, -98);
-  ctx.closePath();
-  ctx.moveTo(96, -112);
-  ctx.lineTo(78, -104);
-  ctx.lineTo(96, -98);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = '#2a1a0e';
-  ctx.beginPath();
-  ctx.moveTo(46, -72);
-  for (let i = 0; i <= 6; i++) ctx.lineTo(46 + i * 8, i % 2 ? -80 : -64);
-  ctx.lineTo(94, -56);
-  ctx.lineTo(46, -56);
-  ctx.closePath();
-  ctx.fill();
-  // flag (skull-ish bug flag)
-  ctx.strokeStyle = OUT;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(70, -180);
-  ctx.lineTo(70, -230);
-  ctx.stroke();
-  const wv = Math.sin(t * 5 + 1) * 4;
-  ctx.beginPath();
-  ctx.moveTo(70, -230);
-  ctx.quadraticCurveTo(92, -226 + wv, 110, -222);
-  ctx.lineTo(70, -206);
-  ctx.closePath();
-  fillStroke(ctx, '#5a2a6a', 2);
+  if (worried) {
+    ctx.moveTo(52, ey + 40);
+    for (let i = 0; i <= 6; i++) ctx.lineTo(52 + i * 6, ey + 36 + (i % 2) * 6);
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    // sweat
+    ctx.fillStyle = '#9be8ff';
+    ellipse(ctx, 118, ey - 10 + ((t * 30) % 12), 5, 8);
+    ctx.fill();
+  } else {
+    ctx.moveTo(46, ey + 30);
+    ctx.quadraticCurveTo(70, ey + 52, 94, ey + 30);
+    ctx.closePath();
+    ctx.fillStyle = '#5a1a1a';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    for (const fx of [54, 80]) {
+      ctx.beginPath();
+      ctx.moveTo(fx, ey + 32);
+      ctx.lineTo(fx + 4, ey + 42);
+      ctx.lineTo(fx + 8, ey + 33);
+      ctx.fill();
+    }
+  }
   drawCracks(ctx, 70, -80, 44, hpFrac);
   ctx.restore();
 }
