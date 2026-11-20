@@ -5,6 +5,7 @@ import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
 import { clamp, drawButton, easeOutBack, panel, rr, STYLES, text, type Rect } from '../core/ui';
 import { ENEMY_MAP } from '../game/enemies';
+import { ALLIES } from '../game/allies';
 import { MUSIC } from '../game/music';
 import { highestUnlocked, isCleared } from '../game/save';
 import { STAGES, STAR_NAMES, ticketReward, WORLD_NAMES } from '../game/stages';
@@ -355,6 +356,20 @@ export class MapScene implements Scene {
       portrait(ctx, id, cx, cy, es * 0.8, this.t + i, 1);
       if (ENEMY_MAP[id].boss) text(ctx, 'ボス', cx, cy - es * 0.42, 11, { color: '#ff5f5f' });
     });
+    // recommended owned counters
+    const traits = new Set(ids.flatMap((id) => ENEMY_MAP[id].traits ?? []));
+    const recs = ALLIES.filter((a) => save.units[a.id] && a.strongVs?.some((t) => traits.has(t))).slice(0, 3);
+    if (recs.length) {
+      const rx = px + pw - 16 - recs.length * 40;
+      text(ctx, 'おすすめ', rx - 6, py + fs * 3.7, fs * 0.55, { align: 'right', color: '#c0392b', stroke: 'none' });
+      recs.forEach((a, i) => {
+        const cx = rx + 20 + i * 40;
+        ctx.fillStyle = 'rgba(255,200,60,0.35)';
+        rr(ctx, cx - 18, py + fs * 3.7 - 20, 36, 40, 8);
+        ctx.fill();
+        portrait(ctx, a.id, cx, py + fs * 3.7, 34, this.t + i);
+      });
+    }
     let y = py + fs * 3.9 + es * 1.35;
     const cleared = isCleared(save, st.id);
     drawGoldIcon(ctx, px + 30, y, fs * 0.45);
