@@ -78,7 +78,7 @@ export const KB_DIST = 110;
 export const ATTACK_BACKSWING = 0.3;
 export const MAX_ALLIES = 40;
 export const WALLET_MAX_LV = 8;
-export const RAGE_START = 150;
+export const RAGE_START = 110;
 
 export function walletRate(lv: number) {
   return 30 + 12 * (lv - 1);

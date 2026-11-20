@@ -310,6 +310,10 @@ export class MapScene implements Scene {
       }
       if (!this.popup && !this.daily) ui.add({ id: 'fest', r: fr, onTap: () => { audio.sfx('whistle'); this.app.go('battle', BONUS_ID); } });
     }
+    if (!this.popup && !this.daily && claimable(save).length && !(!save.tut.power && isCleared(save, 2) && save.gold >= 150)) {
+      const mr = { x: (w - totalW) / 2 + 2 * (bw + 10), y: by + 10, w: bw, h: botH - 20 };
+      text(ctx, 'もらえるよ！', mr.x + mr.w / 2, mr.y - 14 - Math.abs(Math.sin(this.t * 4)) * 4, 14, { color: '#fff36a', stroke: '#1d5aa3' });
+    }
     if (this.popup) this.drawPopup(ctx, w, h);
     if (this.daily) this.drawDaily(ctx, w, h);
   }

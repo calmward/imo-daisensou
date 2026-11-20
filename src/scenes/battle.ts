@@ -666,7 +666,7 @@ export class BattleScene implements Scene {
     this.drawControls(ctx, L);
     this.drawBanner(ctx, w, h, L);
     if (this.tut !== 'done' && !this.paused) this.drawTutorial(ctx, L, w, h);
-    else if (!this.paused && !b.result && b.walletLv < 3 && b.time > 20 && b.canUpgradeWallet() && this.app.save.stats.wins < 6) {
+    else if (!this.paused && !b.result && b.walletLv < 3 && b.time > 20 && b.canUpgradeWallet() && this.app.save.stats.wins < 12 && b.time > 8) {
       // gentle reminder for kids who forget the wallet
       drawHand(ctx, L.wallet.x + L.wallet.w * 0.6, L.wallet.y + L.wallet.h * 0.45 + Math.abs(Math.sin(this.t * 5)) * 10, 22);
     }
@@ -1318,7 +1318,7 @@ export class BattleScene implements Scene {
         void 0;
         text(ctx, `ニガテな てき: ${ed.name}`, px + pw * 0.3, y + fs * 0.3, fs * 0.8, { align: 'left', color: '#ff8080', maxW: pw * 0.66 });
         wrapText(ctx, counterHint(foe, this.app.save.units), px + pw * 0.63, y + fs * 1.6, pw * 0.64, fs * 0.62, '#3a3a6a');
-      } else if (room > fs * 1.6) wrapText(ctx, 'パワーアップで なかまを つよくしよう！', w / 2, y + 4, pw - 30, fs * 0.8, '#3a3a6a');
+      } else if (room > fs * 1.6) wrapText(ctx, '「つよくする」で なかまを つよくしよう！', w / 2, y + 4, pw - 30, fs * 0.8, '#3a3a6a');
     }
     // buttons
     const ui = this.app.ui;
@@ -1331,7 +1331,7 @@ export class BattleScene implements Scene {
       const armed = this.resultT > 3.6; // ignore leftover spam-taps right after the panel appears
       if (!armed) ctx.globalAlpha = 0.5;
       const o1 = drawButton(ctx, b1, STYLES.blue, ui.isPressed('r1'));
-      text(ctx, win ? 'マップへ' : 'パワーアップ', b1.x + bw / 2, b1.y + o1 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
+      text(ctx, win ? 'マップへ' : 'つよくする', b1.x + bw / 2, b1.y + o1 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
       if (armed) ui.add({ id: 'r1', r: b1, onTap: () => this.app.go(win ? 'map' : 'power') });
       const o2 = drawButton(ctx, b2, next ? STYLES.orange : STYLES.green, ui.isPressed('r2'));
       text(ctx, next ? 'つぎの ステージ' : 'もういちど', b2.x + bw / 2, b2.y + o2 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
@@ -1434,7 +1434,7 @@ export function counterHint(enemyId: string, owned: Record<string, number>): str
   if (e.barrier) return 'こうらの てきは つよい いちげきで わろう！ フライドポテトや ながいもが とくい！';
   if (e.metal) return 'かたい てきは クリティカルで たおそう！「いもけんぴ」や しんかした いもが とくい！';
   if (e.burrow) return 'うしろに まわりこんで くるよ。うしろにも なかまを だそう！';
-  return 'パワーアップで なかまを つよくしよう！';
+  return '「つよくする」で なかまを つよくしよう！';
 }
 
 function drawChest(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, t: number) {

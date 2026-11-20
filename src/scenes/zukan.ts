@@ -99,7 +99,7 @@ export class ZukanScene implements Scene {
         ctx.fill();
         text(ctx, label, tx, py + ph * 0.66 + 12, 14);
       });
-      wrapText(ctx, e.desc, w / 2, py + ph * 0.83, pw - 30, 16, '#3a3a2a');
+      wrapText(ctx, e.desc, w / 2, py + ph * 0.86, pw - 30, 15, '#3a3a2a');
     }
   }
 }
