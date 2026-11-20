@@ -245,6 +245,14 @@ export class BattleScene implements Scene {
     const fx = this.fx;
     const r = Math.random;
     switch (e.type) {
+      case 'swing': {
+        const f = e.f;
+        if (f.s.range <= 200) {
+          const dir = f.side === 0 ? 1 : -1;
+          fx.add({ kind: 'smear', x: f.x + dir * 14, y: -30 * f.size + this.laneY(f.lane), max: 0.18, size: 26 * f.size, color: f.side === 0 ? '#fffbe0' : '#ffd0d0', rot: dir });
+        }
+        break;
+      }
       case 'hit': {
         const y = -26 - e.lane * 0;
         const ly = this.laneY(e.lane);
@@ -433,8 +441,8 @@ export class BattleScene implements Scene {
       };
     }
     const topH = clamp(h * 0.07, 48, 64);
-    const scale = Math.min(w / 400, (h * 0.38) / 310);
-    const fh = Math.min(h * 0.42, 310 * scale);
+    const scale = Math.min(w / 370, (h * 0.42) / 300);
+    const fh = Math.min(h * 0.46, 300 * scale);
     const field = { x: 0, y: topH, w, h: fh };
     const groundY = field.y + field.h - 48 * scale;
     const rest = h - topH - fh;

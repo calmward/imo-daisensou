@@ -2,7 +2,7 @@
 import { ellipse, star } from '../art/kit';
 import { font } from '../core/ui';
 
-export type PKind = 'spark' | 'puff' | 'text' | 'coin' | 'debris' | 'soul' | 'ring' | 'confetti' | 'dirt' | 'flash';
+export type PKind = 'smear' | 'spark' | 'puff' | 'text' | 'coin' | 'debris' | 'soul' | 'ring' | 'confetti' | 'dirt' | 'flash';
 
 export interface Particle {
   kind: PKind;
@@ -55,6 +55,19 @@ export class FX {
           ctx.rotate(p.rot);
           const s = p.size * scale * (0.6 + k * 0.8);
           star(ctx, 0, 0, s, 4, 0.35);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+          break;
+        }
+        case 'smear': {
+          ctx.globalAlpha = (1 - k) * 0.9;
+          ctx.translate(x, y);
+          ctx.scale(p.rot, 1);
+          const R = p.size * scale;
+          ctx.beginPath();
+          ctx.arc(0, 0, R, -1.2 + k * 0.8, 1.0 + k * 0.8);
+          ctx.arc(-R * 0.25, 0, R * 0.8, 1.0 + k * 0.8, -1.2 + k * 0.8, true);
+          ctx.closePath();
           ctx.fillStyle = p.color;
           ctx.fill();
           break;
