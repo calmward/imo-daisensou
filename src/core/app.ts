@@ -1,6 +1,6 @@
 import { audio } from './audio';
 import { UI } from './ui';
-import { loadSave, writeSave, type SaveData } from '../game/save';
+import { loadSave, newSave, writeSave, type SaveData } from '../game/save';
 
 export interface Scene {
   name: string;
@@ -102,6 +102,11 @@ export class App {
     }
     this.next = s;
     this.fadeDir = 1;
+  }
+
+  resetSave() {
+    this.save = newSave();
+    this.persist();
   }
 
   persist() {

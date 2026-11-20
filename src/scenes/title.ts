@@ -2,7 +2,7 @@ import { drawChar } from '../art/index';
 import { drawBackground } from '../art/scenery';
 import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
-import { clamp, drawButton, STYLES, text } from '../core/ui';
+import { clamp, drawButton, panel, STYLES, text } from '../core/ui';
 import { ALLIES } from '../game/allies';
 import { MUSIC } from '../game/music';
 
@@ -90,5 +90,46 @@ export class TitleScene implements Scene {
       this.app.go('map');
     } });
     text(ctx, 'v' + (import.meta.env?.VITE_VERSION ?? '1.0'), w - 8, h - 10, 11, { align: 'right', color: '#fff', stroke: 'rgba(0,0,0,0.4)' });
+    // settings
+    const sr = { x: 10, y: h - 58, w: 120, h: 48 };
+    const so = drawButton(ctx, sr, STYLES.cream, ui.isPressed('settings'), 14);
+    text(ctx, '⚙ せってい', sr.x + sr.w / 2, sr.y + so + 21, 16, { color: '#5a3a12', stroke: 'none' });
+    ui.add({ id: 'settings', r: sr, onTap: () => { this.settings = true; this.confirm = 0; } });
+    if (this.settings) this.drawSettings(ctx, w, h);
+  }
+
+  settings = false;
+  confirm = 0;
+  private drawSettings(ctx: CanvasRenderingContext2D, w: number, h: number) {
+    const ui = this.app.ui;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(0, 0, w, h);
+    ui.add({ id: 'setbg', r: { x: 0, y: 0, w, h }, sound: false, onTap: () => (this.settings = false) });
+    const pw = Math.min(340, w - 30),
+      ph = Math.min(300, h - 30);
+    const px = (w - pw) / 2,
+      py = (h - ph) / 2;
+    panel(ctx, { x: px, y: py, w: pw, h: ph });
+    ui.add({ id: 'setpanel', r: { x: px, y: py, w: pw, h: ph }, sound: false });
+    text(ctx, 'せってい', w / 2, py + 30, 24, { color: '#ffd23a' });
+    const bh = Math.min(54, ph * 0.18);
+    const items: [string, string, keyof typeof STYLES, () => void][] = [
+      ['snd', audio.muted ? 'おと: オフ' : 'おと: オン', 'green', () => { audio.setMuted(!audio.muted); this.app.save.muted = audio.muted; this.app.persist(); }],
+      ['reset', ['データを けす', 'ほんとうに けす？', 'さいごの かくにん！'][this.confirm], 'red', () => {
+        if (this.confirm < 2) this.confirm++;
+        else {
+          this.app.resetSave();
+          this.settings = false;
+          this.confirm = 0;
+        }
+      }],
+      ['close', 'とじる', 'cream', () => (this.settings = false)],
+    ];
+    items.forEach(([id, label, st, fn], i) => {
+      const r = { x: px + pw * 0.12, y: py + 60 + i * (bh + 12), w: pw * 0.76, h: bh };
+      const off = drawButton(ctx, r, STYLES[st], ui.isPressed(id));
+      text(ctx, label, r.x + r.w / 2, r.y + off + (bh - 6) / 2, bh * 0.36, { color: st === 'cream' ? '#5a3a12' : '#fff', stroke: st === 'cream' ? 'none' : undefined });
+      ui.add({ id, r, onTap: fn });
+    });
   }
 }
