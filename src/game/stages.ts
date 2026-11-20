@@ -9,7 +9,8 @@ function e(enemy: string, start: number, interval: [number, number] | number, co
   return { enemy, start, interval: iv, count, mult, trigger };
 }
 function boss(enemy: string, mult: number, trigger = 0.99, start = 1): SpawnEntry {
-  return { enemy, start, interval: [999, 999], count: 1, mult, trigger, boss: true };
+  // bosses are deliberately much beefier than their escorts
+  return { enemy, start, interval: [999, 999], count: 1, mult: Math.round(mult * 1.7), trigger, boss: true };
 }
 
 interface Raw {
