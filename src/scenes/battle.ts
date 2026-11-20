@@ -1062,9 +1062,16 @@ export class BattleScene implements Scene {
         ctx.save();
         ctx.translate(w / 2, y + 2);
         ctx.scale(pulse, pulse);
-        text(ctx, `あたらしい なかま！「${ALLY_MAP[r.unlocked].name}」`, 0, 0, fs * 0.9, { color: '#7dff7d', maxW: pw - 20 });
+        text(ctx, `あたらしい なかま！「${ALLY_MAP[r.unlocked].name}」`, fs * 1.2, 0, fs * 0.85, { color: '#7dff7d', maxW: pw - fs * 4 });
         ctx.restore();
-        y += fs * 1.4;
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,240,120,0.6)';
+        ctx.beginPath();
+        ctx.arc(px + fs * 1.6, y - fs * 0.2, fs * 1.3 + Math.sin(this.t * 6) * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        portrait(ctx, r.unlocked, px + fs * 1.6, y - fs * 0.3, fs * 2.4, this.t * 2, 0, 'walk');
+        y += fs * 1.6;
       }
       if (r.chest && this.resultT > 3.9) {
         const k2 = easeOutBack(Math.min(1, (this.resultT - 3.9) / 0.4));
