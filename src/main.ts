@@ -21,7 +21,8 @@ app.start();
 (window as any).__app = app; // handy for automated tests
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-  });
+  // the game may start after 'load' already fired (password-locked build), so check readyState
+  const reg = () => navigator.serviceWorker.register('./sw.js').catch(() => {});
+  if (document.readyState === 'complete') reg();
+  else window.addEventListener('load', reg);
 }

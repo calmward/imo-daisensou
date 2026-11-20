@@ -25,4 +25,14 @@ npm run build    # dist/ に出力
 - `src/core/audio.ts` … 効果音・BGM を Web Audio API で生成
 
 ### GitHub Pages の初回設定
-リポジトリの Settings → Pages → Source を「GitHub Actions」にしてください（初回のみ）。
+1. リポジトリの Settings → Pages → Source を「GitHub Actions」にする（初回のみ）
+2. **あいことば（パスワード）を設定**: Settings → Secrets and variables → Actions → New repository secret
+   - Name: `GAME_PASSWORD` / Secret: 好きなあいことば
+   - これが無いとデプロイは止まります（パスワード無しで公開されないように）
+
+### あいことば（パスワード）のしくみ
+- デプロイ時にゲーム本体のプログラムを、あいことばで暗号化（AES-GCM / PBKDF2）します（`scripts/lock.mjs`）。あいことばを知らない人はダウンロードしても中身を読めず、動かせません。
+- 一度入れた端末では覚えておくので、子どもが毎回入力する必要はありません（ブラウザのデータを消すと再入力）。
+- あいことばを変えたいときは Secret を変えて、もう一度デプロイ（`main` に push するか Actions から手動実行）。
+- 推測されにくいように、ある程度長い言葉にしてください（例: 「いもいもパーティー2026」）。短い数字だけだと、暗号ファイルを持ち出されたときに総当たりで破られる可能性があります。
+- 手元で試す: `npm run build && GAME_PASSWORD=ためし npm run lock && npm run preview`

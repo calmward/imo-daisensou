@@ -9,10 +9,11 @@
 **https://calmward.github.io/imo-daisensou/**
 
 ⚠️ 公開には1回だけ作業が必要です: この作業環境は `main` へ直接 push できない設定だったため、成果はすべて作業ブランチ **`claude/relaxed-bardeen-hw3oxi`** にあります。
-1. GitHub でこのブランチを `main` にマージ（PR を作ってマージ、または `git merge`）
+1. リポジトリの Settings → Secrets and variables → Actions で、Secret **`GAME_PASSWORD`** に「あいことば」を登録（**これが無いとデプロイが止まります**）
 2. リポジトリの Settings → Pages → Source を **GitHub Actions** に（初回のみ）
+3. GitHub でこのブランチを `main` にマージ（PR を作ってマージ、または `git merge`）
 → `main` への push ごとに GitHub Actions がテスト→ビルド→Pages へ自動デプロイします（`.github/workflows/deploy.yml`）。
-Android Chrome で開いたら、メニューの「ホーム画面に追加」でアプリのように全画面・オフラインで遊べます。
+最初に「あいことばを いれてね」と出るので入力（その端末では次から不要）。Android Chrome で開いたら、メニューの「ホーム画面に追加」でアプリのように全画面・オフラインで遊べます。
 
 ## 息子さんに最初に遊んでほしいポイント
 1. **ステージ1のチュートリアル**（指マークの通りにタップするだけ）→ じゃがいもを出す・おさいふ・いもビーム

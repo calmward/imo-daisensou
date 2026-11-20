@@ -26,6 +26,11 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - name: Lock the game with a password (secret GAME_PASSWORD)
+        run: node scripts/lock.mjs
+        env:
+          GAME_PASSWORD: ${{ secrets.GAME_PASSWORD }}
+          REQUIRE_LOCK: '1'
       - uses: actions/configure-pages@v5
         with:
           enablement: true
