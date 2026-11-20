@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#ff8a1f" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="description" content="いもたちが たたかう よこスクロール じんとり バトル！" />
+    <title>いも大戦争</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #5a3a1e; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+      canvas { display: block; touch-action: none; }
+      #boot { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; color: #ffe14d; font: 900 28px sans-serif; }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

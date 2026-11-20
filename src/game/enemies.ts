@@ -1,0 +1,42 @@
+import type { EnemyDef } from './types';
+
+export const ENEMIES: EnemyDef[] = [
+  { id: 'ari', name: 'ありんこ', desc: 'ちいさな あり。むれで やってくる。', traits: ['bug'], reward: 15,
+    hp: 90, atk: 10, range: 100, speed: 40, atkInterval: 1.2, foreswing: 0.25, kb: 2, area: false, width: 34, size: 0.7 },
+  { id: 'nezumi', name: 'ネズミ', desc: 'すばしっこい ネズミ。', traits: ['beast'], reward: 25,
+    hp: 140, atk: 16, range: 100, speed: 85, atkInterval: 0.9, foreswing: 0.2, kb: 2, area: false, width: 36, size: 0.75 },
+  { id: 'kemushi', name: 'けむし', desc: 'のろのろ だけど タフな けむし。', traits: ['bug'], reward: 40,
+    hp: 420, atk: 14, range: 100, speed: 22, atkInterval: 2.0, foreswing: 0.4, kb: 2, area: false, width: 60, size: 0.9 },
+  { id: 'karasu', name: 'カラス', desc: 'いもを ねらう くろい とり。', traits: ['bird'], reward: 60,
+    hp: 260, atk: 34, range: 130, speed: 70, atkInterval: 1.4, foreswing: 0.3, kb: 3, area: false, width: 46, size: 0.95 },
+  { id: 'hachi', name: 'ハチ', desc: 'とおくから はりを とばす。', traits: ['bug'], reward: 70,
+    hp: 230, atk: 38, range: 210, speed: 60, atkInterval: 1.5, foreswing: 0.3, kb: 3, area: false, width: 40, size: 0.8 },
+  { id: 'mogura', name: 'モグラ', desc: 'じめんに もぐって うしろに まわりこむ！', traits: ['beast'], reward: 110,
+    hp: 650, atk: 55, range: 110, speed: 45, atkInterval: 1.8, foreswing: 0.35, kb: 2, area: false, width: 52, size: 1.0, burrow: 260 },
+  { id: 'katatsumuri', name: 'カタツムリ', desc: 'からが かたい。とっても おそい。', traits: ['bug'], reward: 150,
+    hp: 1600, atk: 30, range: 110, speed: 14, atkInterval: 2.5, foreswing: 0.5, kb: 1, area: false, width: 66, size: 1.0 },
+  { id: 'tanuki', name: 'タヌキ', desc: 'はらつづみで こうげき！', traits: ['beast'], reward: 150,
+    hp: 950, atk: 60, range: 140, speed: 50, atkInterval: 1.3, foreswing: 0.3, kb: 3, area: true, width: 58, size: 1.05 },
+  { id: 'kamakiri', name: 'カマキリ', desc: 'するどい カマで きりさく。クリティカルに ちゅうい！', traits: ['bug'], reward: 200,
+    hp: 1000, atk: 140, range: 160, speed: 55, atkInterval: 1.6, foreswing: 0.3, kb: 3, area: false, width: 56, size: 1.15, crit: 0.2 },
+  { id: 'hebi', name: 'ヘビ', desc: 'ながい からだで とおくまで かみつく。', traits: ['beast'], reward: 200,
+    hp: 850, atk: 90, range: 300, speed: 35, atkInterval: 2.5, foreswing: 0.5, kb: 2, area: true, width: 80, size: 1.0 },
+  { id: 'inoshishi', name: 'イノシシ', desc: 'もうれつ とっしん！ いもを ふっとばす。', traits: ['beast'], reward: 260,
+    hp: 1300, atk: 120, range: 130, speed: 75, atkInterval: 2.0, foreswing: 0.3, kb: 3, area: true, width: 72, size: 1.2,
+    effect: { kind: 'knock', chance: 0.3, dur: 0 } },
+  { id: 'fukurou', name: 'フクロウ', desc: 'ホーホー。にらまれると うごけなくなる。', traits: ['bird'], reward: 220,
+    hp: 900, atk: 70, range: 220, speed: 45, atkInterval: 2.2, foreswing: 0.4, kb: 3, area: false, width: 50, size: 1.0,
+    effect: { kind: 'freeze', chance: 0.3, dur: 1.5 } },
+  // ---- bosses ----
+  { id: 'kabuto', name: 'カブトムシ', desc: 'もりの つよい むし。つので まとめて ふっとばす！', traits: ['bug', 'boss'], reward: 500, boss: true,
+    hp: 5000, atk: 180, range: 160, speed: 30, atkInterval: 2.4, foreswing: 0.5, kb: 3, area: true, width: 90, size: 1.6, shockwave: true },
+  { id: 'okarasu', name: 'おおガラス', desc: 'そらの ボス。おおきな つばさで あばれる。', traits: ['bird', 'boss'], reward: 700, boss: true,
+    hp: 7500, atk: 230, range: 240, speed: 45, atkInterval: 2.6, foreswing: 0.5, kb: 3, area: true, width: 90, size: 1.8, shockwave: true },
+  { id: 'kuma', name: 'クマ', desc: 'やまの ぬし。とんでもない ちから！', traits: ['beast', 'boss'], reward: 900, boss: true,
+    hp: 14000, atk: 380, range: 170, speed: 30, atkInterval: 2.8, foreswing: 0.6, kb: 3, area: true, width: 100, size: 2.0, shockwave: true },
+  { id: 'daiou', name: 'イモクイ大王', desc: 'いもが だいすきな わるい 大王。ぜんぶの いもを たべようと している！', traits: ['beast', 'boss'], reward: 2000, boss: true,
+    hp: 40000, atk: 500, range: 260, speed: 25, atkInterval: 3.0, foreswing: 0.7, kb: 4, area: true, width: 120, size: 2.4, shockwave: true,
+    effect: { kind: 'freeze', chance: 0.25, dur: 1.5 } },
+];
+
+export const ENEMY_MAP: Record<string, EnemyDef> = Object.fromEntries(ENEMIES.map((e) => [e.id, e]));
