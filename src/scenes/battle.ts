@@ -59,6 +59,8 @@ export class BattleScene implements Scene {
   dragMini = false;
   beamReadyPlayed = false;
   lastMoney = 0;
+  wasReady: boolean[] = [];
+  readyPop: number[] = [];
 
   star = 1;
   constructor(private app: App, arg: number | { id: number; star?: number }) {
@@ -796,6 +798,17 @@ export class BattleScene implements Scene {
       const affordable = b.money >= slot.def.cost;
       const pressed = ui.isPressed('u' + i);
       const off = pressed ? 3 : 0;
+      if (ready && !this.wasReady[i]) this.readyPop[i] = 0;
+      this.wasReady[i] = ready;
+      const pop = this.readyPop[i] ?? 9;
+      this.readyPop[i] = pop + 1 / 60;
+      const bounce = pop < 0.3 ? Math.sin((pop / 0.3) * Math.PI) * 0.08 : 0;
+      ctx.save();
+      if (bounce) {
+        ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+        ctx.scale(1 + bounce, 1 + bounce);
+        ctx.translate(-(r.x + r.w / 2), -(r.y + r.h / 2));
+      }
       // card
       ctx.fillStyle = '#3a2410';
       rr(ctx, r.x, r.y + 3, r.w, r.h - 3, 10);
@@ -836,6 +849,7 @@ export class BattleScene implements Scene {
         ctx.fillStyle = '#7cc8ff';
         ctx.fillRect(r.x + 6, r.y + off + 5, (r.w - 12) * (1 - slot.cd / slot.def.cooldown), 5);
       }
+      ctx.restore();
       ui.add({ id: 'u' + i, r, onDown: () => this.tapUnit(i) });
     });
     // wallet
