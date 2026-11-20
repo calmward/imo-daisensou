@@ -53,7 +53,8 @@ export type BEvent =
   | { type: 'deny' }
   | { type: 'wallet' }
   | { type: 'rage' }
-  | { type: 'rush' };
+  | { type: 'rush' }
+  | { type: 'heal'; f: Fighter };
 
 export interface Slot {
   def: AllyDef;
@@ -317,6 +318,14 @@ export class Battle {
     const { list, base } = this.findTargets(f);
     if (!list.length && !base) return;
     this.events.push({ type: 'swing', f });
+    if (f.s.heal) {
+      const mine = f.side === 0 ? this.allies : this.enemies;
+      for (const a of mine) {
+        if (a.state === 'dead' || Math.abs(a.x - f.x) > f.s.range || a.hp >= a.maxHp) continue;
+        a.hp = Math.min(a.maxHp, a.hp + a.maxHp * f.s.heal);
+        this.events.push({ type: 'heal', f: a });
+      }
+    }
     for (const t of list) {
       let dmg = f.s.atk;
       if (hasAny(f.s.strongVs, t.s.traits)) dmg *= 1.8;

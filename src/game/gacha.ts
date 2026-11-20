@@ -6,8 +6,8 @@ export const GACHA_GOLD_COST = 1200;
 
 export const GACHA_POOL: Record<Rarity, string[]> = {
   N: [],
-  R: ['sweet', 'youkan', 'ninja', 'hash'],
-  SR: ['daigaku'],
+  R: ['sweet', 'youkan', 'ninja', 'hash', 'korokke', 'potesala'],
+  SR: ['daigaku', 'mash'],
   UR: ['king'],
 };
 

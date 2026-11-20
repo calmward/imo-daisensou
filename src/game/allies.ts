@@ -86,6 +86,22 @@ export const ALLIES: AllyDef[] = [
     cost: 260, cooldown: 6.0, hp: 1500, atk: 40, range: 120, speed: 45, atkInterval: 1.6, foreswing: 0.3, kb: 2, area: true, width: 54, size: 1.1, strongVs: ['beast'],
   },
   {
+    id: 'korokke', name: 'コロッケ', role: 'なげる', rarity: 'R', gacha: true,
+    desc: 'サクサク コロッケを とおくまで なげる！ まとめて あたるよ。',
+    cost: 420, cooldown: 10.0, hp: 380, atk: 130, range: 320, speed: 42, atkInterval: 2.6, foreswing: 0.5, kb: 3, area: true, width: 44, size: 1.0,
+  },
+  {
+    id: 'potesala', name: 'ポテトサラダ', role: 'かいふく', rarity: 'R', gacha: true,
+    desc: 'しゃきしゃき やさいで まわりの いもを げんきに する！',
+    cost: 400, cooldown: 12.0, hp: 900, atk: 30, range: 200, speed: 40, atkInterval: 2.0, foreswing: 0.35, kb: 3, area: true, width: 50, size: 1.05, heal: 0.08,
+  },
+  {
+    id: 'mash', name: 'マッシュポテト', role: 'ふわふわ', rarity: 'SR', gacha: true,
+    desc: 'ふわっふわの おおきな からだで うけとめて、てきを おそくする。',
+    cost: 600, cooldown: 16.0, hp: 4200, atk: 90, range: 150, speed: 32, atkInterval: 2.2, foreswing: 0.4, kb: 2, area: true, width: 76, size: 1.3,
+    effect: { kind: 'slow', chance: 0.6, dur: 3 },
+  },
+  {
     id: 'daigaku', name: 'だいがくいも', role: 'エース', rarity: 'SR', gacha: true,
     desc: 'あまくて つよい エース！ みつの こうげきで まとめて たおす。',
     cost: 750, cooldown: 20.0, hp: 2200, atk: 260, range: 190, speed: 60, atkInterval: 1.7, foreswing: 0.35, kb: 3, area: true, width: 66, size: 1.3,

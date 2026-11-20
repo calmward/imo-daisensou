@@ -333,6 +333,10 @@ export class BattleScene implements Scene {
         }
         for (let i = 0; i < 8; i++) fx.add({ kind: 'dirt', x: e.f.x + 20, y: -4, vx: (r() - 0.5) * 160, vy: -120 - r() * 120, grav: 600, max: 0.8, size: 5, color: '#7a4a22' });
         break;
+      case 'heal':
+        fx.add({ kind: 'text', x: e.f.x - 10, y: -70, vy: -40, max: 0.8, size: 16, color: '#7dff7d', text: '+げんき' });
+        fx.add({ kind: 'spark', x: e.f.x - 10, y: -40, vy: -60, max: 0.6, size: 10, color: '#7dff7d', rot: 0, vr: 4 });
+        break;
       case 'rush':
         this.banner = { text: 'てきの だいぐんだ！', sub: 'かべで まもろう！', t: 0, color: '#ff9a3a', dur: 1.8 };
         audio.sfx('boss');

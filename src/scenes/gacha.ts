@@ -168,7 +168,7 @@ export class GachaScene implements Scene {
       ui.add({ id: 'gback', r: back, onTap: () => this.app.go('map') });
       if (this.phase === 'idle') {
         const fs = clamp(w * 0.03, 11, 15);
-        text(ctx, 'でるかも: スイートポテト・いもようかん・いもにんじゃ・ハッシュドポテト・だいがくいも・キングさつまいも', w / 2, r.y - fs * 1.2, fs, { color: '#fff', stroke: '#a3205f', maxW: w - 20 });
+        text(ctx, 'でるかも: スイートポテト・いもようかん・いもにんじゃ・ハッシュドポテト・コロッケ・ポテトサラダ・マッシュポテト・だいがくいも・キングさつまいも', w / 2, r.y - fs * 1.2, fs, { color: '#fff', stroke: '#a3205f', maxW: w - 20 });
       }
     }
   }

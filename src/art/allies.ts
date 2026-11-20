@@ -722,4 +722,101 @@ const king: Drawer = (ctx, p) => {
   ctx.restore();
 };
 
-export const ALLY_ART: Record<string, Drawer> = { jaga, sato, chips, satsu, kenpi, fry, yaki, murasaki, konnyaku, butter, naga, sweet, youkan, ninja, hash, daigaku, king };
+const korokke: Drawer = (ctx, p) => {
+  const m = motion(p, 9);
+  feet(ctx, 0, 0, 11, 5, p.walk * 9, m.moving, '#8a5a1a');
+  ctx.save();
+  ctx.translate(0, -m.bob);
+  ctx.rotate(m.lean * 0.6);
+  ctx.scale(1 / m.squash, m.squash);
+  blob(ctx, 0, -26, 26, 21, 0.09, 8);
+  fillStroke(ctx, radial(ctx, 0, -28, 26, '#f6c45a', '#c8781a'));
+  // bread crumbs
+  ctx.fillStyle = '#ffe08a';
+  for (let i = 0; i < 14; i++) {
+    const a = i * 2.4,
+      r = 6 + (i % 4) * 4.5;
+    ctx.fillRect(Math.cos(a) * r - 1.5, -26 + Math.sin(a) * r * 0.8 - 1.5, 3, 3);
+  }
+  face(ctx, 4, -26, 9, p, { mouthKind: 'grin' });
+  ctx.restore();
+  // thrown croquette
+  if (p.state === 'attack') {
+    const k = p.atk;
+    const hx = k < 0.5 ? 14 : 14 + (k - 0.5) * 120;
+    const hy = k < 0.5 ? -40 - k * 20 : -50 - Math.sin((k - 0.5) * Math.PI * 2) * 30;
+    ellipse(ctx, hx, hy, 8, 6);
+    fillStroke(ctx, '#e8a53a', 2);
+  }
+};
+
+const potesala: Drawer = (ctx, p) => {
+  const m = motion(p, 8);
+  feet(ctx, 0, 0, 12, 5, p.walk * 8, m.moving, '#5a8ab0');
+  ctx.save();
+  ctx.translate(0, -m.bob);
+  ctx.rotate(m.lean * 0.5);
+  // bowl
+  ctx.beginPath();
+  ctx.moveTo(-28, -24);
+  ctx.quadraticCurveTo(0, 8, 28, -24);
+  ctx.closePath();
+  fillStroke(ctx, '#e6f2ff', 2.5);
+  ctx.strokeStyle = '#7cc8ff';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-22, -16);
+  ctx.quadraticCurveTo(0, 0, 22, -16);
+  ctx.stroke();
+  // salad mound
+  blob(ctx, 0, -32, 25, 15, 0.12, 3);
+  fillStroke(ctx, radial(ctx, 0, -34, 24, '#fffbe6', '#f0dca0'), 2.5);
+  // veggie bits
+  const bits: [number, number, string][] = [[-14, -36, '#ff8a3a'], [10, -42, '#6ccf4a'], [16, -30, '#ff8a3a'], [-6, -44, '#6ccf4a'], [-18, -28, '#9be05a']];
+  for (const [x, y, c] of bits) {
+    ctx.fillStyle = c;
+    ctx.fillRect(x - 2.5, y - 2.5, 5, 5);
+  }
+  face(ctx, 2, -32, 8, p, { mouthKind: 'smile', sparkle: true });
+  ctx.restore();
+  if (p.state === 'attack') {
+    ctx.strokeStyle = `rgba(125,255,125,${1 - p.atk})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, -30, 30 + p.atk * 30, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+};
+
+const mash: Drawer = (ctx, p) => {
+  const m = motion(p, 6);
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.6);
+  ctx.rotate(m.lean * 0.4);
+  ctx.scale(1 / m.squash, m.squash);
+  // cloud-like fluffy body
+  ctx.beginPath();
+  const pts = 12;
+  for (let i = 0; i <= pts; i++) {
+    const a = Math.PI + (i / pts) * Math.PI;
+    const r = 30 + (i % 2 ? 4 : -1) + Math.sin(p.t * 3 + i) * 1;
+    const x = Math.cos(a) * r * 1.15,
+      y = -6 + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.quadraticCurveTo(x * 1.08, y * 1.08, x, y);
+  }
+  ctx.lineTo(34, 0);
+  ctx.lineTo(-34, 0);
+  ctx.closePath();
+  fillStroke(ctx, radial(ctx, -6, -24, 36, '#fffdf0', '#efd9a0'));
+  // butter & pepper
+  ctx.beginPath();
+  ctx.rect(-6, -40, 14, 9);
+  fillStroke(ctx, '#ffe866', 2);
+  ctx.fillStyle = '#3b2412';
+  for (const [x, y] of [[-18, -22], [14, -26], [-4, -12], [20, -12], [-24, -10]]) ctx.fillRect(x, y, 2, 2);
+  face(ctx, 4, -20, 10, p, { mouthKind: 'cat', sleepy: true });
+  ctx.restore();
+};
+
+export const ALLY_ART: Record<string, Drawer> = { korokke, potesala, mash, jaga, sato, chips, satsu, kenpi, fry, yaki, murasaki, konnyaku, butter, naga, sweet, youkan, ninja, hash, daigaku, king };
