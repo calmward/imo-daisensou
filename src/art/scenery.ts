@@ -64,6 +64,22 @@ export function drawBackground(ctx: Ctx, w: number, h: number, groundY: number, 
   ctx.fillStyle = th.accent;
   ctx.fillRect(0, groundY - 2, w, Math.max(4, 7 * scale));
   drawGroundProps(ctx, w, groundY, camX, scale, world, t);
+  // ambient weather: petals / leaves / snow
+  const colors = [['#ffc0d8', '#fff'], ['#e8a040', '#c86a20'], ['#ffffff', '#e8f0ff']][world % 3];
+  for (let i = 0; i < 14; i++) {
+    const sp = 18 + (i % 5) * 6;
+    const x = ((i * 173 + t * sp * 0.6 - camX * scale * 0.3) % (w + 60) + w + 60) % (w + 60) - 30;
+    const y = ((i * 97 + t * sp) % (groundY + 40)) - 20;
+    ctx.save();
+    ctx.translate(x + Math.sin(t * 2 + i) * 8, y);
+    ctx.rotate(t * 2 + i);
+    ctx.fillStyle = colors[i % 2];
+    ctx.globalAlpha = 0.8;
+    if (world === 2) ellipse(ctx, 0, 0, 2.5, 2.5);
+    else ellipse(ctx, 0, 0, 4, 2);
+    ctx.fill();
+    ctx.restore();
+  }
   // grass tufts & furrows scroll with camera
   ctx.strokeStyle = 'rgba(80,50,20,0.25)';
   ctx.lineWidth = Math.max(1, 3 * scale);
