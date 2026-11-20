@@ -311,10 +311,20 @@ export class BattleScene implements Scene {
         audio.sfx('beam');
         this.shake = 6;
         break;
-      case 'beamHit':
-        this.shake = 12;
-        this.flashT = 0.15;
+      case 'beamHit': {
+        this.shake = 14;
+        this.flashT = 0.2;
+        fx.add({ kind: 'ring', x: 0, y: -60, max: 0.7, size: 260, color: '#fff6a0' });
+        let n = 0;
+        for (const en of this.b.enemies) {
+          if (en.x > this.b.beamReach || n > 6) continue;
+          n++;
+          fx.add({ kind: 'text', x: en.x + 10, y: -80 - r() * 30, vy: -50, max: 0.9, size: 22, color: '#ff8a1f', stroke: '#fff', text: 'ドカーン！', rot: (r() - 0.5) * 0.5 });
+          fx.add({ kind: 'flash', x: en.x + 10, y: -30, max: 0.3, size: 40, color: '#fff6a0' });
+        }
+        audio.sfx('boom');
         break;
+      }
       case 'boss':
         this.banner = { text: 'ボスが あらわれた！', sub: ENEMY_MAP[e.f.id]?.name, t: 0, color: '#ff5f5f', dur: 2.4 };
         audio.sfx('boss');
