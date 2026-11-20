@@ -24,6 +24,11 @@ export interface SaveData {
 
 const KEY = 'imo-daisensou-save-v1';
 export const DECK_SIZE = 10;
+/** Team slots grow as you progress: 5 at the start, +1 after stages 4, 6, 9, 12 and 18. */
+export const SLOT_STAGES = [4, 6, 9, 12, 18];
+export function deckSize(s: { cleared: Record<number, number> }) {
+  return 5 + SLOT_STAGES.filter((id) => (s.cleared[id] ?? 0) > 0).length;
+}
 
 export function newSave(): SaveData {
   return {
@@ -95,8 +100,8 @@ export function sanitize(d: unknown): SaveData {
   const st = obj(o.stats);
   s.stats = { wins: num(st.wins, 0), losses: num(st.losses, 0), kills: num(st.kills, 0) };
   const deck = Array.isArray(o.deck) ? o.deck : [];
-  s.deck = deck.filter((id, i): id is string => typeof id === 'string' && Object.prototype.hasOwnProperty.call(s.units, id) && deck.indexOf(id) === i).slice(0, DECK_SIZE);
-  if (!s.deck.length) s.deck = Object.keys(s.units).slice(0, DECK_SIZE);
+  s.deck = deck.filter((id, i): id is string => typeof id === 'string' && Object.prototype.hasOwnProperty.call(s.units, id) && deck.indexOf(id) === i).slice(0, deckSize(s));
+  if (!s.deck.length) s.deck = Object.keys(s.units).slice(0, deckSize(s));
   return s;
 }
 

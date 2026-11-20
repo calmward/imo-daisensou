@@ -1,5 +1,5 @@
 import { ALLY_MAP, MAX_LEVEL } from './allies';
-import type { SaveData } from './save';
+import { deckSize, type SaveData } from './save';
 import type { Rarity } from './types';
 
 export const GACHA_GOLD_COST = 1200;
@@ -63,7 +63,7 @@ export function rollGacha(save: SaveData, rnd: () => number = Math.random): Gach
   }
   if (isNew) {
     save.units[id] = 1;
-    if (save.deck.length < 10) save.deck.push(id);
+    if (save.deck.length < deckSize(save)) save.deck.push(id);
   } else {
     save.units[id] = Math.min(MAX_LEVEL, save.units[id] + 1);
   }

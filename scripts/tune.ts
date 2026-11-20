@@ -60,7 +60,7 @@ for (const st of STAGES) {
     f = Math.min(f, Math.round(slo * 0.92 * 1000) / 1000);
   }
   // keep battles short enough for kids: ~4 min max for bosses, ~3 min otherwise
-  const cap = st.boss ? 260 : 200;
+  const cap = st.boss ? 220 : 160;
   for (let k = 0; k < 12; k++) {
     const ts = [11, 23].map((sd) => trial(save, st.id, f, sd).time);
     if (Math.max(...ts) <= cap) break;
@@ -74,12 +74,12 @@ for (const st of STAGES) {
     if (avg <= castleGoal) break;
     const f2 = Math.round(f * 1.08 * 1000) / 1000;
     const rs2 = [11, 23, 37].map((sd) => trial(save, st.id, f2, sd));
-    if (!rs2.every((r) => r.win) || Math.max(...rs2.map((r) => r.time)) > (st.boss ? 260 : 200)) break;
+    if (!rs2.every((r) => r.win) || Math.max(...rs2.map((r) => r.time)) > (st.boss ? 220 : 160)) break;
     if (st.id <= 10 && ![11, 23].every((sd) => trial(save, st.id, f2, sd, true).win)) break;
     f = f2;
   }
   // hand adjustments for spikes found by the multi-skill campaign test
-  const ADJUST: Record<number, number> = { 3: 0.6, 5: 0.85, 12: 0.88, 18: 0.88, 20: 0.85, 29: 0.88 };
+  const ADJUST: Record<number, number> = { 3: 0.6, 5: 0.85, 12: 0.88, 17: 0.88, 18: 0.88, 20: 0.85, 29: 0.88 };
   f = Math.round(f * (ADJUST[st.id] ?? 1) * 1000) / 1000;
   out.push(f);
   const r = trial(save, st.id, f, 99);

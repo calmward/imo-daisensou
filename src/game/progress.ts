@@ -1,6 +1,6 @@
 import { ALLY_MAP, levelCost, MAX_LEVEL } from './allies';
 import { RESEARCH, researchCost } from './research';
-import type { SaveData } from './save';
+import { deckSize, SLOT_STAGES, type SaveData } from './save';
 import type { StageDef } from './types';
 import { ticketReward } from './stages';
 
@@ -14,6 +14,7 @@ export interface WinResult {
   unlocked?: string;
   first: boolean;
   chest?: { kind: 'gold' | 'ticket'; amount: number };
+  newSlot?: boolean;
   star: number;
 }
 
@@ -50,11 +51,12 @@ export function applyWin(save: SaveData, stage: StageDef, killGold: number, star
     if (stage.unlock && !save.units[stage.unlock]) {
       save.units[stage.unlock] = 1;
       unlocked = stage.unlock;
-      if (save.deck.length < 10) save.deck.push(stage.unlock);
+      if (save.deck.length < deckSize(save)) save.deck.push(stage.unlock);
     }
   }
   save.stats.wins++;
-  return { gold, tickets, unlocked, first, chest, star };
+  const newSlot = first && star === 1 && SLOT_STAGES.includes(stage.id);
+  return { gold, tickets, unlocked, first, chest, star, newSlot };
 }
 
 /** Consolation prize on a loss so kids still progress. */

@@ -10,6 +10,7 @@ import { ENEMY_MAP } from '../game/enemies';
 import { MUSIC } from '../game/music';
 import { applyBonusWin, applyLoss, applyWin, canLevelUp, type WinResult } from '../game/progress';
 import { countToday } from '../game/missions';
+import { deckSize } from '../game/save';
 import { battleMods } from '../game/research';
 import { BONUS_ID, bonusStage, STAGES, STAR_NAMES, starStage } from '../game/stages';
 import { FX } from './fx';
@@ -1258,6 +1259,10 @@ export class BattleScene implements Scene {
       if (r.tickets) {
         text(ctx, `🎟 ガチャけん +${r.tickets}`, w / 2, y, fs * 0.9, { color: '#ff9ccf' });
         y += fs * 1.4;
+      }
+      if (r.newSlot) {
+        text(ctx, `へんせいの わくが ${deckSize(this.app.save)}こに ふえた！`, w / 2, y, fs * 0.75, { color: '#7cc8ff', maxW: pw - 30 });
+        y += fs * 1.2;
       }
       if (r.unlocked) {
         const pulse = 1 + Math.sin(this.t * 6) * 0.05;

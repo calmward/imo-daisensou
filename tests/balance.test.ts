@@ -20,8 +20,11 @@ describe('campaign balance', () => {
 
   it('battles have tension: the castle often gets hurt', () => {
     const { logs } = runCampaign({ skill: 0.6, seed: 5 });
-    const hurt = logs.filter((l) => l.baseFrac < 0.95).length;
-    expect(hurt / logs.length).toBeGreaterThan(0.4);
+    // tutorial stages (1-4) and rest stages are meant to be safe
+    const rest = new Set([9, 16, 21, 28, 34]);
+    const real = logs.filter((l) => l.id > 4 && !rest.has(l.id));
+    const hurt = real.filter((l) => l.baseFrac < 0.95).length;
+    expect(hurt / real.length).toBeGreaterThan(0.45);
   }, 120_000);
 
   it('starter deck beats stage 1 even when played sloppily', () => {

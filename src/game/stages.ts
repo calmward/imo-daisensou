@@ -134,7 +134,7 @@ export const STAGES: StageDef[] = RAW.map((r, i) => ({
   name: r.name,
   world: Math.floor(i / 12),
   length: r.len,
-  baseHp: i >= 19 ? Math.round(r.hp * 0.56) : i >= 12 ? Math.round(r.hp * 0.7) : r.hp,
+  baseHp: i >= 19 ? Math.round(r.hp * 0.42) : i >= 12 ? Math.round(r.hp * 0.55) : r.hp,
   spawns: withThieves(i + 1, r).map((s) => ({ ...s, mult: Math.round(((s.mult ?? 100) * r.d * (TUNING[i] ?? 1)) / 100) })),
   reward: Math.round((150 + 60 * i + (r.boss ? 300 + 40 * i : 0)) / 10) * 10,
   unlock: r.unlock,
@@ -145,8 +145,8 @@ export const STAGES: StageDef[] = RAW.map((r, i) => ({
 }));
 
 function withThieves(id: number, r: Raw): SpawnEntry[] {
-  if (id < 5 || VALLEYS.has(id)) return r.spawns;
-  const iv: [number, number] = id < 13 ? [28, 36] : [20, 28];
+  if (id < 5 || VALLEYS.has(id) || id % 3 === 1) return r.spawns;
+  const iv: [number, number] = id < 13 ? [20, 28] : [15, 21];
   return [...r.spawns, { enemy: 'dorobou', start: 25, interval: iv, count: 0, mult: 100 }];
 }
 

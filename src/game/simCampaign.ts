@@ -4,7 +4,7 @@ import { Battle } from './battle';
 import { simulate } from './bot';
 import { applyLoss, applyWin, doResearch } from './progress';
 import { battleMods, RESEARCH, researchCost } from './research';
-import { newSave, type SaveData } from './save';
+import { deckSize, newSave, type SaveData } from './save';
 import { STAGES } from './stages';
 
 export interface StageLog {
@@ -46,7 +46,7 @@ export function chooseDeck(save: SaveData, allowGacha = false) {
   const owned = ALLIES.filter((a) => save.units[a.id] && (allowGacha || !a.gacha));
   // prefer stronger units when over 10
   owned.sort((a, b) => b.cost - a.cost);
-  save.deck = owned.slice(0, 10).map((a) => a.id);
+  save.deck = owned.slice(0, deckSize(save)).map((a) => a.id);
 }
 
 export function runCampaign(opts: { skill?: number; seed?: number; maxTries?: number; verbose?: boolean } = {}) {

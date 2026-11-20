@@ -7,7 +7,7 @@ import { ALLIES, ALLY_MAP, EVOLVE_LV, isEvolved, levelCost, levelMult, MAX_LEVEL
 import { MUSIC } from '../game/music';
 import { canLevelUp, canResearch, doResearch, levelUp } from '../game/progress';
 import { RESEARCH, researchCost } from '../game/research';
-import { DECK_SIZE } from '../game/save';
+import { deckSize } from '../game/save';
 import { STAGES } from '../game/stages';
 import { drawGoldIcon, drawHand, wrapText } from './battle';
 
@@ -129,7 +129,7 @@ export class PowerScene implements Scene {
     this.gridArea = gridA;
     // deck info
     const fs = clamp(body.w * 0.03, 12, 16);
-    text(ctx, `へんせい ${save.deck.length}/${DECK_SIZE}（✓が バトルに でるよ）`, gridA.x + 4, gridA.y + fs * 0.6, fs, { align: 'left', color: '#5a3a12', stroke: 'none', maxW: gridA.w - 8 });
+    text(ctx, `へんせい ${save.deck.length}/${deckSize(save)}（✓が バトルに でるよ）`, gridA.x + 4, gridA.y + fs * 0.6, fs, { align: 'left', color: '#5a3a12', stroke: 'none', maxW: gridA.w - 8 });
     const cols = clamp(Math.floor(gridA.w / 82), 3, 8);
     const cw = (gridA.w - (cols - 1) * 6) / cols;
     const ch = cw * 1.15;
@@ -288,8 +288,8 @@ export class PowerScene implements Scene {
             save.deck = save.deck.filter((d) => d !== a.id);
             this.confirmRemove = null;
           }
-        } else if (save.deck.length < DECK_SIZE) save.deck.push(a.id);
-        else this.popText = { s: '10たいまで だよ', t: 0 };
+        } else if (save.deck.length < deckSize(save)) save.deck.push(a.id);
+        else this.popText = { s: `いまは ${deckSize(save)}たいまで だよ`, t: 0 };
         this.app.persist();
       } });
     } else {
