@@ -82,7 +82,9 @@ export class App {
     });
     window.addEventListener('popstate', () => {
       // Android back button: let the scene handle it, keep the app open
-      if (this.scene.onBack?.()) history.pushState(null, '');
+      // always keep a history entry so a kid's back press never closes the game
+      if (!this.scene.onBack?.() && this.scene.name !== 'title') this.go('title');
+      history.pushState(null, '');
     });
     history.pushState(null, '');
   }

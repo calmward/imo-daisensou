@@ -176,6 +176,7 @@ export class PowerScene implements Scene {
       const top = Math.max(r.y, gy0),
         bot = Math.min(r.y + r.h, gridA.y + gridA.h);
       if (bot - top > 10) ui.add({ id: 'card' + a.id, r: { x: r.x, y: top, w: r.w, h: bot - top }, onTap: () => {
+        this.confirmRemove = null;
         if (owned) this.sel = a.id;
         else {
           const st = STAGES.find((x) => x.unlock === a.id);

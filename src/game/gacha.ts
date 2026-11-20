@@ -57,6 +57,10 @@ export function rollGacha(save: SaveData, rnd: () => number = Math.random): Gach
   if (!candidates.length) candidates = pool;
   const id = candidates[Math.floor(rnd() * candidates.length)];
   const isNew = !save.units[id];
+  if (!isNew && save.units[id] >= MAX_LEVEL) {
+    save.gold += 1000;
+    return { kind: 'gold', amount: 1000, rarity };
+  }
   if (isNew) {
     save.units[id] = 1;
     if (save.deck.length < 10) save.deck.push(id);

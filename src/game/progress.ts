@@ -17,12 +17,17 @@ export interface WinResult {
   star: number;
 }
 
+/** Gold for winning a stage at a difficulty (same numbers the map preview shows). */
+export function previewReward(stage: StageDef, first: boolean, star: number) {
+  const starBonus = [1, 1, 1.6, 2.4][star];
+  const replayBoost = !first && star > 1 ? 1.75 : 1;
+  return Math.round((stageReward(stage, first) * starBonus * replayBoost) / 10) * 10;
+}
+
 /** Apply a stage win to the save. star = difficulty (1 normal, 2 hard, 3 very hard). */
 export function applyWin(save: SaveData, stage: StageDef, killGold: number, star = 1, rnd: () => number = Math.random): WinResult {
   const first = star === 1 ? !save.cleared[stage.id] : (save.crowns[stage.id] ?? 0) < star;
-  const starBonus = [1, 1, 1.6, 2.4][star];
-  const replayBoost = !first && star > 1 ? 1.75 : 1;
-  const gold = Math.round((stageReward(stage, first) * starBonus * replayBoost) / 10) * 10 + killGold;
+  const gold = previewReward(stage, first, star) + killGold;
   save.gold += gold;
   save.cleared[stage.id] = (save.cleared[stage.id] ?? 0) + 1;
   save.crowns[stage.id] = Math.max(save.crowns[stage.id] ?? 0, star);

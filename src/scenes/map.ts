@@ -10,7 +10,7 @@ import { MUSIC } from '../game/music';
 import { highestUnlocked, isCleared } from '../game/save';
 import { BONUS_ID, STAGES, STAR_NAMES, ticketReward, WORLD_NAMES } from '../game/stages';
 import { todayKey } from '../game/missions';
-import { canLevelUp, claimDaily } from '../game/progress';
+import { canLevelUp, claimDaily, previewReward } from '../game/progress';
 import { claimable } from '../game/missions';
 import { drawGoldIcon, drawHand, wrapText } from './battle';
 
@@ -87,7 +87,7 @@ export class MapScene implements Scene {
   }
 
   onDrag(dx: number, dy: number) {
-    if (this.popup) return;
+    if (this.popup || this.daily) return;
     const d = this.horizontal ? dx : dy;
     this.scroll -= d;
     this.vel = -d * 30;
@@ -396,7 +396,7 @@ export class MapScene implements Scene {
     drawGoldIcon(ctx, px + 30, y, fs * 0.45);
     const ps = this.popStar;
     const firstStar = ps === 1 ? !cleared : (save.crowns[st.id] ?? 0) < ps;
-    const rw = Math.round(((firstStar ? st.reward : st.reward * 0.4) * [1, 1, 1.6, 2.4][ps]) / 10) * 10;
+    const rw = previewReward(st, firstStar, ps);
     text(ctx, `もらえる: きんいも ${rw}${firstStar ? '（はじめて）' : ''}`, px + 46, y, fs * 0.62, { align: 'left', color: '#5a3a12', stroke: 'none', maxW: pw - 60 });
     y += fs * 1.1;
     const tk = ps > 1 ? (firstStar ? ps - 1 : 0) : ticketReward(st);
@@ -407,7 +407,7 @@ export class MapScene implements Scene {
       text(ctx, `＋ ${parts.join('・')}`, px + 46, y, fs * 0.62, { align: 'left', color: '#c0392b', stroke: 'none', maxW: pw - 60 });
       y += fs * 1.1;
     }
-    if (st.tip && (!cleared || ph > 360)) {
+    if (st.tip && !cleared) {
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       const tipH = Math.max(36, py + ph - 80 - y);
       rr(ctx, px + 14, y, pw - 28, Math.min(tipH, 56), 10);
@@ -425,17 +425,17 @@ export class MapScene implements Scene {
         const sel = this.popStar === k;
         const off = drawButton(ctx, r, open ? (sel ? [STYLES.blue, STYLES.orange, STYLES.pink][k - 1] : STYLES.cream) : { ...STYLES.gray, disabled: true }, ui.isPressed('star' + k), 10);
         text(ctx, (open ? '' : '🔒') + STAR_NAMES[k] + '★'.repeat(k), r.x + r.w / 2, r.y + off + (sh - 6) / 2, sh * 0.34, { color: sel ? '#fff' : '#5a3a12', stroke: sel ? undefined : 'none', maxW: sw - 6 });
-        if (open) ui.add({ id: 'star' + k, r, onTap: () => (this.popStar = k) });
+        if (open && this.popT > 0.3) ui.add({ id: 'star' + k, r, onTap: () => (this.popStar = k) });
       }
     }
     const go = { x: px + pw * 0.38, y: py + ph - bh - 14, w: pw * 0.56, h: bh };
     const off = drawButton(ctx, go, STYLES.orange, ui.isPressed('go'));
     text(ctx, 'しゅつげき！', go.x + go.w / 2, go.y + off + (bh - 6) / 2, bh * 0.4);
-    ui.add({ id: 'go', r: go, onTap: () => { audio.sfx('whistle'); this.app.go('battle', { id: st.id, star: this.popStar }); } });
+    if (this.popT > 0.3) ui.add({ id: 'go', r: go, onTap: () => { audio.sfx('whistle'); this.app.go('battle', { id: st.id, star: this.popStar }); } });
     const cl = { x: px + pw * 0.06, y: go.y, w: pw * 0.28, h: bh };
     const off2 = drawButton(ctx, cl, STYLES.cream, ui.isPressed('close'));
     text(ctx, 'とじる', cl.x + cl.w / 2, cl.y + off2 + (bh - 6) / 2, bh * 0.32, { color: '#5a3a12', stroke: 'none' });
-    ui.add({ id: 'close', r: cl, onTap: () => (this.popup = null) });
+    if (this.popT > 0.3) ui.add({ id: 'close', r: cl, onTap: () => (this.popup = null) });
     ctx.restore();
   }
 }
