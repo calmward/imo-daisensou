@@ -1230,7 +1230,7 @@ export class BattleScene implements Scene {
     ctx.translate(w / 2 + (bn.boss ? w * 0.08 : 0), cy - 6);
     ctx.scale(appear, appear);
     const size = clamp(Math.min(w * 0.08, L.field.h * 0.16), 22, 54);
-    text(ctx, bn.text, 0, 0, size, { color: bn.color, lw: size * 0.25 });
+    text(ctx, bn.text, 0, 0, size, { color: bn.color, lw: size * 0.25, maxW: w * 0.8 - (bn.boss ? w * 0.16 : 0) });
     if (bn.sub) text(ctx, bn.sub, 0, size * 0.85, size * 0.45, { color: '#fff' });
     ctx.restore();
   }

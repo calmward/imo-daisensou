@@ -145,7 +145,7 @@ export class Battle {
       const def = ALLY_MAP[d.id];
       const m = levelMult(d.level);
       const evo = isEvolved(d.level);
-      const evoCrit = evo ? 0.08 : 0;
+      const evoCrit = (evo ? 0.08 : 0) + (evoStage(d.level) === 2 ? 0.1 : 0);
       return { def, level: d.level, stats: { ...def, hp: Math.round(def.hp * m), atk: Math.round(def.atk * m), crit: (def.crit ?? 0) + evoCrit }, cd: 0 };
     });
     this.spawns = stage.spawns.map((_, idx) => ({ idx, next: 0, spawned: 0, active: false, activatedAt: 0 }));
@@ -255,12 +255,18 @@ export class Battle {
   }
 
   private knockback(f: Fighter) {
+    if (f.state === 'revive') return;
+    if (f.state === 'burrow') {
+      // knocked out of a jump/dig: it doesn't get a second one
+      f.burrowed = true;
+      f.burrowLeft = 0;
+    }
     if (f.state === 'dead') return;
     const d = f.side === 0 ? -1 : 1;
     f.state = 'kb';
     f.t = 0;
     f.kbFrom = f.x;
-    f.kbTo = Math.max(-40, Math.min(this.length + 40, f.x + d * KB_DIST * (f.boss ? 0.6 : 1) * (this.stage.mod === 'slippery' ? 1.7 : 1)));
+    f.kbTo = Math.max(-40, Math.min(this.length + 40, f.x + d * KB_DIST * (f.boss ? 0.6 : 1) * (this.stage.mod === 'slippery' ? 1.4 : 1)));
     f.hitDone = true;
     this.events.push({ type: 'kb', f });
   }
@@ -274,14 +280,19 @@ export class Battle {
     const range = f.s.range;
     const list: Fighter[] = [];
     if (f.side === 0) {
+      const melts = hasAny(f.s.strongVs, ['ice']);
       for (const e of this.enemies) {
-        if (!this.targetable(e)) continue;
+        if (!this.targetable(e) && !(melts && e.state === 'revive')) continue;
         if (e.x >= f.x - 25 && e.x <= f.x + range) list.push(e);
       }
       const base = this.length - f.x <= range;
       if (list.length && !f.s.area) {
         let best = list[0];
-        for (const e of list) if (e.x < best.x) best = e;
+        if (f.s.jump) {
+          // jumpers go for the back line: healers and long-range enemies first
+          const score = (e: Fighter) => (e.s.heal ? 1000 : 0) + e.s.range;
+          for (const e of list) if (score(e) > score(best)) best = e;
+        } else for (const e of list) if (e.x < best.x) best = e;
         return { list: [best], base: false };
       }
       return { list, base: base && (f.s.area || list.length === 0) };
@@ -307,6 +318,23 @@ export class Battle {
 
   private damage(target: Fighter, amount: number, src: Fighter | null, crit: boolean) {
     if (target.state === 'dead') return;
+    if (target.state === 'revive') {
+      // only an ice counter can hit the ice block: it melts for good
+      if (!src || !hasAny(src.s.strongVs, ['ice'])) return;
+      this.events.push({ type: 'melt', f: target });
+      target.hp = 0;
+      target.state = 'dead';
+      target.t = 0;
+      target.kbFrom = target.x;
+      target.kbTo = target.x + 70;
+      this.events.push({ type: 'death', f: target });
+      this.kills++;
+      if (target.reward > 0) {
+        this.money = Math.min(this.cap, this.money + target.reward);
+        this.events.push({ type: 'money', x: target.x, amount: target.reward });
+      }
+      return;
+    }
     const before = target.hp;
     target.hp -= amount;
     target.flash = 0.12;
@@ -350,7 +378,7 @@ export class Battle {
         }
         if (target.s.split) {
           for (let i = 0; i < target.s.split.n; i++) {
-            const c = this.spawnEnemy(target.s.split.id, target.mult, target.x + i * 28);
+            const c = this.spawnEnemy(target.s.split.id, target.mult, Math.min(this.length, target.x) - i * 28);
             c.lane = Math.min(1, Math.max(0, target.lane + (i - 0.5) * 0.4));
           }
           this.events.push({ type: 'split', f: target });
@@ -380,12 +408,15 @@ export class Battle {
       const mine = f.side === 0 ? this.allies : this.enemies;
       for (const a of mine) {
         if (a.state === 'dead' || Math.abs(a.x - f.x) > f.s.range || a.hp >= a.maxHp) continue;
-        a.hp = Math.min(a.maxHp, a.hp + a.maxHp * f.s.heal);
+        const amt = f.side === 1 ? Math.min(a.maxHp * f.s.heal, f.s.atk * 3) : a.maxHp * f.s.heal;
+        a.hp = Math.min(a.maxHp, a.hp + amt);
         this.events.push({ type: 'heal', f: a });
       }
     }
+    // world-4 bosses grow angrier over time too, so a stalemate always ends
+    const bossRage = f.boss && this.stage.id >= 37 && this.time > RAGE_START ? 1 + (this.time - RAGE_START) * 0.07 : 1;
     for (const t of list) {
-      let dmg = f.s.atk;
+      let dmg = f.s.atk * bossRage;
       if (hasAny(f.s.strongVs, t.s.traits)) dmg *= 2.5;
       if (hasAny(t.s.strongVs, f.s.traits)) dmg *= 0.5;
       const crit = !!f.s.crit && this.rng.chance(f.s.crit);
@@ -402,7 +433,7 @@ export class Battle {
       }
       this.damage(t, dmg, f, crit);
       const ef = f.s.effect;
-      if (ef && t.state !== 'dead' && (!ef.vs || hasAny(ef.vs, t.s.traits)) && this.rng.chance(ef.chance)) {
+      if (ef && this.targetable(t) && (!ef.vs || hasAny(ef.vs, t.s.traits)) && this.rng.chance(ef.chance)) {
         const resist = t.boss ? 0.5 : 1;
         if (ef.kind === 'slow') t.slowT = Math.max(t.slowT, ef.dur * resist);
         else if (ef.kind === 'freeze') {
@@ -483,6 +514,11 @@ export class Battle {
     const tg = this.findTargets(f);
     if (tg.list.length || tg.base) {
       if (f.burrowLeft > 0 && !f.burrowed && tg.list.length) {
+        if (f.side === 0 && f.s.jump) {
+          let rear = f.x;
+          for (const e of this.enemies) if (this.targetable(e) && e.x > f.x && e.x - f.x <= 350) rear = Math.max(rear, e.x);
+          f.burrowLeft = Math.max(60, rear - f.x + 30);
+        }
         f.state = 'burrow';
         f.t = 0;
         this.events.push({ type: 'burrow', f, up: false });
@@ -499,6 +535,10 @@ export class Battle {
       }
     } else {
       f.state = 'walk';
+      if (f.side === 0 && this.enemies.some((e) => e.state === 'revive' && e.x >= f.x - 10 && e.x <= f.x + 30)) {
+        f.state = 'idle';
+        return;
+      }
       const sp = f.s.speed * (f.slowT > 0 ? 0.35 : 1) * this.walkFactor(f.side);
       f.x += dir * sp * dt;
       f.walkT += dt * (f.slowT > 0 ? 0.35 : 1);
@@ -527,7 +567,10 @@ export class Battle {
   private stepWind(dt: number) {
     if (this.windT > 0) {
       this.windT -= dt;
-      if (this.windT <= 0) this.windDir = 0;
+      if (this.windT <= 0) {
+        this.windDir = 0;
+        this.forcedGust = 0;
+      }
     }
     if (this.forcedGust > 0) return;
     if (this.stage.mod !== 'blizzard') return;
@@ -548,7 +591,7 @@ export class Battle {
   private stepSkills(dt: number) {
     for (const f of this.enemies) {
       const sk = f.s.skills;
-      if (!sk || f.state === 'dead' || f.state === 'revive') continue;
+      if (!sk || f.state === 'dead' || f.state === 'revive' || f.state === 'kb' || f.freezeT > 0) continue;
       sk.forEach((k, i) => {
         let fire = false;
         if (k.every) {
@@ -572,7 +615,8 @@ export class Battle {
       for (const a of this.allies) if (a.state !== 'dead' && a.x >= f.x - 450 && a.x <= f.x + 40) this.knockback(a);
       this.events.push({ type: 'shockwave', x: f.x });
     } else if (k.kind === 'summon' && k.id) {
-      const alive = this.enemies.filter((e) => e.summoned && e.state !== 'dead').length;
+      // each kind of summon has its own cap of 4
+      const alive = this.enemies.filter((e) => e.summoned && e.id === k.id && e.state !== 'dead').length;
       for (let i = 0; i < (k.n ?? 1) && alive + i < 4; i++) {
         const c = this.spawnEnemy(k.id, Math.round(f.mult / 1.7), f.x + 40 + i * 30);
         c.summoned = true;
@@ -642,7 +686,9 @@ export class Battle {
     if (before < RAGE_START && this.time >= RAGE_START) this.events.push({ type: 'rage' });
     this.money = Math.min(this.cap, this.money + this.rate * dt);
     if (this.beamT < 0) this.beam = Math.min(1, this.beam + dt / this.mods.beamCharge);
-    for (const s of this.slots) if (s.cd > 0) s.cd = Math.max(0, s.cd - dt);
+    // おいかぜ: potatoes get ready twice as fast — a chance for a big push
+    const cdRate = this.windDir === 1 ? 2 : 1;
+    for (const s of this.slots) if (s.cd > 0) s.cd = Math.max(0, s.cd - dt * cdRate);
     if (this.pBase.hitT > 0) this.pBase.hitT -= dt;
     if (this.eBase.hitT > 0) this.eBase.hitT -= dt;
 
@@ -651,7 +697,7 @@ export class Battle {
       this.beamT += dt;
       if (prev < 0.35 && this.beamT >= 0.35) {
         const reach = this.beamReach;
-        for (const e of this.enemies) {
+        for (const e of [...this.enemies]) {
           if (e.state === 'dead' || e.x > reach) continue;
           if (e.state === 'burrow' || e.state === 'revive') continue;
           this.damage(e, e.s.metal ? 1 : this.mods.beamDmg * (e.boss ? 0.8 : 1), null, false);

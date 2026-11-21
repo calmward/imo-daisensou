@@ -6,7 +6,7 @@ import { ENEMIES } from '../game/enemies';
 import { MUSIC } from '../game/music';
 import { wrapText } from './battle';
 
-const TRAIT: Record<string, [string, string]> = { bug: ['むし', '#6ccf4a'], bird: ['とり', '#3d97f0'], beast: ['けもの', '#c8783a'], boss: ['ボス', '#e8312f'] };
+const TRAIT: Record<string, [string, string]> = { bug: ['むし', '#6ccf4a'], bird: ['とり', '#3d97f0'], beast: ['けもの', '#c8783a'], boss: ['ボス', '#e8312f'], ice: ['こおり', '#7cc8ff'] };
 
 export class ZukanScene implements Scene {
   name = 'zukan';
@@ -92,7 +92,9 @@ export class ZukanScene implements Scene {
       portrait(ctx, e.id, w / 2, py + ph * 0.3, ph * 0.38, this.t * 2, 1, Math.sin(this.t) > 0.5 ? 'attack' : 'walk');
       text(ctx, e.name, w / 2, py + ph * 0.58, 24, { color: '#ffd23a' });
       (e.traits ?? []).forEach((tr, i, arr) => {
-        const [label, col] = TRAIT[tr];
+        const tdef = TRAIT[tr];
+        if (!tdef) return;
+        const [label, col] = tdef;
         const tx = w / 2 + (i - (arr.length - 1) / 2) * 70;
         ctx.fillStyle = col;
         rr(ctx, tx - 30, py + ph * 0.66, 60, 24, 12);

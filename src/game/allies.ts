@@ -66,7 +66,7 @@ export const ALLIES: AllyDef[] = [
   {
     id: 'gratin', name: 'ポテトグラタン', role: 'とかす', rarity: 'N',
     desc: 'あつあつ グラタンで こおりの てきを とかす！ ふっかつも させない',
-    cost: 480, cooldown: 12.0, hp: 1500, atk: 150, range: 180, speed: 40, atkInterval: 2.0, foreswing: 0.4, kb: 2, area: true, width: 62, size: 1.2, strongVs: ['ice'],
+    cost: 480, cooldown: 12.0, hp: 1500, atk: 150, range: 260, speed: 40, atkInterval: 2.0, foreswing: 0.4, kb: 2, area: true, width: 62, size: 1.2, strongVs: ['ice'],
   },
   {
     id: 'ski', name: 'スキーいも', role: 'ジャンプ', rarity: 'N',

@@ -49,7 +49,10 @@ export function applyWin(save: SaveData, stage: StageDef, killGold: number, star
     tickets = ticketReward(stage);
     save.tickets += tickets;
     if (stage.unlock && !save.units[stage.unlock]) {
-      save.units[stage.unlock] = 1;
+      // late-game friends join close to the team's level so they're useful right away
+      const lvs = save.deck.map((d) => save.units[d] ?? 1);
+      const avg = lvs.length ? lvs.reduce((a, b) => a + b, 0) / lvs.length : 1;
+      save.units[stage.unlock] = stage.id >= 37 ? Math.max(1, Math.floor(avg * 0.8)) : 1;
       unlocked = stage.unlock;
       if (save.deck.length < deckSize(save)) save.deck.push(stage.unlock);
     }
