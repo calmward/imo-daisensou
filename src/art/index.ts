@@ -33,7 +33,7 @@ export function drawChar(ctx: Ctx, id: string, x: number, y: number, scale: numb
   fn(ctx, pose);
   faceMode.mode = '';
   if (pose.state === 'kb' || pose.state === 'dead') sweat(ctx, pose.t, TALL[id] ?? 1);
-  if (lvl) evoSparkles(ctx, pose.t, TALL[id] ?? 1);
+  if (lvl) evoSparkles(ctx, pose.t, TALL[id] ?? 1, lvl);
   ctx.restore();
 }
 
@@ -73,8 +73,17 @@ function evoAura(ctx: Ctx, t: number, tall: number, lvl = 1) {
   ctx.fill();
 }
 
-function evoSparkles(ctx: Ctx, t: number, tall: number) {
+function evoSparkles(ctx: Ctx, t: number, tall: number, lvl = 1) {
   const h = 70 * tall;
+  if (lvl >= 2) {
+    // ハイパー: rainbow stars orbiting the potato
+    for (let i = 0; i < 5; i++) {
+      const a = t * 3 + (i / 5) * Math.PI * 2;
+      star(ctx, Math.cos(a) * h * 0.55, -h * 0.45 + Math.sin(a) * h * 0.25, 5, 4, 0.4);
+      ctx.fillStyle = `hsl(${(i * 72 + t * 200) % 360},100%,65%)`;
+      ctx.fill();
+    }
+  }
   // little golden crown-star badge
   ctx.save();
   ctx.translate(-h * 0.3, -h * 0.95 - Math.sin(t * 3) * 2);

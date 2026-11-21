@@ -344,6 +344,29 @@ export function drawEnemyBase(ctx: Ctx, hpFrac: number, t: number, hitT: number,
       ctx.closePath();
       fillStroke(ctx, '#ffd23a', 2);
     }
+    // snow on the roof & glossy shine
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(70, top + 30, 56, 7, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.moveTo(26, top + 40);
+    ctx.lineTo(40, top + 40);
+    ctx.lineTo(28, -10);
+    ctx.lineTo(18, -10);
+    ctx.closePath();
+    ctx.fill();
+    // twinkling frost
+    for (let i = 0; i < 4; i++) {
+      const k = (t * 0.7 + i / 4) % 1;
+      ctx.globalAlpha = 1 - k;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(30 + i * 26, top + 50 + k * 40, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
     // scarf flag
     ctx.fillStyle = '#e8312f';
     ctx.fillRect(122, top - 20, 22, 8);
@@ -664,7 +687,7 @@ export function mapProp(ctx: Ctx, world: number, k: number, t: number) {
 
 function drawAurora(ctx: Ctx, w: number, groundY: number, t: number) {
   ctx.save();
-  for (const [c, off] of [['rgba(120,255,180,0.18)', 0], ['rgba(255,150,220,0.14)', 1.7]] as [string, number][]) {
+  for (const [c, off] of [['rgba(80,240,160,0.38)', 0], ['rgba(255,120,210,0.28)', 1.7]] as [string, number][]) {
     ctx.fillStyle = c;
     ctx.beginPath();
     const y0 = groundY * 0.22;

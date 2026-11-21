@@ -650,14 +650,52 @@ export class BattleScene implements Scene {
     if (b.stage.mod === 'slippery') {
       // shiny ice on the ground
       const g2 = ctx.createLinearGradient(0, L.groundY, 0, L.groundY + 40 * s);
-      g2.addColorStop(0, 'rgba(200,240,255,0.75)');
-      g2.addColorStop(1, 'rgba(200,240,255,0)');
+      g2.addColorStop(0, 'rgba(90,180,240,0.85)');
+      g2.addColorStop(1, 'rgba(120,200,250,0.25)');
       ctx.fillStyle = g2;
       ctx.fillRect(f.x, L.groundY - 2, f.w, 40 * s);
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       for (let i = 0; i < 6; i++) {
         const gx = ((i * 157 - this.camX * s) % f.w + f.w) % f.w;
         ctx.fillRect(gx, L.groundY + 6 * s, 30 * s, 2);
+        // cracks
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(gx + 40 * s, L.groundY + 4 * s);
+        ctx.lineTo(gx + 52 * s, L.groundY + 16 * s);
+        ctx.lineTo(gx + 46 * s, L.groundY + 26 * s);
+        ctx.stroke();
+      }
+    }
+    if (b.stage.mod === 'festival') {
+      // festival flags & lanterns across the sky
+      const fy = f.y + f.h * 0.12;
+      ctx.strokeStyle = '#8a5a22';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(f.x, fy);
+      for (let x = 0; x <= f.w; x += 40) ctx.lineTo(f.x + x, fy + Math.sin(x * 0.02) * 6);
+      ctx.stroke();
+      const cols = ['#ff5f5f', '#ffd23a', '#7cc8ff', '#8fe36b', '#ff9ccf'];
+      for (let i = 0, x = 10; x < f.w; i++, x += 40) {
+        const yy = fy + Math.sin(x * 0.02) * 6;
+        if (i % 3 === 2) {
+          ellipse(ctx, f.x + x, yy + 12, 7, 9);
+          ctx.fillStyle = '#ff6a3a';
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255,230,120,0.8)';
+          ellipse(ctx, f.x + x, yy + 12, 3, 5);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = cols[i % cols.length];
+          ctx.beginPath();
+          ctx.moveTo(f.x + x - 7, yy);
+          ctx.lineTo(f.x + x + 7, yy);
+          ctx.lineTo(f.x + x, yy + 14);
+          ctx.closePath();
+          ctx.fill();
+        }
       }
     }
     // ground fill below field
@@ -689,8 +727,8 @@ export class BattleScene implements Scene {
     if (b.windDir !== 0) {
       // blizzard streaks blowing in the wind direction
       ctx.save();
-      ctx.strokeStyle = 'rgba(120,170,220,0.85)';
-      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      ctx.lineWidth = 3.5;
       const dirx = b.windDir;
       for (let i = 0; i < 40; i++) {
         const sp = 600 + (i % 7) * 60;
@@ -701,11 +739,19 @@ export class BattleScene implements Scene {
         ctx.lineTo(x + dirx * 26, y + 6);
         ctx.stroke();
       }
-      ctx.fillStyle = 'rgba(200,225,250,0.22)';
+      ctx.fillStyle = b.windDir === 1 ? 'rgba(150,255,170,0.16)' : 'rgba(255,170,170,0.16)';
       ctx.fillRect(f.x, f.y, f.w, f.h);
+      // heavy snow bands
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      for (let i = 0; i < 3; i++) {
+        const bx = ((((i * 331 + b.windDir * this.t * 500) % (f.w + 200)) + f.w + 200) % (f.w + 200)) - 100;
+        ctx.beginPath();
+        ctx.ellipse(f.x + bx, f.y + f.h * (0.3 + i * 0.2), 120, 18, b.windDir * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
-      const label = b.windDir === 1 ? 'おいかぜ ➡➡' : '⬅⬅ むかいかぜ';
-      text(ctx, label, f.x + f.w / 2, f.y + (L.portrait ? 76 : L.pause.h + 76), clamp(f.h * 0.07, 14, 24), { color: b.windDir === 1 ? '#7dff7d' : '#ffb0b0', stroke: '#1a4a8a' });
+      const label = b.windDir === 1 ? 'おいかぜ ➡➡ いまだ！' : '⬅⬅ むかいかぜ';
+      text(ctx, label, f.x + f.w / 2, f.y + (L.portrait ? 76 : L.pause.h + 76), clamp(f.h * 0.1, 18, 32), { color: b.windDir === 1 ? '#3ad04a' : '#ff4a4a', stroke: '#ffffff', lw: 6 });
     }
     if (this.flashT > 0) {
       ctx.fillStyle = `rgba(255,255,240,${Math.min(0.7, this.flashT * 3)})`;
@@ -808,7 +854,7 @@ export class BattleScene implements Scene {
     if (flashing || fi.freezeT > 0 || fi.state === 'revive') {
       const tint = flashing ? '#ffffff' : '#9be8ff';
       ctx.translate(0, -40 * sc);
-      drawTinted(ctx, 100 * sc * Math.max(1, fi.s.width / 70), tint, flashing ? 0.6 : 0.45, (c) => drawChar(c, fi.id, 0, 40 * sc, sc, pose, fi.side, fi.evo));
+      drawTinted(ctx, 100 * sc * Math.max(1, fi.s.width / 70), flashing && (fi.boss || fi.s.traits?.includes('ice')) ? '#ffd0a0' : tint, flashing ? (fi.boss ? 0.25 : 0.6) : 0.45, (c) => drawChar(c, fi.id, 0, 40 * sc, sc, pose, fi.side, fi.evo));
     } else drawChar(ctx, fi.id, 0, 0, sc, pose, fi.side, fi.evo);
     ctx.restore();
     ctx.globalAlpha = 1;
@@ -948,7 +994,8 @@ export class BattleScene implements Scene {
     if (!boss) return;
     const bw = Math.min(360, L.field.w * 0.5);
     const x = L.field.x + (L.field.w - bw) / 2;
-    const y = L.field.y + (L.portrait ? 48 : L.pause.h + 50);
+    // dock the boss bar low in the field so it never covers the (huge) boss
+    const y = L.field.y + L.field.h - 44;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     rr(ctx, x - 4, y - 4, bw + 8, 24, 8);
     ctx.fill();
