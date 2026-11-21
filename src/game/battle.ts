@@ -1,12 +1,12 @@
 // Pure battle simulation — no rendering, deterministic with a seed.
 // The renderer reads state and drains `events` to draw effects.
 import { Rng } from '../core/rng';
-import { ALLY_MAP, isEvolved, levelMult } from './allies';
+import { ALLY_MAP, evoStage, isEvolved, levelMult } from './allies';
 import { ENEMY_MAP } from './enemies';
 import type { BattleMods } from './research';
 import type { AllyDef, CombatStats, StageDef, Trait } from './types';
 
-export type FState = 'walk' | 'idle' | 'attack' | 'kb' | 'dead' | 'burrow';
+export type FState = 'walk' | 'idle' | 'attack' | 'kb' | 'dead' | 'burrow' | 'revive';
 
 export interface Fighter {
   uid: number;
@@ -33,8 +33,13 @@ export interface Fighter {
   flash: number; // render: hit flash timer
   walkT: number; // render: animation phase
   size: number;
-  evo: boolean; // evolved potato (visual)
+  evo: number; // 0 normal, 1 スーパー, 2 ハイパー (visual)
   shield: number; // remaining barrier threshold (0 = broken / none)
+  mult: number; // enemy strength % (passed on to splits/summons)
+  revived: boolean;
+  skillT: number[]; // per-skill timers
+  skillDone: boolean[]; // 'below' skills already used
+  summoned: boolean; // spawned by a boss skill
 }
 
 export type BEvent =
@@ -56,6 +61,11 @@ export type BEvent =
   | { type: 'rage' }
   | { type: 'rush' }
   | { type: 'castleShake' }
+  | { type: 'revive'; f: Fighter; up: boolean }
+  | { type: 'melt'; f: Fighter }
+  | { type: 'split'; f: Fighter }
+  | { type: 'gust'; dir: 1 | -1; warn: boolean }
+  | { type: 'skill'; f: Fighter; kind: string }
   | { type: 'heal'; f: Fighter };
 
 export interface Slot {
@@ -79,6 +89,8 @@ export const ATTACK_BACKSWING = 0.3;
 export const MAX_ALLIES = 40;
 export const WALLET_MAX_LV = 8;
 export const RAGE_START = 110;
+export const REVIVE_TIME = 2;
+export const GUST_TIME = 7;
 
 export function walletRate(lv: number) {
   return 30 + 12 * (lv - 1);
@@ -173,7 +185,7 @@ export class Battle {
     this.money -= this.slotCost(i);
     s.cd = s.def.cooldown * (isEvolved(s.level) ? 0.85 : 1);
     const f = this.makeFighter(0, s.def.id, s.stats, -14 + this.rng.range(-6, 6), s.def.size * (isEvolved(s.level) ? 1.1 : 1), 0);
-    f.evo = isEvolved(s.level);
+    f.evo = evoStage(s.level);
     this.allies.push(f);
     this.events.push({ type: 'spawn', f });
     return f;
@@ -212,7 +224,7 @@ export class Battle {
   private makeFighter(side: 0 | 1, id: string, s: CombatStats, x: number, size: number, reward: number, boss = false): Fighter {
     return {
       uid: this.uid++, side, id, s, hp: s.hp, maxHp: s.hp, x, state: 'walk', t: 0, atkCd: 0, hitDone: false, kbCount: 0, kbFrom: x, kbTo: x,
-      slowT: 0, freezeT: 0, lane: this.rng.next(), burrowLeft: s.burrow ?? 0, burrowed: false, boss, reward, flash: 0, walkT: this.rng.next() * 10, size, evo: false, shield: s.barrier ?? 0,
+      slowT: 0, freezeT: 0, lane: this.rng.next(), burrowLeft: s.burrow ?? 0, burrowed: false, boss, reward, flash: 0, walkT: this.rng.next() * 10, size, evo: 0, shield: s.barrier ?? 0, mult: 100, revived: false, skillT: (s.skills ?? []).map(() => 0), skillDone: (s.skills ?? []).map(() => false), summoned: false,
     };
   }
 
@@ -221,12 +233,13 @@ export class Battle {
     return this.time > RAGE_START ? 1 + (this.time - RAGE_START) * 0.015 : 1;
   }
 
-  spawnEnemy(id: string, mult = 100): Fighter {
+  spawnEnemy(id: string, mult = 100, atX?: number): Fighter {
     const def = ENEMY_MAP[id];
     const m = (mult / 100) * this.rage;
     const s: CombatStats = { ...def, hp: Math.round(def.hp * m), atk: Math.round(def.atk * m) };
-    const f = this.makeFighter(1, id, s, this.length + 14 + this.rng.range(-6, 6), def.size, def.reward, !!def.boss);
+    const f = this.makeFighter(1, id, s, atX ?? this.length + 14 + this.rng.range(-6, 6), def.size, def.reward, !!def.boss);
     f.shield = Math.round((def.barrier ?? 0) * m);
+    f.mult = mult;
     this.enemies.push(f);
     this.spawned++;
     this.events.push({ type: 'spawn', f });
@@ -247,13 +260,13 @@ export class Battle {
     f.state = 'kb';
     f.t = 0;
     f.kbFrom = f.x;
-    f.kbTo = Math.max(-40, Math.min(this.length + 40, f.x + d * KB_DIST * (f.boss ? 0.6 : 1)));
+    f.kbTo = Math.max(-40, Math.min(this.length + 40, f.x + d * KB_DIST * (f.boss ? 0.6 : 1) * (this.stage.mod === 'slippery' ? 1.7 : 1)));
     f.hitDone = true;
     this.events.push({ type: 'kb', f });
   }
 
   private targetable(f: Fighter) {
-    return f.state !== 'dead' && f.state !== 'kb' && f.state !== 'burrow';
+    return f.state !== 'dead' && f.state !== 'kb' && f.state !== 'burrow' && f.state !== 'revive';
   }
 
   /** Units in reach of f, plus whether the opposing base is in reach. */
@@ -302,6 +315,18 @@ export class Battle {
     });
     if (target.hp <= 0) {
       target.hp = 0;
+      // ユキオトコ style: freeze into an ice block and come back once (an 'ice' counter melts it for good)
+      if (target.s.revive && !target.revived) {
+        if (src && hasAny(src.s.strongVs, ['ice'])) {
+          this.events.push({ type: 'melt', f: target });
+        } else {
+          target.state = 'revive';
+          target.t = 0;
+          target.revived = true;
+          this.events.push({ type: 'revive', f: target, up: false });
+          return;
+        }
+      }
       target.state = 'dead';
       target.t = 0;
       target.kbFrom = target.x;
@@ -318,9 +343,17 @@ export class Battle {
       }
       if (target.side === 1) {
         this.kills++;
-        if (target.reward > 0) {
-          this.money = Math.min(this.cap, this.money + target.reward);
-          this.events.push({ type: 'money', x: target.x, amount: target.reward });
+        const reward = target.reward * (this.stage.mod === 'festival' ? 2 : 1);
+        if (reward > 0) {
+          this.money = Math.min(this.cap, this.money + reward);
+          this.events.push({ type: 'money', x: target.x, amount: reward });
+        }
+        if (target.s.split) {
+          for (let i = 0; i < target.s.split.n; i++) {
+            const c = this.spawnEnemy(target.s.split.id, target.mult, target.x + i * 28);
+            c.lane = Math.min(1, Math.max(0, target.lane + (i - 0.5) * 0.4));
+          }
+          this.events.push({ type: 'split', f: target });
         }
       }
       return;
@@ -394,6 +427,17 @@ export class Battle {
       f.t += dt;
       return;
     }
+    if (f.state === 'revive') {
+      f.t += dt;
+      if (f.t >= REVIVE_TIME) {
+        f.state = 'walk';
+        f.t = 0;
+        f.hp = f.maxHp * (f.s.revive ?? 0.5);
+        f.kbCount = 0;
+        this.events.push({ type: 'revive', f, up: true });
+      }
+      return;
+    }
     if (f.state === 'kb') {
       f.t += dt;
       const p = Math.min(1, f.t / KB_TIME);
@@ -428,7 +472,7 @@ export class Battle {
       f.x += dir * mv;
       f.burrowLeft -= mv;
       f.walkT += dt;
-      if (f.burrowLeft <= 0 || f.x <= 20 || (f.s.thief && f.x <= 230)) {
+      if (f.burrowLeft <= 0 || (f.side === 1 && f.x <= 20) || (f.side === 0 && f.x >= this.length - 60) || (f.s.thief && f.x <= 230)) {
         f.state = 'walk';
         f.t = 0;
         f.burrowed = true;
@@ -455,12 +499,91 @@ export class Battle {
       }
     } else {
       f.state = 'walk';
-      const sp = f.s.speed * (f.slowT > 0 ? 0.35 : 1);
+      const sp = f.s.speed * (f.slowT > 0 ? 0.35 : 1) * this.walkFactor(f.side);
       f.x += dir * sp * dt;
       f.walkT += dt * (f.slowT > 0 ? 0.35 : 1);
       if (f.side === 0) f.x = Math.min(f.x, this.length - 10);
       else f.x = Math.max(f.x, 10);
     }
+  }
+
+  /** ふぶき: gusts that speed one side up and slow the other. dir 1 = おいかぜ (helps potatoes), -1 = むかいかぜ */
+  windDir: 0 | 1 | -1 = 0;
+  windT = 0;
+  private gustN = 0;
+  private nextGust = 30;
+  private warned = false;
+  private forcedGust = 0;
+
+  walkFactor(side: 0 | 1) {
+    let k = this.stage.mod === 'slippery' ? 1.15 : 1;
+    if (this.windDir !== 0) {
+      const helps = (this.windDir === 1) === (side === 0);
+      k *= helps ? 1.4 : side === 0 ? 0.5 + this.mods.windResist : 0.5;
+    }
+    return k;
+  }
+
+  private stepWind(dt: number) {
+    if (this.windT > 0) {
+      this.windT -= dt;
+      if (this.windT <= 0) this.windDir = 0;
+    }
+    if (this.forcedGust > 0) return;
+    if (this.stage.mod !== 'blizzard') return;
+    if (!this.warned && this.time >= this.nextGust - 3) {
+      this.warned = true;
+      this.events.push({ type: 'gust', dir: this.gustN % 2 === 0 ? -1 : 1, warn: true });
+    }
+    if (this.time >= this.nextGust) {
+      this.windDir = this.gustN % 2 === 0 ? -1 : 1;
+      this.windT = GUST_TIME;
+      this.gustN++;
+      this.nextGust = this.time + 35;
+      this.warned = false;
+      this.events.push({ type: 'gust', dir: this.windDir, warn: false });
+    }
+  }
+
+  private stepSkills(dt: number) {
+    for (const f of this.enemies) {
+      const sk = f.s.skills;
+      if (!sk || f.state === 'dead' || f.state === 'revive') continue;
+      sk.forEach((k, i) => {
+        let fire = false;
+        if (k.every) {
+          f.skillT[i] += dt;
+          if (f.skillT[i] >= k.every) {
+            f.skillT[i] = 0;
+            fire = true;
+          }
+        }
+        if (k.below !== undefined && !f.skillDone[i] && f.hp <= f.maxHp * k.below) {
+          f.skillDone[i] = true;
+          fire = true;
+        }
+        if (fire) this.useSkill(f, k);
+      });
+    }
+  }
+
+  private useSkill(f: Fighter, k: { kind: string; id?: string; n?: number }) {
+    if (k.kind === 'stomp') {
+      for (const a of this.allies) if (a.state !== 'dead' && a.x >= f.x - 450 && a.x <= f.x + 40) this.knockback(a);
+      this.events.push({ type: 'shockwave', x: f.x });
+    } else if (k.kind === 'summon' && k.id) {
+      const alive = this.enemies.filter((e) => e.summoned && e.state !== 'dead').length;
+      for (let i = 0; i < (k.n ?? 1) && alive + i < 4; i++) {
+        const c = this.spawnEnemy(k.id, Math.round(f.mult / 1.7), f.x + 40 + i * 30);
+        c.summoned = true;
+      }
+    } else if (k.kind === 'blizzard') {
+      this.windDir = -1;
+      this.windT = 8;
+      this.forcedGust = 1;
+      this.events.push({ type: 'gust', dir: -1, warn: false });
+    }
+    this.events.push({ type: 'skill', f, kind: k.kind });
   }
 
   private stepRushes() {
@@ -530,7 +653,7 @@ export class Battle {
         const reach = this.beamReach;
         for (const e of this.enemies) {
           if (e.state === 'dead' || e.x > reach) continue;
-          if (e.state === 'burrow') continue;
+          if (e.state === 'burrow' || e.state === 'revive') continue;
           this.damage(e, e.s.metal ? 1 : this.mods.beamDmg * (e.boss ? 0.8 : 1), null, false);
           if ((e.state as string) !== 'dead') this.knockback(e);
         }
@@ -539,6 +662,8 @@ export class Battle {
       if (this.beamT >= 1.1) this.beamT = -1;
     }
 
+    this.stepWind(dt);
+    this.stepSkills(dt);
     this.stepSpawns();
     for (const f of this.allies) this.stepFighter(f, dt);
     for (const f of this.enemies) this.stepFighter(f, dt);

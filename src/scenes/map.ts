@@ -12,7 +12,7 @@ import { BONUS_ID, STAGES, STAR_NAMES, ticketReward, WORLD_NAMES } from '../game
 import { todayKey } from '../game/missions';
 import { canLevelUp, claimDaily, previewReward } from '../game/progress';
 import { claimable } from '../game/missions';
-import { drawGoldIcon, drawHand, wrapText } from './battle';
+import { drawGoldIcon, drawHand, MOD_LABEL, wrapText } from './battle';
 
 const SPACING = 96;
 
@@ -368,6 +368,7 @@ export class MapScene implements Scene {
     const fs = Math.min(24, pw * 0.06);
     text(ctx, `ステージ ${st.id}`, w / 2, py + fs * 1.1, fs * 0.75, { color: '#fff', stroke: '#8a5a22' });
     text(ctx, st.name, w / 2, py + fs * 2.4, fs, { color: st.boss ? '#ff5f5f' : '#ffd23a', maxW: pw - 20 });
+    if (st.mod) text(ctx, MOD_LABEL[st.mod], px + pw - 14, py + fs * 1.1, fs * 0.6, { align: 'right', color: '#3d97f0', stroke: '#fff' });
     // enemies preview
     const ids = [...new Set(st.spawns.map((s) => s.enemy))];
     const es = Math.min(64, (pw - 40) / Math.max(4, ids.length));

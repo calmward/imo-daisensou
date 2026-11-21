@@ -767,7 +767,329 @@ const kame: Drawer = (ctx, p) => {
   ctx.restore();
 };
 
+// ---------- World 4: ゆきの くに ----------
+const SNOW = '#f4f9ff';
+const SNOW2 = '#bcd6ee';
+
+const yukiusagi: Drawer = (ctx, p) => {
+  const m = motion(p, 16);
+  const hop = m.moving ? Math.abs(Math.sin(p.walk * 9)) * 9 : 0;
+  ctx.save();
+  ctx.translate(0, -hop);
+  ctx.rotate(m.lean + (m.moving ? -0.1 : 0));
+  // ears
+  for (const [ex, a] of [[-2, -0.25], [8, 0.15]] as [number, number][]) {
+    ctx.save();
+    ctx.translate(ex, -30);
+    ctx.rotate(a + Math.sin(p.t * 6 + ex) * 0.08);
+    ellipse(ctx, 0, -12, 5, 13);
+    fillStroke(ctx, SNOW, 2.5);
+    ellipse(ctx, 0, -12, 2.2, 9);
+    ctx.fillStyle = '#ffb0c8';
+    ctx.fill();
+    ctx.restore();
+  }
+  ellipse(ctx, 0, -16, 17, 15);
+  fillStroke(ctx, radial(ctx, -4, -20, 18, '#ffffff', SNOW2), 2.5);
+  ellipse(ctx, -16, -12, 5, 5);
+  fillStroke(ctx, '#fff', 2);
+  eye(ctx, 9, -20, 3.8, { look: 0.8, color: '#d0304a' });
+  ellipse(ctx, 16, -14, 2, 1.6);
+  ctx.fillStyle = '#ff8aa8';
+  ctx.fill();
+  mouth(ctx, 13, -10, 4, p.state === 'attack' ? 'open' : 'cat');
+  ctx.restore();
+  feet(ctx, 0, 0, 8, 4, p.walk * 16, m.moving, SNOW2);
+};
+
+const penguin: Drawer = (ctx, p) => {
+  const m = motion(p, 10);
+  feet(ctx, 0, 0, 7, 4, p.walk * 10, m.moving, '#ffb340');
+  ctx.save();
+  ctx.translate(0, -m.bob);
+  ctx.rotate(m.lean * 0.6 + (m.moving ? Math.sin(p.walk * 10) * 0.08 : 0));
+  ellipse(ctx, 0, -24, 17, 23);
+  fillStroke(ctx, radial(ctx, -4, -30, 22, '#3a4a6a', '#1a2038'));
+  ellipse(ctx, 4, -20, 11, 17);
+  fillStroke(ctx, '#ffffff', 2);
+  // red scarf (readability on snow)
+  ctx.beginPath();
+  ctx.ellipse(1, -33, 15, 4, 0, 0, Math.PI * 2);
+  fillStroke(ctx, '#e8312f', 2);
+  eye(ctx, 2, -40, 3.4, { look: 0.8 });
+  eye(ctx, 10, -40, 3.4, { look: 0.8 });
+  ctx.beginPath();
+  ctx.moveTo(10, -36);
+  ctx.lineTo(18, -34);
+  ctx.lineTo(10, -32);
+  ctx.closePath();
+  fillStroke(ctx, '#ffb340', 1.5);
+  blush(ctx, 14, -30, 2.5);
+  // flipper with snowball
+  const a = p.state === 'attack' ? (p.atk < 0.5 ? -0.9 : 0.8) : 0.2;
+  ctx.save();
+  ctx.translate(12, -26);
+  ctx.rotate(a);
+  ellipse(ctx, 6, 0, 8, 3.5);
+  fillStroke(ctx, '#1a2038', 2);
+  if (p.state === 'attack' && p.atk < 0.55) {
+    ellipse(ctx, 14, -2, 5, 5);
+    fillStroke(ctx, '#ffffff', 1.5, SNOW2);
+  }
+  ctx.restore();
+  ctx.restore();
+  if (p.state === 'attack' && p.atk >= 0.55) {
+    ellipse(ctx, 20 + (p.atk - 0.55) * 200, -34 - Math.sin((p.atk - 0.55) * 7) * 16, 5, 5);
+    fillStroke(ctx, '#ffffff', 1.5, SNOW2);
+  }
+};
+
+function snowman(ctx: Ctx, p: Pose, small: boolean) {
+  const m = motion(p, small ? 10 : 5);
+  const k = small ? 0.62 : 1;
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.4);
+  ctx.rotate(m.lean * 0.4 + (m.moving ? Math.sin(p.walk * 6) * 0.05 : 0));
+  ctx.scale(k, k);
+  ellipse(ctx, 0, -20, 24, 21);
+  fillStroke(ctx, radial(ctx, -8, -26, 26, '#ffffff', SNOW2), 3);
+  ellipse(ctx, 2, -52, 17, 16);
+  fillStroke(ctx, radial(ctx, -4, -56, 18, '#ffffff', SNOW2), 3);
+  // bucket hat & scarf
+  ctx.beginPath();
+  ctx.moveTo(-10, -64);
+  ctx.lineTo(14, -64);
+  ctx.lineTo(10, -80);
+  ctx.lineTo(-6, -80);
+  ctx.closePath();
+  fillStroke(ctx, small ? '#3d97f0' : '#c0392b', 2.5);
+  ctx.beginPath();
+  ctx.ellipse(2, -39, 15, 4.5, 0, 0, Math.PI * 2);
+  fillStroke(ctx, small ? '#8fe36b' : '#3d97f0', 2);
+  eye(ctx, -2, -55, 3.4, { look: 0.7, angry: p.state === 'attack' });
+  eye(ctx, 9, -55, 3.4, { look: 0.7, angry: p.state === 'attack' });
+  ctx.beginPath();
+  ctx.moveTo(8, -50);
+  ctx.lineTo(18, -48);
+  ctx.lineTo(8, -46);
+  ctx.closePath();
+  fillStroke(ctx, '#ff8a1f', 1.5);
+  // twig arms
+  const a = p.state === 'attack' ? (p.atk < 0.5 ? -0.6 : 0.5) : 0;
+  ctx.strokeStyle = '#6a4a2a';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(18, -26);
+  ctx.lineTo(32, -38 + a * 20);
+  ctx.moveTo(-20, -26);
+  ctx.lineTo(-32, -34);
+  ctx.stroke();
+  // coal buttons
+  ctx.fillStyle = OUT;
+  ellipse(ctx, 4, -24, 2.2, 2.2);
+  ctx.fill();
+  ellipse(ctx, 4, -14, 2.2, 2.2);
+  ctx.fill();
+  // cracks when hurt (it will split!)
+  if (!small && (p.hp ?? 1) < 0.5) {
+    ctx.strokeStyle = '#5a7a9a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-8, -38);
+    ctx.lineTo(-2, -26);
+    ctx.lineTo(-8, -18);
+    ctx.lineTo(-2, -6);
+    ctx.moveTo(12, -30);
+    ctx.lineTo(6, -20);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+const yukidaruma: Drawer = (ctx, p) => snowman(ctx, p, false);
+const chibidaruma: Drawer = (ctx, p) => snowman(ctx, p, true);
+
+const tonakai: Drawer = (ctx, p) => {
+  const m = motion(p, 9);
+  ctx.strokeStyle = '#5a3a22';
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  for (const [x, ph] of [[-18, 0], [-8, 2], [10, 1], [18, 3]] as [number, number][]) {
+    const sw = m.moving ? Math.sin(p.walk * 9 + ph) * 4 : 0;
+    ctx.beginPath();
+    ctx.moveTo(x, -18);
+    ctx.lineTo(x + sw, 0);
+    ctx.stroke();
+  }
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.6);
+  ctx.rotate(m.lean * 0.5);
+  ellipse(ctx, 0, -26, 26, 13);
+  fillStroke(ctx, radial(ctx, -6, -30, 26, '#c4905a', '#8a5a32'));
+  ellipse(ctx, 22, -44, 11, 10);
+  fillStroke(ctx, '#b07a48', 2.5);
+  // antlers
+  ctx.strokeStyle = '#6a4a2a';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(18, -52);
+  ctx.lineTo(12, -66);
+  ctx.lineTo(6, -70);
+  ctx.moveTo(12, -66);
+  ctx.lineTo(16, -74);
+  ctx.moveTo(24, -53);
+  ctx.lineTo(28, -68);
+  ctx.lineTo(24, -74);
+  ctx.moveTo(28, -68);
+  ctx.lineTo(34, -72);
+  ctx.stroke();
+  eye(ctx, 24, -46, 3.4, { look: 0.7 });
+  ellipse(ctx, 32, -42, 4, 3.6);
+  ctx.fillStyle = '#e8312f';
+  ctx.fill();
+  // collar with bell
+  ctx.beginPath();
+  ctx.ellipse(16, -36, 8, 3, 0.4, 0, Math.PI * 2);
+  fillStroke(ctx, '#e8312f', 1.5);
+  const ring = p.state === 'attack' ? Math.sin(p.t * 40) * 2 : 0;
+  ellipse(ctx, 16 + ring, -31, 4, 4);
+  fillStroke(ctx, '#ffd23a', 1.5);
+  ctx.restore();
+  if (p.state === 'attack') {
+    ctx.strokeStyle = `rgba(125,255,125,${1 - p.atk})`;
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.arc(16, -34, 10 + i * 9 + p.atk * 10, -0.6, 0.6);
+      ctx.stroke();
+    }
+  }
+};
+
+const yukiotoko: Drawer = (ctx, p) => {
+  const m = motion(p, 6);
+  feet(ctx, 0, 0, 14, 7, p.walk * 6, m.moving, SNOW2);
+  ctx.save();
+  ctx.translate(0, -m.bob);
+  ctx.rotate(m.lean * 0.6);
+  blob(ctx, 0, -32, 28, 32, 0.08, 5);
+  fillStroke(ctx, radial(ctx, -8, -40, 32, '#ffffff', '#a8c8e6'), 3);
+  // furry tufts
+  ctx.fillStyle = '#ffffff';
+  for (let i = 0; i < 7; i++) {
+    ellipse(ctx, -24 + i * 8, -62 + Math.abs(i - 3) * 2, 5, 4);
+    ctx.fill();
+  }
+  // blue face
+  ellipse(ctx, 6, -40, 14, 12);
+  fillStroke(ctx, '#6a9ac8', 2);
+  eye(ctx, 1, -43, 3.6, { look: 0.7, angry: true });
+  eye(ctx, 12, -43, 3.6, { look: 0.7, angry: true });
+  mouth(ctx, 8, -33, 7, p.state === 'attack' ? 'open' : 'grr');
+  // big arm
+  const a = p.state === 'attack' ? (p.atk < 0.5 ? -14 : 16) : 0;
+  arm(ctx, 18, -30, 32 + a, -38, 10, '#e8f2fb');
+  ctx.restore();
+};
+
+const mammoth: Drawer = (ctx, p) => {
+  const m = motion(p, 4);
+  ctx.strokeStyle = '#5a3a22';
+  ctx.lineWidth = 9;
+  ctx.lineCap = 'round';
+  for (const [x, ph] of [[-22, 0], [-8, 2], [12, 1], [24, 3]] as [number, number][]) {
+    const sw = m.moving ? Math.sin(p.walk * 4 + ph) * 3 : 0;
+    ctx.beginPath();
+    ctx.moveTo(x, -20);
+    ctx.lineTo(x + sw, -2);
+    ctx.stroke();
+  }
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.7);
+  ctx.rotate(m.lean * 0.4);
+  blob(ctx, 0, -36, 34, 26, 0.06, 3);
+  fillStroke(ctx, radial(ctx, -10, -44, 36, '#a8724a', '#5a3a22'), 3);
+  // snow on the back
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(-6, -58, 22, 7, -0.1, Math.PI, 0);
+  ctx.fill();
+  ellipse(ctx, 28, -40, 15, 15);
+  fillStroke(ctx, '#8a5a32', 3);
+  // trunk
+  const tr = p.state === 'attack' ? (p.atk < 0.5 ? -0.6 : 0.5) : Math.sin(p.t * 2) * 0.15;
+  ctx.save();
+  ctx.translate(38, -34);
+  ctx.rotate(tr);
+  ctx.strokeStyle = OUT;
+  ctx.lineWidth = 11;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(10, 14, 4, 28);
+  ctx.stroke();
+  ctx.strokeStyle = '#8a5a32';
+  ctx.lineWidth = 7;
+  ctx.stroke();
+  ctx.restore();
+  // tusks
+  ctx.beginPath();
+  ctx.moveTo(34, -28);
+  ctx.quadraticCurveTo(52, -26, 50, -42);
+  ctx.quadraticCurveTo(46, -32, 32, -32);
+  fillStroke(ctx, '#fff8e0', 2);
+  eye(ctx, 30, -46, 4, { look: 0.8, angry: true });
+  ctx.restore();
+};
+
+const kooriou: Drawer = (ctx, p) => {
+  const m = motion(p, 4);
+  feet(ctx, 0, 0, 18, 8, p.walk * 4, m.moving, '#3a5a8a');
+  ctx.save();
+  ctx.translate(0, -m.bob);
+  ctx.rotate(m.lean * 0.5);
+  // icy cape
+  ctx.beginPath();
+  ctx.moveTo(-10, -62);
+  ctx.quadraticCurveTo(-52, -40 + Math.sin(p.t * 3) * 4, -44, 0);
+  ctx.lineTo(10, -2);
+  ctx.closePath();
+  fillStroke(ctx, '#3d6ab0', 2.5);
+  blob(ctx, 0, -34, 30, 33, 0.05, 2);
+  fillStroke(ctx, radial(ctx, -8, -40, 32, '#9ad0f5', '#3a6aa8'), 3);
+  // white fur collar
+  ctx.fillStyle = '#ffffff';
+  for (let i = 0; i < 7; i++) {
+    ellipse(ctx, -14 + i * 6, -16 + Math.abs(i - 3), 5, 4);
+    ctx.fill();
+  }
+  // ice crown
+  ctx.beginPath();
+  ctx.moveTo(-12, -64);
+  for (let i = 0; i <= 6; i++) ctx.lineTo(-12 + i * 5, i % 2 ? -80 - (i === 3 ? 8 : 0) : -66);
+  ctx.lineTo(18, -64);
+  ctx.closePath();
+  fillStroke(ctx, '#e6f6ff', 2, '#3a6aa8');
+  eye(ctx, 0, -44, 6, { look: 0.7, angry: true, color: '#1a4aa8' });
+  eye(ctx, 18, -44, 6, { look: 0.7, angry: true, color: '#1a4aa8' });
+  mouth(ctx, 10, -30, 12, p.state === 'attack' ? 'open' : 'grr');
+  // ice scepter
+  const a = p.state === 'attack' ? (p.atk < 0.5 ? -0.9 : 0.6) : -0.2;
+  ctx.save();
+  ctx.translate(26, -34);
+  ctx.rotate(a);
+  arm(ctx, 0, 0, 0, -46, 4, '#c9e2f5');
+  ctx.beginPath();
+  ctx.moveTo(0, -62);
+  ctx.lineTo(8, -50);
+  ctx.lineTo(0, -44);
+  ctx.lineTo(-8, -50);
+  ctx.closePath();
+  fillStroke(ctx, '#9be8ff', 2);
+  ctx.restore();
+  ctx.restore();
+};
+
 export const ENEMY_ART: Record<string, Drawer> = {
+  yukiusagi, penguin, yukidaruma, chibidaruma, tonakai, yukiotoko, mammoth, kooriou,
   kame, dorobou, kaeru, metal,
   ari, nezumi, kemushi, karasu, hachi, mogura, katatsumuri, tanuki, kamakiri, hebi, inoshishi, fukurou, kabuto, okarasu, kuma, daiou,
 };

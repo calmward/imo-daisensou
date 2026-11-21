@@ -12,7 +12,7 @@ import { TUNING } from '../src/game/tuning';
 const SKILL = Number(process.env.SKILL ?? 0.6);
 const LIMIT = (_id: number) => 420;
 // "valley" stages are intentionally easy; bosses a bit harder
-const VALLEY = new Set([9, 16, 21, 28, 34]);
+const VALLEY = new Set([9, 16, 21, 28, 34, 40, 46]);
 function target(id: number) {
   const st = STAGES[id - 1];
   if (VALLEY.has(id)) return 0.5; // factor relative to the max-beatable factor

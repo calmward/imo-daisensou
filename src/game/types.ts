@@ -1,4 +1,4 @@
-export type Trait = 'bug' | 'bird' | 'beast' | 'boss';
+export type Trait = 'bug' | 'bird' | 'beast' | 'boss' | 'ice';
 
 export interface Effect {
   kind: 'slow' | 'freeze' | 'knock';
@@ -26,6 +26,9 @@ export interface CombatStats {
   shockwave?: boolean; // knocks back all foes on appear (boss)
   multiHit?: number; // hits per attack (visual + split damage)
   minRange?: number; // can't hit things closer than this (long-range snipers)
+  split?: { id: string; n: number }; // breaks into smaller enemies when defeated
+  revive?: number; // comes back once with this fraction of hp (unless finished by an 'ice' counter)
+  skills?: Skill[]; // boss abilities
   heal?: number; // heals nearby allies by this fraction of their max hp each attack
   flying?: boolean; // short-range attacks (range < 160) only do half damage
   barrier?: number; // hits weaker than this bounce off until one strong hit breaks it
@@ -81,6 +84,7 @@ export interface StageDef {
   maxEnemies?: number;
   tip?: string; // hint text shown before start
   baseKind?: string; // enemy base art
+  mod?: StageMod; // stage-wide extra rule
 }
 
 export interface Rush {
@@ -88,4 +92,14 @@ export interface Rush {
   enemy: string;
   count: number;
   mult: number;
+}
+
+export type StageMod = 'blizzard' | 'slippery' | 'festival';
+
+export interface Skill {
+  kind: 'stomp' | 'summon' | 'blizzard';
+  every?: number; // seconds between uses
+  below?: number; // fire once when hp fraction drops below this
+  id?: string; // summon: enemy id
+  n?: number; // summon: how many
 }

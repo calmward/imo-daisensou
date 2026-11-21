@@ -19,6 +19,7 @@ export interface SaveData {
   daily: string; // last day the login bonus was claimed
   claimed: string[]; // mission ids already claimed
   seen: Record<string, number>; // enemy id -> times defeated/encountered
+  kills: Record<string, number>; // enemy id -> defeated count
   today: { date: string; counts: Record<string, number>; claimed: string[]; ids?: string[] };
   stats: { wins: number; losses: number; kills: number };
 }
@@ -50,6 +51,7 @@ export function newSave(): SaveData {
     daily: '',
     claimed: [],
     seen: {},
+    kills: {},
     today: { date: '', counts: {}, claimed: [] },
     stats: { wins: 0, losses: 0, kills: 0 },
   };
@@ -91,8 +93,9 @@ export function sanitize(d: unknown): SaveData {
   for (const [k, v] of Object.entries(obj(o.units))) if (Object.prototype.hasOwnProperty.call(ALLY_MAP, k)) units[k] = num(v, 1, 1, MAX_LEVEL);
   s.units = Object.keys(units).length ? units : base.units;
   if (!s.units.jaga) s.units.jaga = 1;
+  for (const [k, v] of Object.entries(obj(o.kills))) if (/^[a-z]+$/.test(k) && !(k in Object.prototype)) s.kills[k] = num(v, 0);
   for (const [k, v] of Object.entries(obj(o.seen))) if (/^[a-z]+$/.test(k) && !(k in Object.prototype)) s.seen[k] = num(v, 0);
-  const RES = ['castle', 'income', 'wallet', 'beamPow', 'beamCharge', 'startMoney'];
+  const RES = ['castle', 'income', 'wallet', 'beamPow', 'beamCharge', 'startMoney', 'muffler'];
   for (const [k, v] of Object.entries(obj(o.research))) if (RES.includes(k)) s.research[k] = num(v, 0, 0, 20);
   for (const [k, v] of Object.entries(obj(o.tut))) s.tut[k] = v === true;
   const td = obj(o.today);
