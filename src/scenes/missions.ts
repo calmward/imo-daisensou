@@ -128,7 +128,7 @@ export class MissionScene implements Scene {
       lw = lw - rh * 0.9;
       const btnW = Math.min(100, lw * 0.24);
       const rx = lx + lw - btnW - 18 - Math.min(70, lw * 0.18);
-      fitText(ctx, mi.label, lx + 14, y + rh * 0.32, fs, rx - lx - 20, got ? '#888' : '#3a3a6a');
+      fitText(ctx, mi.label, lx + 14, y + rh * 0.32, fs, rx - lx - 34, got ? '#888' : '#3a3a6a');
       const [a, b] = mi.progress(save);
       const bw = rx - lx - 80;
       ctx.fillStyle = '#d8e4ee';

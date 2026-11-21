@@ -158,7 +158,8 @@ export class PowerScene implements Scene {
       ctx.fill();
       if (owned) {
         portrait(ctx, a.id, r.x + r.w / 2, r.y + r.h * 0.44, r.w * 0.78, selected ? this.t * 2 : 0, 0, selected ? 'walk' : 'idle', evoStage(save.units[a.id]));
-        text(ctx, `Lv.${save.units[a.id]}`, r.x + r.w / 2, r.y + r.h - 12, clamp(r.w * 0.17, 10, 15), { color: '#fff' });
+        text(ctx, a.name, r.x + r.w / 2, r.y + r.h - 26, clamp(r.w * 0.13, 9, 12), { color: '#5a3a12', stroke: 'none', maxW: r.w - 6 });
+        text(ctx, `Lv.${save.units[a.id]}`, r.x + r.w / 2, r.y + r.h - 11, clamp(r.w * 0.15, 10, 14), { color: '#fff' });
         if (canLevelUp(save, a.id)) text(ctx, '▲', r.x + r.w - 10, r.y + 16, 14, { color: '#7dff7d' });
       } else {
         silhouette(ctx, a.id, r.x + r.w / 2, r.y + r.h * 0.44, r.w * 0.78, 0, '#000', 0.35);
@@ -317,7 +318,7 @@ export class PowerScene implements Scene {
       panel(ctx, r, '#fffaf0', '#8a5a22', 14);
       const lv = save.research[rd.id] ?? 0;
       const fs = clamp(rh * 0.2, 11, 20);
-      const icon = ['🏰', '💰', '👛', '⚡', '🔋', '🪙'][i];
+      const icon = ['🏰', '💰', '👛', '⚡', '🔋', '🪙', '🧣'][i] ?? '⭐';
       text(ctx, icon, r.x + rh * 0.35, r.y + rh / 2, rh * 0.4, { stroke: 'none' });
       const textW = r.w - rh * 0.7 - Math.min(140, r.w * 0.3) - 26;
       text(ctx, rd.name, r.x + rh * 0.7, r.y + rh * 0.28, fs, { align: 'left', color: '#ffd23a', maxW: textW });

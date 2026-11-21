@@ -443,9 +443,11 @@ export class Battle {
         this.events.push({ type: 'hit', x: t.x, lane: t.lane, side: f.side, dmg: 0, crit: false, big: false, targetSide: t.side, effect: ef.kind });
       }
     }
-    if (base) {
+    // world 4+: potatoes fighting right at the castle gate also chip the castle (no endless sieges)
+    const spill = !base && f.side === 0 && list.length > 0 && this.stage.id >= 37 && this.length - f.x <= f.s.range;
+    if (base || spill) {
       const b = f.side === 0 ? this.eBase : this.pBase;
-      const dmg = f.s.atk;
+      const dmg = f.s.atk * (spill ? 0.35 : 1);
       b.hp = Math.max(0, b.hp - dmg);
       b.hitT = 0.15;
       this.events.push({ type: 'baseHit', side: f.side === 0 ? 1 : 0, dmg });

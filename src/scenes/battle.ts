@@ -4,7 +4,7 @@ import { drawBackground, drawEnemyBase, drawPlayerBase } from '../art/scenery';
 import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
 import { clamp, drawButton, easeOutBack, font, panel, rr, STYLES, text, type Rect } from '../core/ui';
-import { ATTACK_BACKSWING, Battle, KB_TIME, WALLET_MAX_LV, type BEvent, type Fighter } from '../game/battle';
+import { ATTACK_BACKSWING, Battle, KB_TIME, MAX_ALLIES, WALLET_MAX_LV, type BEvent, type Fighter } from '../game/battle';
 import { ALLY_MAP, evoStage } from '../game/allies';
 import { ENEMY_MAP } from '../game/enemies';
 import { MUSIC } from '../game/music';
@@ -57,6 +57,7 @@ export class BattleScene implements Scene {
   rotateTip = 0;
   bossCamT = 0;
   denyT: number[] = [];
+  fullMsgT = -9;
   dangerT = 0;
   endHandled = false;
   winRes: WinResult | null = null;
@@ -1221,7 +1222,13 @@ export class BattleScene implements Scene {
   private tapUnit(i: number) {
     if (this.paused || this.b.result) return;
     if (this.tut === 'wallet' || this.tut === 'beam') return;
-    if (!this.b.deploy(i)) this.denyT[i] = 0.35;
+    if (!this.b.deploy(i)) {
+      this.denyT[i] = 0.35;
+      if (this.b.allies.filter((a) => a.state !== 'dead').length >= MAX_ALLIES && this.t - this.fullMsgT > 3) {
+        this.fullMsgT = this.t;
+        this.fx.add({ kind: 'text', x: this.camX + (this.L.field.w / this.L.scale) * 0.3, y: -170, vy: -20, max: 1.4, size: 22, color: '#ffffff', stroke: '#c00040', text: 'なかまが いっぱい！' });
+      }
+    }
   }
   private tapWallet() {
     if (this.paused || this.b.result) return;
@@ -1387,7 +1394,21 @@ export class BattleScene implements Scene {
         ctx.fill();
       }
       ctx.restore();
-      text(ctx, 'しょうり！', w / 2, py + ph * 0.13, ts, { color: '#ffd23a', lw: ts * 0.25 });
+      const worldClear = this.winRes?.first && this.stageId % 12 === 0 && this.stageId <= STAGES.length && this.star === 1;
+      text(ctx, worldClear ? 'ワールド クリア！' : 'しょうり！', w / 2, py + ph * 0.13, worldClear ? ts * 0.85 : ts, { color: '#ffd23a', lw: ts * 0.25, maxW: pw - 20 });
+      if (worldClear) {
+        // confetti shower for clearing a whole world
+        for (let i = 0; i < 40; i++) {
+          const cx = ((i * 97) % w) + Math.sin(this.t * 2 + i) * 20;
+          const cy = ((this.t * (80 + (i % 5) * 30) + i * 53) % (h + 40)) - 20;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(this.t * 4 + i);
+          ctx.fillStyle = ['#ff5fa8', '#ffd23a', '#7cc8ff', '#8fe36b', '#c49bff'][i % 5];
+          ctx.fillRect(-5, -3, 10, 6);
+          ctx.restore();
+        }
+      }
     } else {
       text(ctx, 'まけちゃった…', w / 2, py + ph * 0.13, ts * 0.85, { color: '#c0c8ff', lw: ts * 0.22 });
     }
@@ -1432,6 +1453,7 @@ export class BattleScene implements Scene {
         ctx.fill();
         ctx.restore();
         portrait(ctx, r.unlocked, px + fs * 2.2, y - fs * 0.3, fs * 2.4, this.t * 2, 0, 'walk');
+        if (!this.app.save.deck.includes(r.unlocked)) text(ctx, 'へんせいが いっぱい！「なかまを いれる」で いれかえよう', w / 2 + fs, y + fs * 1.05, fs * 0.55, { color: '#ff8a1f', stroke: 'none', maxW: pw - fs * 5 });
         y += fs * 1.6;
       }
       const secs = Math.floor(this.b.time);
@@ -1470,7 +1492,7 @@ export class BattleScene implements Scene {
         portrait(ctx, foe, px + pw * 0.16, y + fs * 0.9, fs * 2.6, this.t, 1);
         void 0;
         text(ctx, `ニガテな てき: ${ed.name}`, px + pw * 0.3, y + fs * 0.3, fs * 0.8, { align: 'left', color: '#ff8080', maxW: pw * 0.66 });
-        wrapText(ctx, counterHint(foe, this.app.save.units), px + pw * 0.63, y + fs * 1.6, pw * 0.64, fs * 0.62, '#3a3a6a');
+        wrapText(ctx, counterHint(foe, this.app.save.units, this.app.save.deck), px + pw * 0.63, y + fs * 1.6, pw * 0.64, fs * 0.62, '#3a3a6a');
       } else if (room > fs * 1.6) wrapText(ctx, '「つよくする」で なかまを つよくしよう！', w / 2, y + 4, pw - 30, fs * 0.8, '#3a3a6a');
     }
     // buttons
@@ -1484,8 +1506,10 @@ export class BattleScene implements Scene {
       const armed = this.resultT > 3.6; // ignore leftover spam-taps right after the panel appears
       if (!armed) ctx.globalAlpha = 0.5;
       const o1 = drawButton(ctx, b1, STYLES.blue, ui.isPressed('r1'));
-      text(ctx, win ? 'マップへ' : 'つよくする', b1.x + bw / 2, b1.y + o1 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
-      if (armed) ui.add({ id: 'r1', r: b1, onTap: () => this.app.go(win ? 'map' : 'power') });
+      // a new friend who didn't fit in the team: send the kid to the team screen
+      const newOut = win && this.winRes?.unlocked && !this.app.save.deck.includes(this.winRes.unlocked);
+      text(ctx, newOut ? 'なかまを いれる' : win ? 'マップへ' : 'つよくする', b1.x + bw / 2, b1.y + o1 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
+      if (armed) ui.add({ id: 'r1', r: b1, onTap: () => this.app.go(newOut || !win ? 'power' : 'map') });
       const o2 = drawButton(ctx, b2, next ? STYLES.orange : STYLES.green, ui.isPressed('r2'));
       text(ctx, next ? 'つぎの ステージ' : 'もういちど', b2.x + bw / 2, b2.y + o2 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
       ctx.globalAlpha = 1;
@@ -1580,11 +1604,12 @@ export const MOD_LABEL: Record<string, string> = { blizzard: '🌬 ふぶき', s
 const TRAIT_NAME: Record<string, string> = { bug: 'むし', bird: 'とり', beast: 'けもの', boss: 'ボス', ice: 'こおり' };
 
 /** Suggest an owned potato that is strong against this enemy. */
-export function counterHint(enemyId: string, owned: Record<string, number>): string {
+export function counterHint(enemyId: string, owned: Record<string, number>, deck?: string[]): string {
   const e = ENEMY_MAP[enemyId];
   const traits = e.traits ?? [];
-  const counter = Object.keys(owned).map((id) => ALLY_MAP[id]).find((a) => a && a.strongVs?.some((t) => traits.includes(t)));
-  if (counter) return `${TRAIT_NAME[counter.strongVs!.find((t) => traits.includes(t))!]}に つよい「${counter.name}」を だそう！`;
+  const all = Object.keys(owned).map((id) => ALLY_MAP[id]).filter((a) => a && a.strongVs?.some((t) => traits.includes(t)));
+  const counter = all.find((a) => !deck?.includes(a.id)) ?? all[0];
+  if (counter) return `${TRAIT_NAME[counter.strongVs!.find((t) => traits.includes(t))!]}に つよい「${counter.name}」を ${deck && !deck.includes(counter.id) ? 'へんせいに いれよう' : 'だそう'}！`;
   if (e.range >= 200) return 'とおくから うってくる てき。しゃていの ながい なかまで たおそう！';
   if (e.revive) return 'ユキオトコは ふっかつ する！ ポテトグラタンで とかせば ふっかつ しないよ';
   if (e.split) return 'わると 2つに なるよ！ まとめて こうげきできる なかまが とくい！';
