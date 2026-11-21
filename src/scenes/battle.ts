@@ -58,6 +58,7 @@ export class BattleScene implements Scene {
   bossCamT = 0;
   denyT: number[] = [];
   fullMsgT = -9;
+  breathT = 0;
   dangerT = 0;
   endHandled = false;
   winRes: WinResult | null = null;
@@ -464,8 +465,14 @@ export class BattleScene implements Scene {
         } else audio.sfx('charge');
         break;
       case 'skill':
+        if (e.kind === 'breath') {
+          this.breathT = 0.9;
+          this.dangerT = 1.6;
+          fx.add({ kind: 'text', x: e.f.x - 60, y: -150, vy: -20, max: 1.3, size: 22, color: '#bfe8ff', stroke: '#1a4a8a', text: 'こおりの いき！' });
+          audio.sfx('beam');
+        }
         if (e.kind === 'summon') fx.add({ kind: 'text', x: e.f.x - 30, y: -160, vy: -20, max: 1.2, size: 20, color: '#9be8ff', stroke: '#1a4a8a', text: 'でてこい！' });
-        if (e.kind === 'blizzard') this.banner = { text: 'こおり大王が おこったぞ！', sub: 'ふぶきが ふいてくる！', t: 0, color: '#9be8ff', dur: 2.6, boss: e.f.id };
+        if (e.kind === 'blizzard') this.banner = { text: 'こおり大王が おこったぞ！', sub: 'ふぶきが ふいてくる！', t: 0, color: '#9be8ff', dur: 1.5 };
         break;
       case 'castleShake':
         this.banner = { text: 'てきの おしろが ぐらついた！', sub: 'いまだ！ せめこめー！', t: 0, color: '#ffd23a', dur: 2.2 };
@@ -724,8 +731,27 @@ export class BattleScene implements Scene {
     const all = [...b.enemies, ...b.allies].sort((a, c) => a.lane - c.lane);
     for (const fi of all) this.drawFighter(ctx, fi, toX, toY, s);
     this.drawBeam(ctx, toX, toY, s);
+    if (this.breathT > 0) {
+      this.breathT -= 1 / 60;
+      const boss = b.enemies.find((e) => e.boss && e.state !== 'dead');
+      if (boss) {
+        const k = this.breathT / 0.9;
+        const g3 = ctx.createLinearGradient(toX(boss.x), 0, toX(-60), 0);
+        g3.addColorStop(0, `rgba(190,235,255,${0.9 * k})`);
+        g3.addColorStop(1, `rgba(120,190,255,${0.6 * k})`);
+        ctx.fillStyle = g3;
+        const yy = toY(-110);
+        ctx.beginPath();
+        ctx.moveTo(toX(boss.x - 20), yy - 14 * s);
+        ctx.lineTo(toX(-60), yy - 40 * s);
+        ctx.lineTo(toX(-60), yy + 40 * s);
+        ctx.lineTo(toX(boss.x - 20), yy + 14 * s);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
     this.fx.render(ctx, toX, toY, s);
-    if (b.windDir !== 0) {
+    if (b.windDir !== 0 && !b.result) {
       // blizzard streaks blowing in the wind direction
       ctx.save();
       ctx.strokeStyle = 'rgba(255,255,255,0.95)';
@@ -1453,7 +1479,7 @@ export class BattleScene implements Scene {
         ctx.fill();
         ctx.restore();
         portrait(ctx, r.unlocked, px + fs * 2.2, y - fs * 0.3, fs * 2.4, this.t * 2, 0, 'walk');
-        if (!this.app.save.deck.includes(r.unlocked)) text(ctx, 'へんせいが いっぱい！「なかまを いれる」で いれかえよう', w / 2 + fs, y + fs * 1.05, fs * 0.55, { color: '#ff8a1f', stroke: 'none', maxW: pw - fs * 5 });
+        if (!this.app.save.deck.includes(r.unlocked)) text(ctx, 'へんせいが いっぱい！ 「なかまを いれる」で いれかえよう', w / 2, y + fs * 1.15, Math.max(14, fs * 0.65), { color: '#ff8a1f', stroke: 'none', maxW: pw - 20 });
         y += fs * 1.6;
       }
       const secs = Math.floor(this.b.time);
@@ -1472,7 +1498,7 @@ export class BattleScene implements Scene {
         // treasure chest badge in the panel's top-right corner (never overlaps the reward lines)
         const k2 = easeOutBack(Math.min(1, (this.resultT - 3.9) / 0.4));
         ctx.save();
-        ctx.translate(px + pw - fs * 2.6, py + fs * 2.2);
+        ctx.translate(px + pw - fs * 2.6, py + fs * 4.2);
         ctx.scale(k2, k2);
         ctx.rotate(0.08);
         drawChest(ctx, 0, 0, fs * 0.9, this.t);

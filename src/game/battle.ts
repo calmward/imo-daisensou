@@ -329,9 +329,10 @@ export class Battle {
       target.kbTo = target.x + 70;
       this.events.push({ type: 'death', f: target });
       this.kills++;
-      if (target.reward > 0) {
-        this.money = Math.min(this.cap, this.money + target.reward);
-        this.events.push({ type: 'money', x: target.x, amount: target.reward });
+      const reward = target.reward * (this.stage.mod === 'festival' ? 2 : 1);
+      if (reward > 0) {
+        this.money = Math.min(this.cap, this.money + reward);
+        this.events.push({ type: 'money', x: target.x, amount: reward });
       }
       return;
     }
@@ -407,7 +408,7 @@ export class Battle {
     if (f.s.heal) {
       const mine = f.side === 0 ? this.allies : this.enemies;
       for (const a of mine) {
-        if (a.state === 'dead' || Math.abs(a.x - f.x) > f.s.range || a.hp >= a.maxHp) continue;
+        if (a.state === 'dead' || a.state === 'revive' || (f.side === 1 && a.boss) || Math.abs(a.x - f.x) > f.s.range || a.hp >= a.maxHp) continue;
         const amt = f.side === 1 ? Math.min(a.maxHp * f.s.heal, f.s.atk * 3) : a.maxHp * f.s.heal;
         a.hp = Math.min(a.maxHp, a.hp + amt);
         this.events.push({ type: 'heal', f: a });
@@ -571,6 +572,7 @@ export class Battle {
       this.windT -= dt;
       if (this.windT <= 0) {
         this.windDir = 0;
+        if (this.forcedGust) this.nextGust = Math.max(this.nextGust, this.time + 5);
         this.forcedGust = 0;
       }
     }
@@ -612,8 +614,14 @@ export class Battle {
     }
   }
 
-  private useSkill(f: Fighter, k: { kind: string; id?: string; n?: number }) {
-    if (k.kind === 'stomp') {
+  private useSkill(f: Fighter, k: { kind: string; id?: string; n?: number; power?: number }) {
+    if (k.kind === 'breath') {
+      // こおりの いき: an icy blast straight at the potato castle — beat the boss quickly!
+      const dmg = Math.round(this.pBase.max * (k.power ?? 0.05));
+      this.pBase.hp = Math.max(0, this.pBase.hp - dmg);
+      this.pBase.hitT = 0.5;
+      this.events.push({ type: 'baseHit', side: 0, dmg });
+    } else if (k.kind === 'stomp') {
       for (const a of this.allies) if (a.state !== 'dead' && a.x >= f.x - 450 && a.x <= f.x + 40) this.knockback(a);
       this.events.push({ type: 'shockwave', x: f.x });
     } else if (k.kind === 'summon' && k.id) {
@@ -687,7 +695,9 @@ export class Battle {
     this.time += dt;
     if (before < RAGE_START && this.time >= RAGE_START) this.events.push({ type: 'rage' });
     this.money = Math.min(this.cap, this.money + this.rate * dt);
-    if (this.beamT < 0) this.beam = Math.min(1, this.beam + dt / this.mods.beamCharge);
+    // world 4+: when the army is full, the beam charges faster so there's still something to do
+    const capped = this.stage.id >= 37 && this.allies.length >= MAX_ALLIES;
+    if (this.beamT < 0) this.beam = Math.min(1, this.beam + (dt / this.mods.beamCharge) * (capped ? 2.5 : 1));
     // おいかぜ: potatoes get ready twice as fast — a chance for a big push
     const cdRate = this.windDir === 1 ? 2 : 1;
     for (const s of this.slots) if (s.cd > 0) s.cd = Math.max(0, s.cd - dt * cdRate);

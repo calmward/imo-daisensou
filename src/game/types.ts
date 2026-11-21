@@ -97,7 +97,8 @@ export interface Rush {
 export type StageMod = 'blizzard' | 'slippery' | 'festival';
 
 export interface Skill {
-  kind: 'stomp' | 'summon' | 'blizzard';
+  kind: 'stomp' | 'summon' | 'blizzard' | 'breath';
+  power?: number; // breath: fraction of the potato castle's max hp
   every?: number; // seconds between uses
   below?: number; // fire once when hp fraction drops below this
   id?: string; // summon: enemy id
