@@ -111,7 +111,7 @@ export class MapScene implements Scene {
     const topH = clamp(h * 0.1, 50, 70);
     const botH = clamp(h * 0.14, 70, 110);
     const area = { x: 0, y: topH, w, h: h - topH - botH };
-    this.axisLen = 140 + (STAGES.length - 1) * SPACING + 2 * 60;
+    this.axisLen = 140 + (STAGES.length - 1) * SPACING + (WORLD_NAMES.length - 1) * 60;
     this.viewMain = this.horizontal ? area.w : area.h;
     if (!this.inited) {
       this.inited = true;
@@ -122,10 +122,10 @@ export class MapScene implements Scene {
     // background bands per world
     ctx.fillStyle = '#8fd8ff';
     ctx.fillRect(0, 0, w, h);
-    for (let wi = 0; wi < 3; wi++) {
+    for (let wi = 0; wi < WORLD_NAMES.length; wi++) {
       const a = this.nodePos(wi * 12, area);
       const b = this.nodePos(wi * 12 + 11, area);
-      const th = THEMES[wi];
+      const th = THEMES[wi % THEMES.length];
       const start = (this.horizontal ? a.x : a.y) - SPACING * 0.8;
       const end = (this.horizontal ? b.x : b.y) + SPACING * 0.8;
       ctx.fillStyle = th.hill1;

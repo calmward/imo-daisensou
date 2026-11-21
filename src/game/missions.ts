@@ -1,5 +1,6 @@
 import { ALLIES, EVOLVE_LV } from './allies';
 import type { SaveData } from './save';
+import { STAGES } from './stages';
 
 export interface Mission {
   id: string;
@@ -26,7 +27,8 @@ export const MISSIONS: Mission[] = [
   m('c6', 'はじめての ボスを たおす（6ステージ）', clearedCount, 6, 500, 1),
   m('c12', 'ステージを 12 クリア', clearedCount, 12, 1000, 2),
   m('c24', 'ステージを 24 クリア', clearedCount, 24, 2000, 2),
-  m('c36', 'ぜんぶの ステージを クリア！', clearedCount, 36, 5000, 5),
+  m('c36', 'ワールド3まで クリア！（36ステージ）', clearedCount, 36, 5000, 5),
+  m('call', `ぜんぶの ステージを クリア！（${STAGES.length}ステージ）`, clearedCount, STAGES.length, 8000, 8),
   m('k50', 'てきを 50ひき たおす', (s) => s.stats.kills, 50, 200),
   m('k300', 'てきを 300ぴき たおす', (s) => s.stats.kills, 300, 600, 1),
   m('k1000', 'てきを 1000ぴき たおす', (s) => s.stats.kills, 1000, 1500, 2),
