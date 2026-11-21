@@ -49,7 +49,7 @@ export const MISSIONS: Mission[] = [
   m('s3a', '★★★（げきむず）を 1つ クリア', (s) => crownCount(s, 3), 1, 1500, 2),
   m('s3b', '★★★（げきむず）を 10 クリア', (s) => crownCount(s, 3), 10, 5000, 5),
   m('snow30', 'ゆきだるまを 30こ わる', (s) => s.kills.yukidaruma ?? 0, 30, 1500, 2),
-  m('w4star', '★★ ゆきの くにを 6つ クリア', (s) => Object.entries(s.crowns).filter(([id, c]) => +id >= 37 && c >= 2).length, 6, 3000, 3),
+  m('w4star', 'ゆきの くにの「むずかしい★★」を 6つ クリア', (s) => Object.entries(s.crowns).filter(([id, c]) => +id >= 37 && c >= 2).length, 6, 3000, 3),
   m('hyper1', 'なかまを ハイパーしんか させる（レベル15）', (s) => Object.values(s.units).filter((l) => l >= 15).length, 1, 3000, 3),
   m('w10', 'バトルで 10かい かつ', (s) => s.stats.wins, 10, 500),
   m('w50', 'バトルで 50かい かつ', (s) => s.stats.wins, 50, 2000, 2),

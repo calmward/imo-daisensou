@@ -373,7 +373,7 @@ export class BattleScene implements Scene {
         audio.sfx('coin');
         break;
       case 'baseHit': {
-        if (e.side === 0 && this.camX > 60 && this.t - this.lastDanger > 6) {
+        if (e.side === 0 && this.camX > 60 && this.t - this.lastDanger > 6 && this.b.pBase.hp < this.b.pBase.max * 0.7) {
           this.lastDanger = this.t;
           this.dangerT = 2.2;
           audio.sfx('deny');
@@ -473,6 +473,11 @@ export class BattleScene implements Scene {
         }
         if (e.kind === 'summon') fx.add({ kind: 'text', x: e.f.x - 30, y: -160, vy: -20, max: 1.2, size: 20, color: '#9be8ff', stroke: '#1a4a8a', text: 'でてこい！' });
         if (e.kind === 'blizzard') this.banner = { text: 'こおり大王が おこったぞ！', sub: 'ふぶきが ふいてくる！', t: 0, color: '#9be8ff', dur: 1.5 };
+        break;
+      case 'turret':
+        fx.add({ kind: 'spark', x: e.x, y: -40, max: 0.35, size: 14, color: '#ffd23a', rot: 0, vr: 8 });
+        fx.add({ kind: 'text', x: e.x, y: -90, vy: -30, max: 0.7, size: 15, color: '#ffd23a', text: 'ドン！' });
+        audio.sfx('hit2');
         break;
       case 'castleShake':
         this.banner = { text: 'てきの おしろが ぐらついた！', sub: 'いまだ！ せめこめー！', t: 0, color: '#ffd23a', dur: 2.2 };
@@ -1479,7 +1484,10 @@ export class BattleScene implements Scene {
         ctx.fill();
         ctx.restore();
         portrait(ctx, r.unlocked, px + fs * 2.2, y - fs * 0.3, fs * 2.4, this.t * 2, 0, 'walk');
-        if (!this.app.save.deck.includes(r.unlocked)) text(ctx, 'へんせいが いっぱい！ 「なかまを いれる」で いれかえよう', w / 2, y + fs * 1.15, Math.max(14, fs * 0.65), { color: '#ff8a1f', stroke: 'none', maxW: pw - 20 });
+        if (!this.app.save.deck.includes(r.unlocked)) {
+          text(ctx, 'へんせいが いっぱい！ 「なかまを いれる」で いれかえよう', w / 2, y + fs * 1.15, Math.max(14, fs * 0.65), { color: '#ff8a1f', stroke: 'none', maxW: pw - 20 });
+          y += fs * 1.1;
+        }
         y += fs * 1.6;
       }
       const secs = Math.floor(this.b.time);
@@ -1511,7 +1519,8 @@ export class BattleScene implements Scene {
       const left = Math.ceil((this.b.eBase.hp / this.b.eBase.max) * 100);
       text(ctx, left <= 40 ? `あと ちょっと！ てきの おしろ のこり ${left}%` : `てきの おしろ のこり ${left}%`, w / 2, y, fs * 0.7, { color: left <= 40 ? '#ff8a1f' : '#5a5a8a', stroke: 'none', maxW: pw - 30 });
       y += fs * 1.1;
-      const foe = Object.entries(this.b.killedBy).sort((a, c) => c[1] - a[1])[0]?.[0];
+      // blame whoever hurt the castle most (e.g. thieves), else whoever beat the most potatoes
+      const foe = (Object.entries(this.b.castleBy).sort((a, c) => c[1] - a[1])[0] ?? Object.entries(this.b.killedBy).sort((a, c) => c[1] - a[1])[0])?.[0];
       const room = by - y;
       if (foe && room > fs * 3) {
         const ed = ENEMY_MAP[foe];
@@ -1637,6 +1646,7 @@ export function counterHint(enemyId: string, owned: Record<string, number>, deck
   const counter = all.find((a) => !deck?.includes(a.id)) ?? all[0];
   if (counter) return `${TRAIT_NAME[counter.strongVs!.find((t) => traits.includes(t))!]}に つよい「${counter.name}」を ${deck && !deck.includes(counter.id) ? 'へんせいに いれよう' : 'だそう'}！`;
   if (e.range >= 200) return 'とおくから うってくる てき。しゃていの ながい なかまで たおそう！';
+  if (e.thief) return 'いもどろぼうは おしろの ちかくで たおそう！ なかまを すこし のこしておこう';
   if (e.revive) return 'ユキオトコは ふっかつ する！ ポテトグラタンで とかせば ふっかつ しないよ';
   if (e.split) return 'わると 2つに なるよ！ まとめて こうげきできる なかまが とくい！';
   if (e.heal) return 'なかまを なおす てき！ とおくから さきに たおそう';

@@ -61,6 +61,7 @@ export type BEvent =
   | { type: 'rage' }
   | { type: 'rush' }
   | { type: 'castleShake' }
+  | { type: 'turret'; x: number }
   | { type: 'revive'; f: Fighter; up: boolean }
   | { type: 'melt'; f: Fighter }
   | { type: 'split'; f: Fighter }
@@ -126,6 +127,9 @@ export class Battle {
   kills = 0;
   /** which enemy defeated how many potatoes (for the loss hint) */
   killedBy: Record<string, number> = {};
+  /** which enemy damaged the potato castle how much (for the loss hint) */
+  castleBy: Record<string, number> = {};
+  private turretT = 0;
   spawned = 0;
   private uid = 1;
   private spawns: SpawnState[];
@@ -448,6 +452,7 @@ export class Battle {
     const spill = !base && f.side === 0 && list.length > 0 && this.stage.id >= 37 && this.length - f.x <= f.s.range;
     if (base || spill) {
       const b = f.side === 0 ? this.eBase : this.pBase;
+      if (f.side === 1) this.castleBy[f.id] = (this.castleBy[f.id] ?? 0) + f.s.atk;
       const dmg = f.s.atk * (spill ? 0.35 : 1);
       b.hp = Math.max(0, b.hp - dmg);
       b.hitT = 0.15;
@@ -640,6 +645,18 @@ export class Battle {
     this.events.push({ type: 'skill', f, kind: k.kind });
   }
 
+  /** world 4+: the potato castle's little cannon shoots thieves that reach it */
+  private stepTurret(dt: number) {
+    if (this.stage.id < 37) return;
+    this.turretT -= dt;
+    if (this.turretT > 0) return;
+    const thief = this.enemies.find((e) => e.s.thief && this.targetable(e) && e.x <= 240);
+    if (!thief) return;
+    this.turretT = 1.2;
+    this.events.push({ type: 'turret', x: thief.x });
+    this.damage(thief, thief.maxHp * 0.18, null, false);
+  }
+
   private stepRushes() {
     const rushes = this.stage.rushes ?? [];
     while (this.rushIdx < rushes.length && this.time >= rushes[this.rushIdx].at) {
@@ -722,6 +739,7 @@ export class Battle {
 
     this.stepWind(dt);
     this.stepSkills(dt);
+    this.stepTurret(dt);
     this.stepSpawns();
     for (const f of this.allies) this.stepFighter(f, dt);
     for (const f of this.enemies) this.stepFighter(f, dt);

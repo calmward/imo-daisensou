@@ -278,7 +278,11 @@ export class PowerScene implements Scene {
       const inDeck = save.deck.includes(a.id);
       const dR = { x: r.x + r.w * 0.58, y: by, w: r.w * 0.42 - 10, h: bh };
       const off2 = drawButton(ctx, dR, inDeck ? STYLES.blue : STYLES.orange, ui.isPressed('deck'));
-      text(ctx, inDeck ? (this.confirmRemove === a.id ? 'ほんとに はずす？' : 'はずす') : 'へんせいに いれる', dR.x + dR.w / 2, dR.y + off2 + (bh - 6) / 2, bh * 0.28, { maxW: dR.w - 8 });
+      const full = !inDeck && save.deck.length >= deckSize(save);
+      // when the team is full, offer a one-step swap with the weakest member
+      const weakest = full ? [...save.deck].sort((x, y) => save.units[x] - save.units[y])[0] : '';
+      const label = inDeck ? (this.confirmRemove === a.id ? 'ほんとに はずす？' : 'はずす') : full ? (this.confirmRemove === 'swap' + a.id ? `「${ALLY_MAP[weakest].name}」と こうたい？` : 'いれかえる') : 'へんせいに いれる';
+      text(ctx, label, dR.x + dR.w / 2, dR.y + off2 + (bh - 6) / 2, bh * 0.28, { maxW: dR.w - 8 });
       ui.add({ id: 'deck', r: dR, onTap: () => {
         if (inDeck) {
           if (save.deck.length <= 1) audio.sfx('deny');
@@ -290,7 +294,14 @@ export class PowerScene implements Scene {
             this.confirmRemove = null;
           }
         } else if (save.deck.length < deckSize(save)) save.deck.push(a.id);
-        else this.popText = { s: `いまは ${deckSize(save)}たいまで だよ`, t: 0 };
+        else if (this.confirmRemove !== 'swap' + a.id) {
+          this.confirmRemove = 'swap' + a.id;
+          this.popText = { s: 'もういちど おすと いれかえるよ', t: 0 };
+        } else {
+          save.deck = save.deck.map((d) => (d === weakest ? a.id : d));
+          this.confirmRemove = null;
+          this.popText = { s: 'いれかえた！', t: 0 };
+        }
         this.app.persist();
       } });
     } else {
