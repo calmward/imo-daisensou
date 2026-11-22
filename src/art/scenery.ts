@@ -12,6 +12,7 @@ export const THEMES: WorldTheme[] = [
   { sky: ['#8fd8ff', '#e6f8ff'], hill1: '#a6e07a', hill2: '#7cc85a', ground: ['#c9925a', '#a06a3a'], accent: '#6ccf4a' },
   { sky: ['#ffcf9a', '#fff1d6'], hill1: '#5aa86a', hill2: '#3a8a4a', ground: ['#a07a4a', '#7a5a32'], accent: '#e8792a' },
   { sky: ['#b8a6ff', '#ffe0f0'], hill1: '#9a90b8', hill2: '#7a6a9a', ground: ['#a08a7a', '#7a6a5a'], accent: '#c0b0e0' },
+  { sky: ['#9fd4f5', '#f2fbff'], hill1: '#e6f2fb', hill2: '#c4dcef', ground: ['#f4f8fc', '#b8cfe2'], accent: '#7fc8f0' },
 ];
 
 /** Parallax background. camX in world units, scale = px per world unit. */
@@ -53,7 +54,8 @@ export function drawBackground(ctx: Ctx, w: number, h: number, groundY: number, 
   };
   hillLayer(th.hill1, 0.25, 30, 90, 0.004);
   if (world === 1) drawTrees(ctx, w, groundY, camX, scale, 0.4);
-  if (world === 2) drawPeaks(ctx, w, groundY, camX, scale);
+  if (world === 2 || world === 3) drawPeaks(ctx, w, groundY, camX, scale);
+  if (world === 3) drawAurora(ctx, w, groundY, t);
   hillLayer(th.hill2, 0.5, 18, 40, 0.007);
   // ground
   const gg = ctx.createLinearGradient(0, groundY, 0, h);
@@ -65,7 +67,7 @@ export function drawBackground(ctx: Ctx, w: number, h: number, groundY: number, 
   ctx.fillRect(0, groundY - 2, w, Math.max(4, 7 * scale));
   drawGroundProps(ctx, w, groundY, camX, scale, world, t);
   // ambient weather: petals / leaves / snow
-  const colors = [['#ffc0d8', '#fff'], ['#e8a040', '#c86a20'], ['#ffffff', '#e8f0ff']][world % 3];
+  const colors = [['#ffc0d8', '#fff'], ['#e8a040', '#c86a20'], ['#ffffff', '#e8f0ff'], ['#ffffff', '#dff2ff']][world % 4];
   for (let i = 0; i < 14; i++) {
     const sp = 18 + (i % 5) * 6;
     const x = ((i * 173 + t * sp * 0.6 - camX * scale * 0.3) % (w + 60) + w + 60) % (w + 60) - 30;
@@ -75,7 +77,7 @@ export function drawBackground(ctx: Ctx, w: number, h: number, groundY: number, 
     ctx.rotate(t * 2 + i);
     ctx.fillStyle = colors[i % 2];
     ctx.globalAlpha = 0.8;
-    if (world === 2) ellipse(ctx, 0, 0, 2.5, 2.5);
+    if (world >= 2) ellipse(ctx, 0, 0, 2.5, 2.5);
     else ellipse(ctx, 0, 0, 4, 2);
     ctx.fill();
     ctx.restore();
@@ -293,6 +295,82 @@ export function drawEnemyBase(ctx: Ctx, hpFrac: number, t: number, hitT: number,
     ctx.ellipse(70, -5, 30, 34, 0, Math.PI, 0);
     ctx.fill();
     faceY = -105;
+  } else if (kind === 4 || kind === 5) {
+    // ice castle (5 = こおり大王の こおりの きゅうでん)
+    const big = kind === 5;
+    const top = big ? -205 : -175;
+    ctx.beginPath();
+    ctx.moveTo(10, 0);
+    ctx.lineTo(18, top + 30);
+    ctx.lineTo(122, top + 30);
+    ctx.lineTo(130, 0);
+    ctx.closePath();
+    fillStroke(ctx, radial(ctx, 50, -100, 140, '#f4fbff', '#9cc8ec'), 4, '#3a6a9a');
+    // ice bricks
+    ctx.strokeStyle = 'rgba(90,140,190,0.45)';
+    ctx.lineWidth = 2;
+    for (let r = 0; r < 5; r++) {
+      ctx.beginPath();
+      ctx.moveTo(16, -24 - r * 28);
+      ctx.lineTo(126, -24 - r * 28);
+      ctx.stroke();
+    }
+    // towers
+    for (const x of big ? [8, 70, 132] : [14, 126]) {
+      ctx.beginPath();
+      ctx.rect(x - 14, top + 6, 28, -top - 6);
+      fillStroke(ctx, '#dff0fc', 3, '#3a6a9a');
+      ctx.beginPath();
+      ctx.moveTo(x - 18, top + 6);
+      ctx.lineTo(x, top - 30);
+      ctx.lineTo(x + 18, top + 6);
+      ctx.closePath();
+      fillStroke(ctx, big ? '#7fc8f0' : '#bfe8ff', 3, '#3a6a9a');
+    }
+    // icicle teeth along the top edge
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 8; i++) {
+      ctx.beginPath();
+      ctx.moveTo(24 + i * 12, top + 30);
+      ctx.lineTo(30 + i * 12, top + 44 + (i % 2) * 6);
+      ctx.lineTo(36 + i * 12, top + 30);
+      ctx.fill();
+    }
+    if (big) {
+      // crown on the middle tower
+      ctx.beginPath();
+      ctx.moveTo(56, top - 26);
+      for (let i = 0; i <= 4; i++) ctx.lineTo(56 + i * 7, i % 2 ? top - 46 : top - 30);
+      ctx.closePath();
+      fillStroke(ctx, '#ffd23a', 2);
+    }
+    // snow on the roof & glossy shine
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(70, top + 30, 56, 7, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.moveTo(26, top + 40);
+    ctx.lineTo(40, top + 40);
+    ctx.lineTo(28, -10);
+    ctx.lineTo(18, -10);
+    ctx.closePath();
+    ctx.fill();
+    // twinkling frost
+    for (let i = 0; i < 4; i++) {
+      const k = (t * 0.7 + i / 4) % 1;
+      ctx.globalAlpha = 1 - k;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(30 + i * 26, top + 50 + k * 40, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // scarf flag
+    ctx.fillStyle = '#e8312f';
+    ctx.fillRect(122, top - 20, 22, 8);
+    faceY = big ? -110 : -95;
   } else {
     // イモクイ大王の宮殿
     ctx.beginPath();
@@ -424,6 +502,12 @@ function drawGroundProps(ctx: Ctx, w: number, groundY: number, camX: number, sca
       if (kind < 0.4) mushroom(ctx, i % 2 ? '#e8312f' : '#c8783a');
       else if (kind < 0.7) acorn(ctx);
       else flower(ctx, '#c49bff', t + i);
+    } else if (world === 3) {
+      if (kind < 0.35) pine(ctx);
+      else if (kind < 0.5) igloo(ctx);
+      else if (kind < 0.62) snowmanProp(ctx);
+      else if (kind < 0.85) iceCrystal(ctx, t + i);
+      else shrub(ctx);
     } else {
       if (kind < 0.5) rock(ctx, hash(i * 1.9));
       else if (kind < 0.8) shrub(ctx);
@@ -561,6 +645,12 @@ function shrub(ctx: Ctx) {
 
 /** Decorative prop for the world map (feet at 0,0, ~40 units tall). */
 export function mapProp(ctx: Ctx, world: number, k: number, t: number) {
+  if (world === 3) {
+    if (k < 0.45) pine(ctx);
+    else if (k < 0.7) igloo(ctx);
+    else snowmanProp(ctx);
+    return;
+  }
   if (world === 0) {
     if (k < 0.15) scarecrow(ctx, t);
     else if (k < 0.75) potatoPlant(ctx, t);
@@ -593,4 +683,87 @@ export function mapProp(ctx: Ctx, world: number, k: number, t: number) {
     } else if (k < 0.75) rock(ctx, k);
     else shrub(ctx);
   }
+}
+
+function drawAurora(ctx: Ctx, w: number, groundY: number, t: number) {
+  ctx.save();
+  for (const [c, off] of [['rgba(80,240,160,0.38)', 0], ['rgba(255,120,210,0.28)', 1.7]] as [string, number][]) {
+    ctx.fillStyle = c;
+    ctx.beginPath();
+    const y0 = groundY * 0.22;
+    ctx.moveTo(0, y0);
+    for (let x = 0; x <= w; x += 20) ctx.lineTo(x, y0 + Math.sin(x * 0.012 + t * 0.6 + off) * 18);
+    for (let x = w; x >= 0; x -= 20) ctx.lineTo(x, y0 + 30 + Math.sin(x * 0.015 + t * 0.5 + off) * 14);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function pine(ctx: Ctx) {
+  ctx.fillStyle = '#6a4a2a';
+  ctx.fillRect(-3, -10, 6, 10);
+  for (let i = 0; i < 3; i++) {
+    const y = -10 - i * 12,
+      r = 16 - i * 4;
+    ctx.beginPath();
+    ctx.moveTo(-r, y);
+    ctx.lineTo(0, y - 18);
+    ctx.lineTo(r, y);
+    ctx.closePath();
+    fillStroke(ctx, '#3a8a6a', 1.5, '#1e4a3a');
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.5, y - 9);
+    ctx.lineTo(0, y - 18);
+    ctx.lineTo(r * 0.5, y - 9);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function igloo(ctx: Ctx) {
+  ctx.beginPath();
+  ctx.arc(0, 0, 18, Math.PI, 0);
+  ctx.closePath();
+  fillStroke(ctx, '#f4f9ff', 2, '#7a9ab8');
+  ctx.strokeStyle = '#c4dcef';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, 11, Math.PI, 0);
+  ctx.moveTo(-17, -7);
+  ctx.lineTo(17, -7);
+  ctx.stroke();
+  ctx.fillStyle = '#4a6a8a';
+  ctx.beginPath();
+  ctx.arc(8, 0, 6, Math.PI, 0);
+  ctx.fill();
+}
+
+function snowmanProp(ctx: Ctx) {
+  ellipse(ctx, 0, -8, 9, 8);
+  fillStroke(ctx, '#ffffff', 1.5, '#7a9ab8');
+  ellipse(ctx, 0, -21, 6, 6);
+  fillStroke(ctx, '#ffffff', 1.5, '#7a9ab8');
+  ctx.fillStyle = OUT;
+  ellipse(ctx, -2, -22, 1, 1);
+  ctx.fill();
+  ellipse(ctx, 2, -22, 1, 1);
+  ctx.fill();
+  ctx.fillStyle = '#ff8a1f';
+  ctx.fillRect(1, -20, 5, 2);
+}
+
+function iceCrystal(ctx: Ctx, t: number) {
+  ctx.save();
+  ctx.translate(0, -12);
+  ctx.globalAlpha = 0.85 + Math.sin(t * 2) * 0.15;
+  ctx.beginPath();
+  ctx.moveTo(0, -12);
+  ctx.lineTo(6, 0);
+  ctx.lineTo(0, 12);
+  ctx.lineTo(-6, 0);
+  ctx.closePath();
+  fillStroke(ctx, '#bfe8ff', 1.5, '#5a9ac8');
+  ctx.restore();
 }

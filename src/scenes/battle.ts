@@ -4,8 +4,8 @@ import { drawBackground, drawEnemyBase, drawPlayerBase } from '../art/scenery';
 import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
 import { clamp, drawButton, easeOutBack, font, panel, rr, STYLES, text, type Rect } from '../core/ui';
-import { ATTACK_BACKSWING, Battle, KB_TIME, WALLET_MAX_LV, type BEvent, type Fighter } from '../game/battle';
-import { ALLY_MAP, isEvolved } from '../game/allies';
+import { ATTACK_BACKSWING, Battle, KB_TIME, MAX_ALLIES, WALLET_MAX_LV, type BEvent, type Fighter } from '../game/battle';
+import { ALLY_MAP, evoStage } from '../game/allies';
 import { ENEMY_MAP } from '../game/enemies';
 import { MUSIC } from '../game/music';
 import { applyBonusWin, applyLoss, applyWin, canLevelUp, type WinResult } from '../game/progress';
@@ -57,6 +57,8 @@ export class BattleScene implements Scene {
   rotateTip = 0;
   bossCamT = 0;
   denyT: number[] = [];
+  fullMsgT = -9;
+  breathT = 0;
   dangerT = 0;
   endHandled = false;
   winRes: WinResult | null = null;
@@ -95,6 +97,7 @@ export class BattleScene implements Scene {
     audio.playMusic('battle', MUSIC.battle);
     const st = this.b.stage;
     this.banner = { text: st.boss ? 'ボス ステージ！' : 'スタート！', sub: `${st.id === BONUS_ID ? '' : st.id + '. '}${st.name}${this.star > 1 ? '（' + STAR_NAMES[this.star] + '）' : ''}`, t: 0, color: st.boss ? '#ff5f5f' : '#ffd23a', dur: 2.2 };
+    if (st.mod) this.banner.sub = (this.banner.sub ?? '') + '　' + MOD_LABEL[st.mod];
     audio.sfx('whistle');
     this.rotateTip = this.app.h > this.app.w * 1.1 && (this.app.save.stats.wins + this.app.save.stats.losses) < 8 ? 5 : 0;
     setTimeout(() => audio.say(st.boss ? 'ボスステージだ！ しゅつげき！' : 'しゅつげき！'), 300);
@@ -335,6 +338,7 @@ export class BattleScene implements Scene {
         break;
       }
       case 'kb':
+        if (this.b.stage.mod === 'slippery' && r() < 0.4) fx.add({ kind: 'text', x: e.f.x, y: -70, vy: -20, max: 0.8, size: 16, color: '#bfe8ff', stroke: '#1a4a8a', text: 'つるーん！' });
         fx.add({ kind: 'puff', x: e.f.x, y: -10 + this.laneY(e.f.lane), max: 0.4, size: 22, color: '#fff' });
         for (let i = 0; i < 4; i++) fx.add({ kind: 'dirt', x: e.f.kbTo, y: -2 + this.laneY(e.f.lane), vx: (r() - 0.5) * 90, vy: -60 - r() * 60, grav: 400, max: 0.9, size: 4, color: '#c9a070' });
         if (!e.f.boss) audio.sfx('kb');
@@ -344,6 +348,8 @@ export class BattleScene implements Scene {
         const ly = this.laneY(f.lane);
         void ly;
         if (f.side === 1) {
+          const kl = this.app.save.kills;
+          kl[f.id] = (kl[f.id] ?? 0) + 1;
           countToday(this.app.save, 'kills');
           if (f.s.thief) countToday(this.app.save, 'thieves');
           if (f.boss) countToday(this.app.save, 'bosses');
@@ -363,11 +369,11 @@ export class BattleScene implements Scene {
       }
       case 'money':
         for (let i = 0; i < 3; i++) fx.add({ kind: 'coin', x: e.x + 20, y: -30, vx: (r() - 0.5) * 120, vy: -150 - r() * 100, grav: 500, max: 0.9, size: 6 });
-        if (fx.list.filter((p) => p.kind === 'text').length < 8) fx.add({ kind: 'text', x: e.x + 20, y: -90, vy: -40, max: 0.8, size: 13, color: '#ffe14d', text: `+${e.amount}えん` });
+        if (fx.list.filter((p) => p.kind === 'text').length < 8) fx.add({ kind: 'text', x: e.x + 20, y: -90, vy: -40, max: 0.8, size: 13, color: '#ffe14d', text: `+${e.amount}えん`, ...(this.b.stage.mod === 'festival' ? { color: '#ffb000', size: 16 } : {}) });
         audio.sfx('coin');
         break;
       case 'baseHit': {
-        if (e.side === 0 && this.camX > 60 && this.t - this.lastDanger > 6) {
+        if (e.side === 0 && this.camX > 60 && this.t - this.lastDanger > 6 && this.b.pBase.hp < this.b.pBase.max * 0.7) {
           this.lastDanger = this.t;
           this.dangerT = 2.2;
           audio.sfx('deny');
@@ -431,6 +437,48 @@ export class BattleScene implements Scene {
         fx.add({ kind: 'text', x: e.f.x - 10, y: -70, vy: -40, max: 0.8, size: 16, color: '#7dff7d', text: '+げんき' });
         fx.add({ kind: 'spark', x: e.f.x - 10, y: -40, vy: -60, max: 0.6, size: 10, color: '#7dff7d', rot: 0, vr: 4 });
         break;
+      case 'revive':
+        if (e.up) {
+          fx.add({ kind: 'text', x: e.f.x, y: -110, vy: -30, max: 1.2, size: 24, color: '#9be8ff', stroke: '#1a4a8a', text: 'ふっかつ！' });
+          for (let i = 0; i < 8; i++) fx.add({ kind: 'spark', x: e.f.x - 20, y: -50, vx: (r() - 0.5) * 240, vy: -r() * 200, max: 0.5, size: 9, color: '#bfe8ff', rot: r() * 6, vr: 8 });
+          audio.sfx('freeze');
+        } else {
+          fx.add({ kind: 'text', x: e.f.x, y: -110, vy: -20, max: 1.2, size: 18, color: '#ffffff', stroke: '#1a4a8a', text: 'こおった…？' });
+          audio.sfx('freeze');
+        }
+        break;
+      case 'melt':
+        fx.add({ kind: 'text', x: e.f.x, y: -110, vy: -30, max: 1.2, size: 24, color: '#ff8a1f', stroke: '#fff', text: 'とけた！' });
+        for (let i = 0; i < 6; i++) fx.add({ kind: 'puff', x: e.f.x - 20 + (r() - 0.5) * 40, y: -40, vy: -60, max: 0.8, size: 20, color: '#ffffff' });
+        countToday(this.app.save, 'melts');
+        audio.sfx('crit');
+        break;
+      case 'split':
+        fx.add({ kind: 'text', x: e.f.x, y: -100, vy: -30, max: 0.9, size: 22, color: '#9be8ff', stroke: '#1a4a8a', text: 'パカッ！' });
+        for (let i = 0; i < 10; i++) fx.add({ kind: 'dirt', x: e.f.x, y: -40, vx: (r() - 0.5) * 220, vy: -120 - r() * 120, grav: 600, max: 0.8, size: 5, color: '#ffffff' });
+        audio.sfx('pop');
+        break;
+      case 'gust':
+        if (e.warn) {
+          this.banner = { text: 'ふぶきが くるよ！', sub: e.dir === 1 ? 'おいかぜ → いっきに すすもう！' : '← むかいかぜ ちゅうい！', t: 0, color: '#bfe8ff', dur: 2.6 };
+          audio.sfx('whistle');
+        } else audio.sfx('charge');
+        break;
+      case 'skill':
+        if (e.kind === 'breath') {
+          this.breathT = 0.9;
+          this.dangerT = 1.6;
+          fx.add({ kind: 'text', x: e.f.x - 60, y: -150, vy: -20, max: 1.3, size: 22, color: '#bfe8ff', stroke: '#1a4a8a', text: 'こおりの いき！' });
+          audio.sfx('beam');
+        }
+        if (e.kind === 'summon') fx.add({ kind: 'text', x: e.f.x - 30, y: -160, vy: -20, max: 1.2, size: 20, color: '#9be8ff', stroke: '#1a4a8a', text: 'でてこい！' });
+        if (e.kind === 'blizzard') this.banner = { text: 'こおり大王が おこったぞ！', sub: 'ふぶきが ふいてくる！', t: 0, color: '#9be8ff', dur: 1.5 };
+        break;
+      case 'turret':
+        fx.add({ kind: 'spark', x: e.x, y: -40, max: 0.35, size: 14, color: '#ffd23a', rot: 0, vr: 8 });
+        fx.add({ kind: 'text', x: e.x, y: -90, vy: -30, max: 0.7, size: 15, color: '#ffd23a', text: 'ドン！' });
+        audio.sfx('hit2');
+        break;
       case 'castleShake':
         this.banner = { text: 'てきの おしろが ぐらついた！', sub: 'いまだ！ せめこめー！', t: 0, color: '#ffd23a', dur: 2.2 };
         this.shake = 18;
@@ -476,6 +524,10 @@ export class BattleScene implements Scene {
               hachi: 'そらを とぶ てき！ ちかくの こうげきは とどきにくい。とおくから うてる なかまを だそう',
               fukurou: 'そらを とぶ てき！ にらまれると うごけなくなるよ',
               hebi: 'とおくまで かみついてくる！',
+              penguin: 'ゆきだまで おそく されるよ！',
+              yukidaruma: 'わると 2つに わかれるよ！',
+              tonakai: 'なかまを なおす！ さきに たおそう',
+              yukiotoko: 'いちど ふっかつ する！ グラタンで とかそう',
             };
             if (intro[e.f.id] && (!this.banner || this.banner.t > 1.5)) {
               this.banner = { text: `${ENEMY_MAP[e.f.id].name}が きた！`, sub: intro[e.f.id], t: 0, color: '#9be8ff', dur: 2.6 };
@@ -608,6 +660,57 @@ export class BattleScene implements Scene {
     const toX = (x: number) => f.x + (x - this.camX) * s;
     const toY = (y: number) => L.groundY + y * s;
     drawBackground(ctx, w, f.y + f.h, L.groundY, this.camX, s, b.stage.world, this.t);
+    if (b.stage.mod === 'slippery') {
+      // shiny ice on the ground
+      const g2 = ctx.createLinearGradient(0, L.groundY, 0, L.groundY + 40 * s);
+      g2.addColorStop(0, 'rgba(90,180,240,0.85)');
+      g2.addColorStop(1, 'rgba(120,200,250,0.25)');
+      ctx.fillStyle = g2;
+      ctx.fillRect(f.x, L.groundY - 2, f.w, 40 * s);
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      for (let i = 0; i < 6; i++) {
+        const gx = ((i * 157 - this.camX * s) % f.w + f.w) % f.w;
+        ctx.fillRect(gx, L.groundY + 6 * s, 30 * s, 2);
+        // cracks
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(gx + 40 * s, L.groundY + 4 * s);
+        ctx.lineTo(gx + 52 * s, L.groundY + 16 * s);
+        ctx.lineTo(gx + 46 * s, L.groundY + 26 * s);
+        ctx.stroke();
+      }
+    }
+    if (b.stage.mod === 'festival') {
+      // festival flags & lanterns across the sky
+      const fy = f.y + f.h * 0.12;
+      ctx.strokeStyle = '#8a5a22';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(f.x, fy);
+      for (let x = 0; x <= f.w; x += 40) ctx.lineTo(f.x + x, fy + Math.sin(x * 0.02) * 6);
+      ctx.stroke();
+      const cols = ['#ff5f5f', '#ffd23a', '#7cc8ff', '#8fe36b', '#ff9ccf'];
+      for (let i = 0, x = 10; x < f.w; i++, x += 40) {
+        const yy = fy + Math.sin(x * 0.02) * 6;
+        if (i % 3 === 2) {
+          ellipse(ctx, f.x + x, yy + 12, 7, 9);
+          ctx.fillStyle = '#ff6a3a';
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255,230,120,0.8)';
+          ellipse(ctx, f.x + x, yy + 12, 3, 5);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = cols[i % cols.length];
+          ctx.beginPath();
+          ctx.moveTo(f.x + x - 7, yy);
+          ctx.lineTo(f.x + x + 7, yy);
+          ctx.lineTo(f.x + x, yy + 14);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    }
     // ground fill below field
     // bases
     const pFrac = b.pBase.hp / b.pBase.max,
@@ -622,7 +725,7 @@ export class BattleScene implements Scene {
     ctx.save();
     ctx.translate(toX(b.length), L.groundY);
     ctx.scale(s, s);
-    drawEnemyBase(ctx, eFrac, this.t, b.eBase.hitT, b.stage.id === 36 ? 3 : b.stage.world, eDestroyed);
+    drawEnemyBase(ctx, eFrac, this.t, b.eBase.hitT, b.stage.id === 36 ? 3 : b.stage.id === 48 ? 5 : b.stage.world === 3 ? 4 : b.stage.world, eDestroyed);
     ctx.restore();
     // base HP labels
     const lblSize = clamp(15 * s * 1.4, 11, 18);
@@ -633,7 +736,55 @@ export class BattleScene implements Scene {
     const all = [...b.enemies, ...b.allies].sort((a, c) => a.lane - c.lane);
     for (const fi of all) this.drawFighter(ctx, fi, toX, toY, s);
     this.drawBeam(ctx, toX, toY, s);
+    if (this.breathT > 0) {
+      this.breathT -= 1 / 60;
+      const boss = b.enemies.find((e) => e.boss && e.state !== 'dead');
+      if (boss) {
+        const k = this.breathT / 0.9;
+        const g3 = ctx.createLinearGradient(toX(boss.x), 0, toX(-60), 0);
+        g3.addColorStop(0, `rgba(190,235,255,${0.9 * k})`);
+        g3.addColorStop(1, `rgba(120,190,255,${0.6 * k})`);
+        ctx.fillStyle = g3;
+        const yy = toY(-110);
+        ctx.beginPath();
+        ctx.moveTo(toX(boss.x - 20), yy - 14 * s);
+        ctx.lineTo(toX(-60), yy - 40 * s);
+        ctx.lineTo(toX(-60), yy + 40 * s);
+        ctx.lineTo(toX(boss.x - 20), yy + 14 * s);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
     this.fx.render(ctx, toX, toY, s);
+    if (b.windDir !== 0 && !b.result) {
+      // blizzard streaks blowing in the wind direction
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      ctx.lineWidth = 3.5;
+      const dirx = b.windDir;
+      for (let i = 0; i < 40; i++) {
+        const sp = 600 + (i % 7) * 60;
+        const x = (((i * 97 + dirx * this.t * sp) % f.w) + f.w) % f.w;
+        const y = f.y + ((i * 53 + this.t * 140) % f.h);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + dirx * 26, y + 6);
+        ctx.stroke();
+      }
+      ctx.fillStyle = b.windDir === 1 ? 'rgba(150,255,170,0.16)' : 'rgba(255,170,170,0.16)';
+      ctx.fillRect(f.x, f.y, f.w, f.h);
+      // heavy snow bands
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      for (let i = 0; i < 3; i++) {
+        const bx = ((((i * 331 + b.windDir * this.t * 500) % (f.w + 200)) + f.w + 200) % (f.w + 200)) - 100;
+        ctx.beginPath();
+        ctx.ellipse(f.x + bx, f.y + f.h * (0.3 + i * 0.2), 120, 18, b.windDir * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      const label = b.windDir === 1 ? 'おいかぜ ➡➡ いまだ！' : '⬅⬅ むかいかぜ';
+      text(ctx, label, f.x + f.w / 2, f.y + (L.portrait ? 76 : L.pause.h + 76), clamp(f.h * 0.1, 18, 32), { color: b.windDir === 1 ? '#3ad04a' : '#ff4a4a', stroke: '#ffffff', lw: 6 });
+    }
     if (this.flashT > 0) {
       ctx.fillStyle = `rgba(255,255,240,${Math.min(0.7, this.flashT * 3)})`;
       ctx.fillRect(f.x, f.y, f.w, f.h);
@@ -731,15 +882,15 @@ export class BattleScene implements Scene {
     ctx.translate(sx, sy);
     if (rot) ctx.rotate(rot);
     const flashing = fi.flash > 0;
-    const pose = { t: this.t + fi.uid, walk: fi.walkT, state, atk, hurt: flashing, frozen: fi.freezeT > 0 };
-    if (flashing || fi.freezeT > 0) {
+    const pose = { t: this.t + fi.uid, walk: fi.walkT, state, atk, hurt: flashing, frozen: fi.freezeT > 0, hp: fi.hp / fi.maxHp };
+    if (flashing || fi.freezeT > 0 || fi.state === 'revive') {
       const tint = flashing ? '#ffffff' : '#9be8ff';
       ctx.translate(0, -40 * sc);
-      drawTinted(ctx, 100 * sc * Math.max(1, fi.s.width / 70), tint, flashing ? 0.6 : 0.45, (c) => drawChar(c, fi.id, 0, 40 * sc, sc, pose, fi.side, fi.evo));
+      drawTinted(ctx, 100 * sc * Math.max(1, fi.s.width / 70), flashing && (fi.boss || fi.s.traits?.includes('ice')) ? '#ffd0a0' : tint, flashing ? (fi.boss ? 0.25 : 0.6) : 0.45, (c) => drawChar(c, fi.id, 0, 40 * sc, sc, pose, fi.side, fi.evo));
     } else drawChar(ctx, fi.id, 0, 0, sc, pose, fi.side, fi.evo);
     ctx.restore();
     ctx.globalAlpha = 1;
-    if (fi.freezeT > 0 && fi.state !== 'dead') {
+    if ((fi.freezeT > 0 || fi.state === 'revive') && fi.state !== 'dead') {
       ctx.fillStyle = 'rgba(160,230,255,0.35)';
       rr(ctx, sx - 30 * sc, sy - 64 * sc, 60 * sc, 64 * sc, 6 * sc);
       ctx.fill();
@@ -754,6 +905,39 @@ export class BattleScene implements Scene {
         ellipse(ctx, sx + (i - 1) * 12 * sc, py, 3 * s + 1, 3 * s + 1);
         ctx.fill();
       }
+    }
+    if (fi.state === 'revive') {
+      // solid ice block (clearly visible on snow)
+      const bw = 70 * sc,
+        bh = 90 * sc;
+      ctx.save();
+      const ig = ctx.createLinearGradient(sx - bw / 2, sy - bh, sx + bw / 2, sy);
+      ig.addColorStop(0, 'rgba(150,210,250,0.75)');
+      ig.addColorStop(1, 'rgba(90,160,220,0.6)');
+      ctx.fillStyle = ig;
+      rr(ctx, sx - bw / 2, sy - bh, bw, bh, 8 * sc);
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#1a4a8a';
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillRect(sx - bw * 0.35, sy - bh * 0.9, bw * 0.12, bh * 0.5);
+      ctx.restore();
+      // sparkle countdown on the ice block
+      const k = Math.min(1, fi.t / 2);
+      text(ctx, k < 0.5 ? '❄❄' : '❄', sx, sy - 74 * sc, 14, { color: '#ffffff', stroke: '#1a4a8a' });
+    }
+    if (fi.side === 1 && fi.s.revive && !fi.revived && fi.state !== 'dead') {
+      // "1 more life" badge
+      const bx = sx + 18 * sc,
+        by = sy - 70 * sc;
+      ellipse(ctx, bx, by, 8, 8);
+      ctx.fillStyle = '#3d97f0';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      text(ctx, '1', bx, by + 1, 11, { stroke: 'none' });
     }
     // small hp bar for hurt enemies
     if (fi.side === 1 && !fi.boss && fi.hp < fi.maxHp && fi.state !== 'dead' && fi.state !== 'burrow') {
@@ -842,7 +1026,8 @@ export class BattleScene implements Scene {
     if (!boss) return;
     const bw = Math.min(360, L.field.w * 0.5);
     const x = L.field.x + (L.field.w - bw) / 2;
-    const y = L.field.y + (L.portrait ? 48 : L.pause.h + 50);
+    // dock the boss bar low in the field so it never covers the (huge) boss
+    const y = L.field.y + L.field.h - 44;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     rr(ctx, x - 4, y - 4, bw + 8, 24, 8);
     ctx.fill();
@@ -976,7 +1161,7 @@ export class BattleScene implements Scene {
       ctx.clip();
       const ps = Math.min(r.w * 0.95, (r.h - 3) * 0.85);
       if (!ready) ctx.globalAlpha = slot.cd > 0 ? 0.55 : 0.85;
-      portrait(ctx, slot.def.id, r.x + r.w / 2, r.y + off + (r.h - 3) * 0.42, ps, t * (ready ? 1 : 0), 0, ready ? 'idle' : 'portrait', isEvolved(slot.level));
+      portrait(ctx, slot.def.id, r.x + r.w / 2, r.y + off + (r.h - 3) * 0.42, ps, t * (ready ? 1 : 0), 0, ready ? 'idle' : 'portrait', evoStage(slot.level));
       ctx.globalAlpha = 1;
       // cooldown overlay
       if (slot.cd > 0) {
@@ -1068,7 +1253,13 @@ export class BattleScene implements Scene {
   private tapUnit(i: number) {
     if (this.paused || this.b.result) return;
     if (this.tut === 'wallet' || this.tut === 'beam') return;
-    if (!this.b.deploy(i)) this.denyT[i] = 0.35;
+    if (!this.b.deploy(i)) {
+      this.denyT[i] = 0.35;
+      if (this.b.allies.filter((a) => a.state !== 'dead').length >= MAX_ALLIES && this.t - this.fullMsgT > 3) {
+        this.fullMsgT = this.t;
+        this.fx.add({ kind: 'text', x: this.camX + (this.L.field.w / this.L.scale) * 0.3, y: -170, vy: -20, max: 1.4, size: 22, color: '#ffffff', stroke: '#c00040', text: 'なかまが いっぱい！' });
+      }
+    }
   }
   private tapWallet() {
     if (this.paused || this.b.result) return;
@@ -1124,7 +1315,7 @@ export class BattleScene implements Scene {
     ctx.translate(w / 2 + (bn.boss ? w * 0.08 : 0), cy - 6);
     ctx.scale(appear, appear);
     const size = clamp(Math.min(w * 0.08, L.field.h * 0.16), 22, 54);
-    text(ctx, bn.text, 0, 0, size, { color: bn.color, lw: size * 0.25 });
+    text(ctx, bn.text, 0, 0, size, { color: bn.color, lw: size * 0.25, maxW: w * 0.8 - (bn.boss ? w * 0.16 : 0) });
     if (bn.sub) text(ctx, bn.sub, 0, size * 0.85, size * 0.45, { color: '#fff' });
     ctx.restore();
   }
@@ -1234,7 +1425,21 @@ export class BattleScene implements Scene {
         ctx.fill();
       }
       ctx.restore();
-      text(ctx, 'しょうり！', w / 2, py + ph * 0.13, ts, { color: '#ffd23a', lw: ts * 0.25 });
+      const worldClear = this.winRes?.first && this.stageId % 12 === 0 && this.stageId <= STAGES.length && this.star === 1;
+      text(ctx, worldClear ? 'ワールド クリア！' : 'しょうり！', w / 2, py + ph * 0.13, worldClear ? ts * 0.85 : ts, { color: '#ffd23a', lw: ts * 0.25, maxW: pw - 20 });
+      if (worldClear) {
+        // confetti shower for clearing a whole world
+        for (let i = 0; i < 40; i++) {
+          const cx = ((i * 97) % w) + Math.sin(this.t * 2 + i) * 20;
+          const cy = ((this.t * (80 + (i % 5) * 30) + i * 53) % (h + 40)) - 20;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(this.t * 4 + i);
+          ctx.fillStyle = ['#ff5fa8', '#ffd23a', '#7cc8ff', '#8fe36b', '#c49bff'][i % 5];
+          ctx.fillRect(-5, -3, 10, 6);
+          ctx.restore();
+        }
+      }
     } else {
       text(ctx, 'まけちゃった…', w / 2, py + ph * 0.13, ts * 0.85, { color: '#c0c8ff', lw: ts * 0.22 });
     }
@@ -1243,7 +1448,7 @@ export class BattleScene implements Scene {
     const step = Math.min(0.16, 0.84 / Math.max(1, deck.length));
     deck.forEach((s, i) => {
       const cx = w / 2 + (i - (deck.length - 1) / 2) * pw * step;
-      portrait(ctx, s.def.id, cx, py + ph * 0.37 - (win ? Math.abs(Math.sin(this.t * 5 + i * 0.9)) * 14 : 0), Math.min(64, pw * Math.max(step, 0.1)), this.t * (win ? 2 : 0.3) + i, 0, win ? 'walk' : 'kb', isEvolved(s.level));
+      portrait(ctx, s.def.id, cx, py + ph * 0.37 - (win ? Math.abs(Math.sin(this.t * 5 + i * 0.9)) * 14 : 0), Math.min(64, pw * Math.max(step, 0.1)), this.t * (win ? 2 : 0.3) + i, 0, win ? 'walk' : 'kb', evoStage(s.level));
     });
     const fs = Math.min(22, pw * 0.055);
     const by = py + ph - Math.min(54, ph * 0.15) - 16;
@@ -1279,6 +1484,10 @@ export class BattleScene implements Scene {
         ctx.fill();
         ctx.restore();
         portrait(ctx, r.unlocked, px + fs * 2.2, y - fs * 0.3, fs * 2.4, this.t * 2, 0, 'walk');
+        if (!this.app.save.deck.includes(r.unlocked)) {
+          text(ctx, 'へんせいが いっぱい！ 「なかまを いれる」で いれかえよう', w / 2, y + fs * 1.15, Math.max(14, fs * 0.65), { color: '#ff8a1f', stroke: 'none', maxW: pw - 20 });
+          y += fs * 1.1;
+        }
         y += fs * 1.6;
       }
       const secs = Math.floor(this.b.time);
@@ -1297,7 +1506,7 @@ export class BattleScene implements Scene {
         // treasure chest badge in the panel's top-right corner (never overlaps the reward lines)
         const k2 = easeOutBack(Math.min(1, (this.resultT - 3.9) / 0.4));
         ctx.save();
-        ctx.translate(px + pw - fs * 2.6, py + fs * 2.2);
+        ctx.translate(px + pw - fs * 2.6, py + fs * 4.2);
         ctx.scale(k2, k2);
         ctx.rotate(0.08);
         drawChest(ctx, 0, 0, fs * 0.9, this.t);
@@ -1310,14 +1519,15 @@ export class BattleScene implements Scene {
       const left = Math.ceil((this.b.eBase.hp / this.b.eBase.max) * 100);
       text(ctx, left <= 40 ? `あと ちょっと！ てきの おしろ のこり ${left}%` : `てきの おしろ のこり ${left}%`, w / 2, y, fs * 0.7, { color: left <= 40 ? '#ff8a1f' : '#5a5a8a', stroke: 'none', maxW: pw - 30 });
       y += fs * 1.1;
-      const foe = Object.entries(this.b.killedBy).sort((a, c) => c[1] - a[1])[0]?.[0];
+      // blame whoever hurt the castle most (e.g. thieves), else whoever beat the most potatoes
+      const foe = (Object.entries(this.b.castleBy).sort((a, c) => c[1] - a[1])[0] ?? Object.entries(this.b.killedBy).sort((a, c) => c[1] - a[1])[0])?.[0];
       const room = by - y;
       if (foe && room > fs * 3) {
         const ed = ENEMY_MAP[foe];
         portrait(ctx, foe, px + pw * 0.16, y + fs * 0.9, fs * 2.6, this.t, 1);
         void 0;
         text(ctx, `ニガテな てき: ${ed.name}`, px + pw * 0.3, y + fs * 0.3, fs * 0.8, { align: 'left', color: '#ff8080', maxW: pw * 0.66 });
-        wrapText(ctx, counterHint(foe, this.app.save.units), px + pw * 0.63, y + fs * 1.6, pw * 0.64, fs * 0.62, '#3a3a6a');
+        wrapText(ctx, counterHint(foe, this.app.save.units, this.app.save.deck), px + pw * 0.63, y + fs * 1.6, pw * 0.64, fs * 0.62, '#3a3a6a');
       } else if (room > fs * 1.6) wrapText(ctx, '「つよくする」で なかまを つよくしよう！', w / 2, y + 4, pw - 30, fs * 0.8, '#3a3a6a');
     }
     // buttons
@@ -1331,8 +1541,10 @@ export class BattleScene implements Scene {
       const armed = this.resultT > 3.6; // ignore leftover spam-taps right after the panel appears
       if (!armed) ctx.globalAlpha = 0.5;
       const o1 = drawButton(ctx, b1, STYLES.blue, ui.isPressed('r1'));
-      text(ctx, win ? 'マップへ' : 'つよくする', b1.x + bw / 2, b1.y + o1 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
-      if (armed) ui.add({ id: 'r1', r: b1, onTap: () => this.app.go(win ? 'map' : 'power') });
+      // a new friend who didn't fit in the team: send the kid to the team screen
+      const newOut = win && this.winRes?.unlocked && !this.app.save.deck.includes(this.winRes.unlocked);
+      text(ctx, newOut ? 'なかまを いれる' : win ? 'マップへ' : 'つよくする', b1.x + bw / 2, b1.y + o1 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
+      if (armed) ui.add({ id: 'r1', r: b1, onTap: () => this.app.go(newOut || !win ? 'power' : 'map') });
       const o2 = drawButton(ctx, b2, next ? STYLES.orange : STYLES.green, ui.isPressed('r2'));
       text(ctx, next ? 'つぎの ステージ' : 'もういちど', b2.x + bw / 2, b2.y + o2 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
       ctx.globalAlpha = 1;
@@ -1422,15 +1634,22 @@ export function wrapText(ctx: CanvasRenderingContext2D, s: string, cx: number, c
   return lines.length * lh;
 }
 
-const TRAIT_NAME: Record<string, string> = { bug: 'むし', bird: 'とり', beast: 'けもの', boss: 'ボス' };
+export const MOD_LABEL: Record<string, string> = { blizzard: '🌬 ふぶき', slippery: '❄ つるつる', festival: '🎉 おかね 2ばい' };
+
+const TRAIT_NAME: Record<string, string> = { bug: 'むし', bird: 'とり', beast: 'けもの', boss: 'ボス', ice: 'こおり' };
 
 /** Suggest an owned potato that is strong against this enemy. */
-export function counterHint(enemyId: string, owned: Record<string, number>): string {
+export function counterHint(enemyId: string, owned: Record<string, number>, deck?: string[]): string {
   const e = ENEMY_MAP[enemyId];
   const traits = e.traits ?? [];
-  const counter = Object.keys(owned).map((id) => ALLY_MAP[id]).find((a) => a && a.strongVs?.some((t) => traits.includes(t)));
-  if (counter) return `${TRAIT_NAME[counter.strongVs!.find((t) => traits.includes(t))!]}に つよい「${counter.name}」を だそう！`;
+  const all = Object.keys(owned).map((id) => ALLY_MAP[id]).filter((a) => a && a.strongVs?.some((t) => traits.includes(t)));
+  const counter = all.find((a) => !deck?.includes(a.id)) ?? all[0];
+  if (counter) return `${TRAIT_NAME[counter.strongVs!.find((t) => traits.includes(t))!]}に つよい「${counter.name}」を ${deck && !deck.includes(counter.id) ? 'へんせいに いれよう' : 'だそう'}！`;
   if (e.range >= 200) return 'とおくから うってくる てき。しゃていの ながい なかまで たおそう！';
+  if (e.thief) return 'いもどろぼうは おしろの ちかくで たおそう！ なかまを すこし のこしておこう';
+  if (e.revive) return 'ユキオトコは ふっかつ する！ ポテトグラタンで とかせば ふっかつ しないよ';
+  if (e.split) return 'わると 2つに なるよ！ まとめて こうげきできる なかまが とくい！';
+  if (e.heal) return 'なかまを なおす てき！ とおくから さきに たおそう';
   if (e.flying) return 'そらを とぶ てきには ちかくの こうげきが とどきにくい！ フライドポテトや むらさきいもで うとう！';
   if (e.barrier) return 'こうらの てきは つよい いちげきで わろう！ フライドポテトや ながいもが とくい！';
   if (e.metal) return 'かたい てきは クリティカルで たおそう！「いもけんぴ」や しんかした いもが とくい！';

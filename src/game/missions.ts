@@ -1,5 +1,6 @@
 import { ALLIES, EVOLVE_LV } from './allies';
 import type { SaveData } from './save';
+import { STAGES } from './stages';
 
 export interface Mission {
   id: string;
@@ -26,7 +27,8 @@ export const MISSIONS: Mission[] = [
   m('c6', 'はじめての ボスを たおす（6ステージ）', clearedCount, 6, 500, 1),
   m('c12', 'ステージを 12 クリア', clearedCount, 12, 1000, 2),
   m('c24', 'ステージを 24 クリア', clearedCount, 24, 2000, 2),
-  m('c36', 'ぜんぶの ステージを クリア！', clearedCount, 36, 5000, 5),
+  m('c36', 'ワールド3まで クリア！（36ステージ）', clearedCount, 36, 5000, 5),
+  m('call', `ぜんぶの ステージを クリア！（${STAGES.length}ステージ）`, clearedCount, STAGES.length, 8000, 8),
   m('k50', 'てきを 50ひき たおす', (s) => s.stats.kills, 50, 200),
   m('k300', 'てきを 300ぴき たおす', (s) => s.stats.kills, 300, 600, 1),
   m('k1000', 'てきを 1000ぴき たおす', (s) => s.stats.kills, 1000, 1500, 2),
@@ -46,6 +48,9 @@ export const MISSIONS: Mission[] = [
   m('s2b', '★★（むずかしい）を 10 クリア', (s) => crownCount(s, 2), 10, 2000, 2),
   m('s3a', '★★★（げきむず）を 1つ クリア', (s) => crownCount(s, 3), 1, 1500, 2),
   m('s3b', '★★★（げきむず）を 10 クリア', (s) => crownCount(s, 3), 10, 5000, 5),
+  m('snow30', 'ゆきだるまを 30こ わる', (s) => s.kills.yukidaruma ?? 0, 30, 1500, 2),
+  m('w4star', 'ゆきの くにの「むずかしい★★」を 6つ クリア', (s) => Object.entries(s.crowns).filter(([id, c]) => +id >= 37 && c >= 2).length, 6, 3000, 3),
+  m('hyper1', 'なかまを ハイパーしんか させる（レベル15）', (s) => Object.values(s.units).filter((l) => l >= 15).length, 1, 3000, 3),
   m('w10', 'バトルで 10かい かつ', (s) => s.stats.wins, 10, 500),
   m('w50', 'バトルで 50かい かつ', (s) => s.stats.wins, 50, 2000, 2),
 ];
@@ -87,6 +92,7 @@ const DAILY_POOL: Daily[] = [
   { id: 'dt', label: 'いもどろぼうを 3びき たおす', key: 'thieves', target: 3, gold: 300, tickets: 1 },
   { id: 'dwl', label: 'おさいふを 10かい レベルアップ', key: 'wallets', target: 10, gold: 250, tickets: 1 },
   { id: 'dbs', label: 'ボスを たおす', key: 'bosses', target: 1, gold: 400, tickets: 1 },
+  { id: 'dml', label: 'ユキオトコを ふっかつ まえに とかす ×2', key: 'melts', target: 2, gold: 400, tickets: 1 },
 ];
 
 export function todayKey(d = new Date()) {
@@ -107,7 +113,7 @@ export function dailyMissions(s: SaveData, date = todayKey()): Daily[] {
   let h = 0;
   for (const c of date) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   const cleared = Object.keys(s.cleared).length;
-  const pool = DAILY_POOL.filter((d) => (d.key === 'thieves' ? cleared >= 5 : d.key === 'bosses' ? cleared >= 6 : true));
+  const pool = DAILY_POOL.filter((d) => (d.key === 'thieves' ? cleared >= 5 : d.key === 'bosses' ? cleared >= 6 : d.key === 'melts' ? cleared >= 43 && !!s.units.gratin : true));
   const out: Daily[] = [];
   while (out.length < 3 && pool.length) {
     h = (h * 1103515245 + 12345) >>> 0;

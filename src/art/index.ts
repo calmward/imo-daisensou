@@ -7,13 +7,14 @@ export function hasArt(id: string) {
 }
 
 /** Draw a character with feet at (x,y). side 1 = enemy (mirrored to face left). */
-export function drawChar(ctx: Ctx, id: string, x: number, y: number, scale: number, pose: Pose, side: 0 | 1 = 0, evo = false) {
+export function drawChar(ctx: Ctx, id: string, x: number, y: number, scale: number, pose: Pose, side: 0 | 1 = 0, evo: boolean | number = 0) {
+  const lvl = evo === true ? 1 : evo === false ? 0 : evo;
   const fn = ALLY_ART[id] ?? ENEMY_ART[id];
   if (!fn) return;
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(side === 1 ? -scale : scale, scale);
-  if (evo) evoAura(ctx, pose.t, TALL[id] ?? 1);
+  if (lvl) evoAura(ctx, pose.t, TALL[id] ?? 1, lvl);
   // squash & stretch: wind up (pull back), then lunge forward on the hit
   if (pose.state === 'attack') {
     const a = pose.atk;
@@ -32,7 +33,7 @@ export function drawChar(ctx: Ctx, id: string, x: number, y: number, scale: numb
   fn(ctx, pose);
   faceMode.mode = '';
   if (pose.state === 'kb' || pose.state === 'dead') sweat(ctx, pose.t, TALL[id] ?? 1);
-  if (evo) evoSparkles(ctx, pose.t, TALL[id] ?? 1);
+  if (lvl) evoSparkles(ctx, pose.t, TALL[id] ?? 1, lvl);
   ctx.restore();
 }
 
@@ -53,19 +54,36 @@ function sweat(ctx: Ctx, t: number, tall: number) {
 }
 
 /** Golden glow behind evolved ("スーパー") potatoes. */
-function evoAura(ctx: Ctx, t: number, tall: number) {
+function evoAura(ctx: Ctx, t: number, tall: number, lvl = 1) {
   const h = 70 * tall;
   const g = ctx.createRadialGradient(0, -h * 0.45, 4, 0, -h * 0.45, h * 0.75);
-  g.addColorStop(0, 'rgba(255,240,120,0.55)');
-  g.addColorStop(1, 'rgba(255,200,40,0)');
+  if (lvl >= 2) {
+    // ハイパー: shifting rainbow glow
+    const hue = (t * 120) % 360;
+    g.addColorStop(0, `hsla(${hue},100%,75%,0.6)`);
+    g.addColorStop(0.6, `hsla(${(hue + 120) % 360},100%,70%,0.3)`);
+    g.addColorStop(1, `hsla(${(hue + 240) % 360},100%,70%,0)`);
+  } else {
+    g.addColorStop(0, 'rgba(255,240,120,0.55)');
+    g.addColorStop(1, 'rgba(255,200,40,0)');
+  }
   ctx.fillStyle = g;
   ctx.beginPath();
   ctx.ellipse(0, -h * 0.45, h * 0.62 + Math.sin(t * 4) * 3, h * 0.72, 0, 0, Math.PI * 2);
   ctx.fill();
 }
 
-function evoSparkles(ctx: Ctx, t: number, tall: number) {
+function evoSparkles(ctx: Ctx, t: number, tall: number, lvl = 1) {
   const h = 70 * tall;
+  if (lvl >= 2) {
+    // ハイパー: rainbow stars orbiting the potato
+    for (let i = 0; i < 5; i++) {
+      const a = t * 3 + (i / 5) * Math.PI * 2;
+      star(ctx, Math.cos(a) * h * 0.55, -h * 0.45 + Math.sin(a) * h * 0.25, 5, 4, 0.4);
+      ctx.fillStyle = `hsl(${(i * 72 + t * 200) % 360},100%,65%)`;
+      ctx.fill();
+    }
+  }
   // little golden crown-star badge
   ctx.save();
   ctx.translate(-h * 0.3, -h * 0.95 - Math.sin(t * 3) * 2);
@@ -90,7 +108,7 @@ function evoSparkles(ctx: Ctx, t: number, tall: number) {
 const TALL: Record<string, number> = { naga: 1.25, king: 1.2, daigaku: 1.25, murasaki: 1.2, fry: 1.1, kenpi: 0.95, okarasu: 1.1, daiou: 1.25, hebi: 0.9, kuma: 1.1 };
 
 /** Idle portrait centred in a box of the given size. */
-export function portrait(ctx: Ctx, id: string, cx: number, cy: number, size: number, t: number, side: 0 | 1 = 0, state: Pose['state'] = 'idle', evo = false) {
+export function portrait(ctx: Ctx, id: string, cx: number, cy: number, size: number, t: number, side: 0 | 1 = 0, state: Pose['state'] = 'idle', evo: boolean | number = 0) {
   const tall = TALL[id] ?? 1;
   const sc = size / 78 / tall;
   drawChar(ctx, id, cx, cy + size * 0.42, sc, { t, walk: t, state, atk: 0, hurt: false }, side, evo);

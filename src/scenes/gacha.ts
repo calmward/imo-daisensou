@@ -191,7 +191,7 @@ export class GachaScene implements Scene {
       text(ctx, left <= 1 ? 'つぎは スーパーレア いじょう かくてい！' : `あと ${left}かいで スーパーレア いじょう かくてい！`, cx, land ? back.y + back.h + 14 : r.y - 14, clamp(w * 0.032, 12, 16), { color: '#fff36a', stroke: '#a3205f', maxW: bw + 40 });
       if (this.phase === 'idle') {
         const fs = clamp(w * 0.03, 11, 15);
-        wrapText(ctx, 'でるかも: スイートポテト・いもようかん・いもにんじゃ・ハッシュドポテト・コロッケ・ポテトサラダ・マッシュポテト・だいがくいも・キングさつまいも', cx, land ? back.y + back.h + 48 : r.y - fs * 4.4 - 16, land ? w * 0.46 : w - 24, Math.max(12, fs), '#7a1a4a');
+        wrapText(ctx, 'でるかも: スイートポテト・いもようかん・いもにんじゃ・ハッシュドポテト・コロッケ・ポテトサラダ・マッシュポテト・ジャーマンポテト・だいがくいも・キングさつまいも', cx, land ? back.y + back.h + 48 : r.y - fs * 4.4 - 16, land ? w * 0.46 : w - 24, Math.max(12, fs), '#7a1a4a');
       }
     }
   }

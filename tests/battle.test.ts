@@ -129,3 +129,39 @@ describe('save round trip', () => {
     expect(s.deck.length).toBe(7);
   });
 });
+
+describe('world 4 mechanics', () => {
+  const w4 = (id: number, deck = [{ id: 'jaga', level: 5 }, { id: 'gratin', level: 5 }]) => new Battle(STAGES[id - 1], deck, battleMods({}), 1);
+  it('ユキオトコ revives once, but ポテトグラタン melts it for good', () => {
+    const b = w4(43);
+    const y = b.spawnEnemy('yukiotoko');
+    (b as any).damage(y, y.hp + 1, { s: { strongVs: [] }, side: 0, id: 'jaga' }, false);
+    expect(y.state).toBe('revive');
+    for (let i = 0; i < 150; i++) b.update(1 / 60);
+    expect(y.state).not.toBe('revive');
+    expect(y.hp).toBeGreaterThan(0);
+    const y2 = b.spawnEnemy('yukiotoko');
+    (b as any).damage(y2, y2.hp + 1, { s: { strongVs: ['ice'] }, side: 0, id: 'gratin' }, false);
+    expect(y2.state).toBe('dead');
+  });
+  it('ゆきだるま splits into two ちびゆきだるま', () => {
+    const b = w4(39);
+    const d = b.spawnEnemy('yukidaruma');
+    const before = b.enemies.length;
+    (b as any).damage(d, d.hp + 1, null, false);
+    expect(b.enemies.filter((e) => e.id === 'chibidaruma').length).toBe(2);
+    expect(b.enemies.length).toBe(before + 2);
+  });
+  it('ふぶき gusts slow potatoes in a headwind and festival doubles rewards', () => {
+    const b = w4(38);
+    for (let t = 0; t < 31 * 60; t++) b.update(1 / 60);
+    expect(b.windDir).toBe(-1);
+    expect(b.walkFactor(0)).toBeLessThan(1);
+    expect(b.walkFactor(1)).toBeGreaterThan(1);
+    const f = w4(40);
+    f.money = 0;
+    const e = f.spawnEnemy('yukiusagi');
+    (f as any).damage(e, e.hp + 1, null, false);
+    expect(f.money).toBe(e.reward * 2);
+  });
+});

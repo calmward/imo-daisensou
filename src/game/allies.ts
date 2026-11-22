@@ -63,6 +63,16 @@ export const ALLIES: AllyDef[] = [
     cost: 650, cooldown: 18.0, hp: 520, atk: 320, range: 430, speed: 30, atkInterval: 4.0, foreswing: 0.8, kb: 2, area: true, width: 40, size: 1.3,
     effect: { kind: 'slow', chance: 0.6, dur: 3 },
   },
+  {
+    id: 'gratin', name: 'ポテトグラタン', role: 'とかす', rarity: 'N',
+    desc: 'あつあつ グラタンで こおりの てきを とかす！ ふっかつも させない',
+    cost: 480, cooldown: 12.0, hp: 1500, atk: 150, range: 260, speed: 40, atkInterval: 2.0, foreswing: 0.4, kb: 2, area: true, width: 62, size: 1.2, strongVs: ['ice'],
+  },
+  {
+    id: 'ski', name: 'スキーいも', role: 'ジャンプ', rarity: 'N',
+    desc: 'スキーで てきを とびこえて、うしろの てきを こうげき！',
+    cost: 360, cooldown: 9.0, hp: 600, atk: 110, range: 130, speed: 100, atkInterval: 1.0, foreswing: 0.2, kb: 2, area: false, width: 44, size: 1.0, crit: 0.1, burrow: 280, jump: true,
+  },
   // ---- ガチャ限定 ----
   {
     id: 'sweet', name: 'スイートポテト', role: 'とめる', rarity: 'R', gacha: true,
@@ -102,6 +112,12 @@ export const ALLIES: AllyDef[] = [
     effect: { kind: 'slow', chance: 0.6, dur: 3 },
   },
   {
+    id: 'german', name: 'ジャーマンポテト', role: 'じゅうじゅう', rarity: 'SR', gacha: true,
+    desc: 'じゅうじゅう やけた ベーコンで まとめて ふっとばす！ むれに つよい',
+    cost: 420, cooldown: 7.0, hp: 1800, atk: 220, range: 200, speed: 55, atkInterval: 1.4, foreswing: 0.3, kb: 3, area: true, width: 60, size: 1.15,
+    effect: { kind: 'knock', chance: 0.25, dur: 0 },
+  },
+  {
     id: 'daigaku', name: 'だいがくいも', role: 'エース', rarity: 'SR', gacha: true,
     desc: 'あまくて つよい エース！ みつの こうげきで まとめて たおす。',
     cost: 650, cooldown: 16.0, hp: 2800, atk: 380, range: 200, speed: 60, atkInterval: 1.7, foreswing: 0.35, kb: 3, area: true, width: 66, size: 1.3,
@@ -117,18 +133,24 @@ export const ALLY_MAP: Record<string, AllyDef> = Object.fromEntries(ALLIES.map((
 
 /** Stat multiplier for a unit level. */
 export function levelMult(lv: number): number {
-  return (1 + 0.26 * (lv - 1)) * (lv >= EVOLVE_LV ? 1.2 : 1);
+  return (1 + 0.26 * (lv - 1)) * (lv >= EVOLVE_LV ? 1.2 : 1) * (lv >= HYPER_LV ? 1.15 : 1);
 }
 
 /** At this level a potato evolves ("しんか") into its super form. */
 export const EVOLVE_LV = 7;
+/** second evolution (ハイパー) */
+export const HYPER_LV = 15;
+
+export function evoStage(lv: number): 0 | 1 | 2 {
+  return lv >= HYPER_LV ? 2 : lv >= EVOLVE_LV ? 1 : 0;
+}
 
 export function isEvolved(lv: number) {
   return lv >= EVOLVE_LV;
 }
 
 export function unitName(def: AllyDef, lv: number) {
-  return isEvolved(lv) ? 'スーパー' + def.name : def.name;
+  return lv >= HYPER_LV ? 'ハイパー' + def.name : isEvolved(lv) ? 'スーパー' + def.name : def.name;
 }
 
 export const MAX_LEVEL = 30;

@@ -9,7 +9,7 @@ export const PITY = 10;
 export const GACHA_POOL: Record<Rarity, string[]> = {
   N: [],
   R: ['sweet', 'youkan', 'ninja', 'hash', 'korokke', 'potesala'],
-  SR: ['daigaku', 'mash'],
+  SR: ['daigaku', 'mash', 'german'],
   UR: ['king'],
 };
 

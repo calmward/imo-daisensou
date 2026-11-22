@@ -12,7 +12,7 @@ import { TUNING } from '../src/game/tuning';
 const SKILL = Number(process.env.SKILL ?? 0.6);
 const LIMIT = (_id: number) => 420;
 // "valley" stages are intentionally easy; bosses a bit harder
-const VALLEY = new Set([9, 16, 21, 28, 34]);
+const VALLEY = new Set([9, 16, 21, 28, 34, 40, 46]);
 function target(id: number) {
   const st = STAGES[id - 1];
   if (VALLEY.has(id)) return 0.5; // factor relative to the max-beatable factor
@@ -79,7 +79,7 @@ for (const st of STAGES) {
     f = f2;
   }
   // hand adjustments for spikes found by the multi-skill campaign test
-  const ADJUST: Record<number, number> = { 3: 0.6, 5: 0.85, 12: 0.88, 17: 0.88, 18: 0.88, 20: 0.85, 29: 0.88 };
+  const ADJUST: Record<number, number> = { 38: 0.85, 44: 1.0, 48: 1.0, 41: 0.85, 3: 0.6, 5: 0.85, 12: 0.88, 17: 0.88, 18: 0.88, 20: 0.85, 29: 0.88 };
   f = Math.round(f * (ADJUST[st.id] ?? 1) * 1000) / 1000;
   out.push(f);
   const r = trial(save, st.id, f, 99);

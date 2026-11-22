@@ -3,7 +3,7 @@ import { ellipse } from '../art/kit';
 import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
 import { clamp, drawButton, panel, rr, STYLES, text, type Rect } from '../core/ui';
-import { ALLIES, ALLY_MAP, EVOLVE_LV, isEvolved, levelCost, levelMult, MAX_LEVEL, unitName } from '../game/allies';
+import { ALLIES, ALLY_MAP, EVOLVE_LV, HYPER_LV, evoStage, isEvolved, levelCost, levelMult, MAX_LEVEL, unitName } from '../game/allies';
 import { MUSIC } from '../game/music';
 import { canLevelUp, canResearch, doResearch, levelUp } from '../game/progress';
 import { RESEARCH, researchCost } from '../game/research';
@@ -157,8 +157,9 @@ export class PowerScene implements Scene {
       rr(ctx, r.x, r.y, r.w, 6, 3);
       ctx.fill();
       if (owned) {
-        portrait(ctx, a.id, r.x + r.w / 2, r.y + r.h * 0.44, r.w * 0.78, selected ? this.t * 2 : 0, 0, selected ? 'walk' : 'idle', isEvolved(save.units[a.id]));
-        text(ctx, `Lv.${save.units[a.id]}`, r.x + r.w / 2, r.y + r.h - 12, clamp(r.w * 0.17, 10, 15), { color: '#fff' });
+        portrait(ctx, a.id, r.x + r.w / 2, r.y + r.h * 0.44, r.w * 0.78, selected ? this.t * 2 : 0, 0, selected ? 'walk' : 'idle', evoStage(save.units[a.id]));
+        text(ctx, a.name, r.x + r.w / 2, r.y + r.h - 26, clamp(r.w * 0.13, 9, 12), { color: '#5a3a12', stroke: 'none', maxW: r.w - 6 });
+        text(ctx, `Lv.${save.units[a.id]}`, r.x + r.w / 2, r.y + r.h - 11, clamp(r.w * 0.15, 10, 14), { color: '#fff' });
         if (canLevelUp(save, a.id)) text(ctx, '▲', r.x + r.w - 10, r.y + 16, 14, { color: '#7dff7d' });
       } else {
         silhouette(ctx, a.id, r.x + r.w / 2, r.y + r.h * 0.44, r.w * 0.78, 0, '#000', 0.35);
@@ -207,7 +208,7 @@ export class PowerScene implements Scene {
     ctx.fillStyle = 'rgba(140,200,255,0.25)';
     ellipse(ctx, px, py, ps * 0.55, ps * 0.55);
     ctx.fill();
-    if (owned) portrait(ctx, a.id, px, py, ps, this.t * 1.5, 0, Math.sin(this.t * 0.7) > 0.6 ? 'attack' : 'walk', isEvolved(save.units[a.id]));
+    if (owned) portrait(ctx, a.id, px, py, ps, this.t * 1.5, 0, Math.sin(this.t * 0.7) > 0.6 ? 'attack' : 'walk', evoStage(save.units[a.id]));
     else {
       silhouette(ctx, a.id, px, py, ps, 0, '#000', 0.3);
     }
@@ -221,7 +222,7 @@ export class PowerScene implements Scene {
     if (owned) {
       const lv = save.units[a.id];
       text(ctx, `Lv.${lv}`, tx, r.y + fs * 4.1, fs * 1.1, { align: 'left', color: '#fff' });
-      if (!isEvolved(lv)) text(ctx, `Lv.${EVOLVE_LV}で しんか！`, tx + fs * 3.4, r.y + fs * 4.15, fs * 0.6, { align: 'left', color: '#ff8a1f', stroke: 'none', maxW: tw - fs * 3.4 });
+      if (lv < HYPER_LV) text(ctx, isEvolved(lv) ? `Lv.${HYPER_LV}で ハイパーしんか！` : `Lv.${EVOLVE_LV}で しんか！`, tx + fs * 3.4, r.y + fs * 4.15, fs * 0.6, { align: 'left', color: '#ff8a1f', stroke: 'none', maxW: tw - fs * 3.4 });
       // stats bars
       const m = levelMult(lv);
       const stats: [string, number, number][] = [
@@ -267,9 +268,9 @@ export class PowerScene implements Scene {
       if (can && !this.app.save.tut.lvup) drawHand(ctx, lvR.x + lvR.w * 0.7, lvR.y + bh * 0.5 + Math.abs(Math.sin(this.t * 5)) * 8, 22);
       ui.add({ id: 'lvup', r: lvR, onTap: () => {
         if (levelUp(save, a.id)) {
-          const evolved = save.units[a.id] === EVOLVE_LV;
+          const evolved = save.units[a.id] === EVOLVE_LV || save.units[a.id] === HYPER_LV;
           audio.sfx(evolved ? 'fanfare' : 'levelup');
-          this.popText = evolved ? { s: `しんか！ ${unitName(a, EVOLVE_LV)}！`, t: -0.8 } : { s: 'レベルアップ！', t: 0 };
+          this.popText = evolved ? { s: `しんか！ ${unitName(a, save.units[a.id])}！`, t: -0.8 } : { s: 'レベルアップ！', t: 0 };
           save.tut.lvup = true;
           this.app.persist();
         } else audio.sfx('deny');
@@ -277,7 +278,11 @@ export class PowerScene implements Scene {
       const inDeck = save.deck.includes(a.id);
       const dR = { x: r.x + r.w * 0.58, y: by, w: r.w * 0.42 - 10, h: bh };
       const off2 = drawButton(ctx, dR, inDeck ? STYLES.blue : STYLES.orange, ui.isPressed('deck'));
-      text(ctx, inDeck ? (this.confirmRemove === a.id ? 'ほんとに はずす？' : 'はずす') : 'へんせいに いれる', dR.x + dR.w / 2, dR.y + off2 + (bh - 6) / 2, bh * 0.28, { maxW: dR.w - 8 });
+      const full = !inDeck && save.deck.length >= deckSize(save);
+      // when the team is full, offer a one-step swap with the weakest member
+      const weakest = full ? [...save.deck].sort((x, y) => save.units[x] - save.units[y])[0] : '';
+      const label = inDeck ? (this.confirmRemove === a.id ? 'ほんとに はずす？' : 'はずす') : full ? (this.confirmRemove === 'swap' + a.id ? `「${ALLY_MAP[weakest].name}」と こうたい？` : 'いれかえる') : 'へんせいに いれる';
+      text(ctx, label, dR.x + dR.w / 2, dR.y + off2 + (bh - 6) / 2, bh * 0.28, { maxW: dR.w - 8 });
       ui.add({ id: 'deck', r: dR, onTap: () => {
         if (inDeck) {
           if (save.deck.length <= 1) audio.sfx('deny');
@@ -289,7 +294,14 @@ export class PowerScene implements Scene {
             this.confirmRemove = null;
           }
         } else if (save.deck.length < deckSize(save)) save.deck.push(a.id);
-        else this.popText = { s: `いまは ${deckSize(save)}たいまで だよ`, t: 0 };
+        else if (this.confirmRemove !== 'swap' + a.id) {
+          this.confirmRemove = 'swap' + a.id;
+          this.popText = { s: 'もういちど おすと いれかえるよ', t: 0 };
+        } else {
+          save.deck = save.deck.map((d) => (d === weakest ? a.id : d));
+          this.confirmRemove = null;
+          this.popText = { s: 'いれかえた！', t: 0 };
+        }
         this.app.persist();
       } });
     } else {
@@ -317,7 +329,7 @@ export class PowerScene implements Scene {
       panel(ctx, r, '#fffaf0', '#8a5a22', 14);
       const lv = save.research[rd.id] ?? 0;
       const fs = clamp(rh * 0.2, 11, 20);
-      const icon = ['🏰', '💰', '👛', '⚡', '🔋', '🪙'][i];
+      const icon = ['🏰', '💰', '👛', '⚡', '🔋', '🪙', '🧣'][i] ?? '⭐';
       text(ctx, icon, r.x + rh * 0.35, r.y + rh / 2, rh * 0.4, { stroke: 'none' });
       const textW = r.w - rh * 0.7 - Math.min(140, r.w * 0.3) - 26;
       text(ctx, rd.name, r.x + rh * 0.7, r.y + rh * 0.28, fs, { align: 'left', color: '#ffd23a', maxW: textW });

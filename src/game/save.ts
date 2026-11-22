@@ -1,4 +1,5 @@
 import { ALLY_MAP, MAX_LEVEL } from './allies';
+import { STAGES } from './stages';
 
 export interface SaveData {
   v: number;
@@ -18,6 +19,7 @@ export interface SaveData {
   daily: string; // last day the login bonus was claimed
   claimed: string[]; // mission ids already claimed
   seen: Record<string, number>; // enemy id -> times defeated/encountered
+  kills: Record<string, number>; // enemy id -> defeated count
   today: { date: string; counts: Record<string, number>; claimed: string[]; ids?: string[] };
   stats: { wins: number; losses: number; kills: number };
 }
@@ -49,6 +51,7 @@ export function newSave(): SaveData {
     daily: '',
     claimed: [],
     seen: {},
+    kills: {},
     today: { date: '', counts: {}, claimed: [] },
     stats: { wins: 0, losses: 0, kills: 0 },
   };
@@ -82,7 +85,7 @@ export function sanitize(d: unknown): SaveData {
   s.speed2 = o.speed2 === true;
   s.daily = typeof o.daily === 'string' ? o.daily : '';
   s.claimed = Array.isArray(o.claimed) ? o.claimed.filter((x): x is string => typeof x === 'string') : [];
-  const okId = (k: string) => Number.isInteger(+k) && +k >= 1 && +k <= 36;
+  const okId = (k: string) => Number.isInteger(+k) && +k >= 1 && +k <= STAGES.length;
   for (const [k, v] of Object.entries(obj(o.cleared))) if (okId(k) && num(v, 0) > 0) s.cleared[+k] = num(v, 0);
   for (const [k, v] of Object.entries(obj(o.crowns))) if (okId(k) && s.cleared[+k]) s.crowns[+k] = num(v, 0, 0, 3);
   for (const k of Object.keys(s.cleared)) if (!s.crowns[+k]) s.crowns[+k] = 1;
@@ -90,8 +93,9 @@ export function sanitize(d: unknown): SaveData {
   for (const [k, v] of Object.entries(obj(o.units))) if (Object.prototype.hasOwnProperty.call(ALLY_MAP, k)) units[k] = num(v, 1, 1, MAX_LEVEL);
   s.units = Object.keys(units).length ? units : base.units;
   if (!s.units.jaga) s.units.jaga = 1;
+  for (const [k, v] of Object.entries(obj(o.kills))) if (/^[a-z]+$/.test(k) && !(k in Object.prototype)) s.kills[k] = num(v, 0);
   for (const [k, v] of Object.entries(obj(o.seen))) if (/^[a-z]+$/.test(k) && !(k in Object.prototype)) s.seen[k] = num(v, 0);
-  const RES = ['castle', 'income', 'wallet', 'beamPow', 'beamCharge', 'startMoney'];
+  const RES = ['castle', 'income', 'wallet', 'beamPow', 'beamCharge', 'startMoney', 'muffler'];
   for (const [k, v] of Object.entries(obj(o.research))) if (RES.includes(k)) s.research[k] = num(v, 0, 0, 20);
   for (const [k, v] of Object.entries(obj(o.tut))) s.tut[k] = v === true;
   const td = obj(o.today);

@@ -1,4 +1,4 @@
-import type { SpawnEntry, StageDef } from './types';
+import type { SpawnEntry, StageDef, StageMod } from './types';
 import { TUNING } from './tuning';
 import { ENEMY_MAP } from './enemies';
 
@@ -23,9 +23,10 @@ interface Raw {
   boss?: boolean;
   tip?: string;
   max?: number;
+  mod?: StageMod;
 }
 
-export const WORLD_NAMES = ['いもばたけ', 'どんぐりの もり', 'ぐらぐら やま'];
+export const WORLD_NAMES = ['いもばたけ', 'どんぐりの もり', 'ぐらぐら やま', 'ゆきの くに'];
 
 const RAW: Raw[] = [
   // ===== World 1: いもばたけ =====
@@ -125,9 +126,47 @@ const RAW: Raw[] = [
   { name: 'さいごの たたかい！ イモクイ大王', len: 2800, hp: 80000, d: 100, boss: true,
     tip: 'いよいよ さいご！ ぜんぶの ちからで 大王を たおせ！',
     spawns: [e('nezumi', 2, [4, 6], 0, 320), boss('daiou', 100, 0.95, 3), e('inoshishi', 10, [16, 20], 0, 280, 0.95), e('kamakiri', 15, [14, 18], 0, 300, 0.95), e('okarasu', 30, [60, 60], 2, 140, 0.5)] },
+
+  // ===== World 4: ゆきの くに =====
+  { name: 'ゆきの いりぐち', len: 2700, hp: 56000, d: 300,
+    tip: 'ペンギンの ゆきだまに あたると おそくなるよ',
+    spawns: [e('yukiusagi', 4, [6, 8]), e('penguin', 10, [14, 18]), e('tanuki', 15, [12, 15]), e('ari', 2, [3, 5])] },
+  { name: 'ふぶきの はら', len: 2700, hp: 58000, d: 270, mod: 'blizzard', unlock: 'gratin',
+    tip: 'ふぶきに ちゅうい！ おいかぜの ときに いっきに すすもう',
+    spawns: [e('yukiusagi', 2, [5, 7]), e('penguin', 8, [12, 15]), e('kame', 20, [24, 30]), e('karasu', 5, [8, 11])] },
+  { name: 'ゆきだるま がっせん', len: 2600, hp: 60000, d: 310,
+    tip: 'ゆきだるまは わると 2つに なるよ。まとめて たおそう',
+    spawns: [e('yukidaruma', 8, [14, 18]), e('nezumi', 2, [4, 6]), e('hachi', 12, [10, 13])] },
+  { name: 'ゆきまつり', len: 2200, hp: 40000, d: 240, max: 36, mod: 'festival',
+    tip: 'おまつりだ！ てきの おかねが 2ばい！',
+    spawns: [e('yukiusagi', 1, [1.5, 2]), e('chibidaruma', 3, [2, 3]), e('metal', 20, [25, 30], 4)] },
+  { name: 'つるつる いけ', len: 2700, hp: 62000, d: 320, mod: 'slippery',
+    tip: 'こおりの うえ！ ふっとぶと とおくまで すべるよ',
+    spawns: [e('inoshishi', 6, [12, 15]), e('yukidaruma', 10, [16, 20]), e('kaeru', 15, [16, 20]), e('nezumi', 2, [3, 5])] },
+  { name: 'トナカイの そり', len: 2800, hp: 65000, d: 330, mod: 'blizzard',
+    tip: 'トナカイは なかまを なおす！ とおくから ねらおう',
+    spawns: [e('tonakai', 10, [18, 22]), e('kamakiri', 8, [12, 15]), e('penguin', 5, [12, 15]), e('ari', 2, [3, 5])] },
+  { name: 'ユキオトコの どうくつ', len: 2800, hp: 68000, d: 400, unlock: 'ski',
+    tip: 'ユキオトコは ふっかつ する！ ポテトグラタンで とかせば ふっかつ しないよ',
+    spawns: [e('yukiotoko', 10, [16, 20]), e('tonakai', 18, [22, 26]), e('penguin', 8, [12, 15]), e('mogura', 6, [12, 15]), e('yukiusagi', 2, [5, 7])] },
+  { name: 'ボス！ マンモス', len: 2700, hp: 60000, d: 100, boss: true,
+    tip: 'マンモスの ずしん！で ふっとばされたら、すぐに なかまを だそう',
+    spawns: [e('yukiusagi', 2, [4, 6], 0, 300), boss('mammoth', 150, 0.95, 2), e('yukidaruma', 8, [14, 18], 0, 260, 0.95), e('penguin', 10, [12, 15], 0, 260, 0.9)] },
+  { name: 'こおりの めいろ', len: 2900, hp: 72000, d: 350, mod: 'slippery',
+    tip: 'ピカピカの てきは いもけんぴで！ つるつる すべるよ',
+    spawns: [e('yukiotoko', 15, [22, 28]), e('tonakai', 10, [18, 22]), e('fukurou', 6, [14, 18]), e('metal', 20, [30, 40], 5), e('nezumi', 2, [3, 5])] },
+  { name: 'かまくら ひとやすみ', len: 2200, hp: 45000, d: 260, max: 36,
+    tip: 'かまくらで ひとやすみ。たくさん たおして おかねを ためよう',
+    spawns: [e('chibidaruma', 1, [1.5, 2.2]), e('kemushi', 2, [3, 4]), e('yukiusagi', 5, [3, 5])] },
+  { name: 'ふぶきの とうげ', len: 3000, hp: 64000, d: 420, mod: 'blizzard',
+    tip: 'さいごの とうげ！ ぜんぶの ちからを だそう',
+    spawns: [e('yukiotoko', 20, [22, 26]), e('yukidaruma', 8, [14, 18]), e('tonakai', 12, [18, 22]), e('penguin', 5, [12, 15]), e('inoshishi', 10, [14, 18]), e('kame', 25, [26, 32]), e('yukiusagi', 2, [4, 6])] },
+  { name: 'さいごの たたかい！ こおり大王', len: 3000, hp: 88000, d: 100, boss: true, unlock: 'german',
+    tip: 'こおり大王を たおせ！ ポテトグラタンで こおりを とかそう',
+    spawns: [e('yukiusagi', 2, [4, 6], 0, 340), boss('kooriou', 120, 0.95, 3), e('yukidaruma', 10, [16, 20], 0, 320, 0.95), e('tonakai', 20, [22, 26], 0, 300, 0.9), boss('mammoth', 100, 0.7, 2)] },
 ];
 
-const VALLEYS = new Set([9, 16, 21, 28, 34]);
+const VALLEYS = new Set([9, 16, 21, 28, 34, 40, 46]);
 
 export const STAGES: StageDef[] = RAW.map((r, i) => ({
   id: i + 1,
@@ -141,11 +180,13 @@ export const STAGES: StageDef[] = RAW.map((r, i) => ({
   boss: r.boss,
   maxEnemies: r.max,
   tip: r.tip,
+  mod: r.mod,
   rushes: makeRushes(i + 1, r, TUNING[i] ?? 1),
 }));
 
 function withThieves(id: number, r: Raw): SpawnEntry[] {
-  if (id < 5 || VALLEYS.has(id) || id % 3 === 1) return r.spawns;
+  // no thieves on world-4 boss stages (the boss should be the threat); stage 43 gets them for danger
+  if (id < 5 || VALLEYS.has(id) || (id % 3 === 1 && id !== 43) || (id >= 37 && r.boss)) return r.spawns;
   const iv: [number, number] = id < 13 ? [20, 28] : [15, 21];
   return [...r.spawns, { enemy: 'dorobou', start: 25, interval: iv, count: 0, mult: 100 }];
 }
@@ -175,7 +216,8 @@ export const STAR_NAMES = ['', 'ふつう', 'むずかしい', 'げきむず'];
 export function starStage(stage: StageDef, star: number): StageDef {
   if (star <= 1) return stage;
   // early stages get a much bigger boost (the player is far stronger than they were the first time)
-  const early = (STAGES.length - stage.id) / STAGES.length;
+  // measured against the first 3 worlds so adding worlds doesn't change old stages
+  const early = Math.max(0, 36 - stage.id) / 36;
   const m = STAR_MULT[star] * (1 + early * (star === 2 ? 0.8 : 1.2));
   return {
     ...stage,
@@ -193,7 +235,7 @@ export function bonusStage(progress: number): StageDef {
   return {
     id: BONUS_ID,
     name: 'いもまつり（ボーナス）',
-    world: Math.min(2, Math.floor((p - 1) / 12)),
+    world: Math.min(WORLD_NAMES.length - 1, Math.floor((p - 1) / 12)),
     length: 1500,
     baseHp: 3000 + p * 700,
     spawns: [

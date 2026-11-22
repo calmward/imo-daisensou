@@ -15,6 +15,7 @@ export const RESEARCH: ResearchDef[] = [
   { id: 'beamPow', name: 'いもビームの いりょく', desc: 'いもビームが つよくなる', max: 20, baseCost: 150 },
   { id: 'beamCharge', name: 'いもビームの じゅうでん', desc: 'いもビームが はやく つかえる', max: 20, baseCost: 180 },
   { id: 'startMoney', name: 'はじめの おかね', desc: 'バトルの さいしょに もってる おかね', max: 20, baseCost: 120 },
+  { id: 'muffler', name: 'あったか マフラー', desc: 'ふぶきの むかいかぜに まけにくくなる', max: 5, baseCost: 600 },
 ];
 
 export function researchCost(def: ResearchDef, lv: number): number {
@@ -28,6 +29,7 @@ export interface BattleMods {
   beamDmg: number;
   beamCharge: number; // seconds
   startMoney: number;
+  windResist: number; // 0..0.35 less headwind slow for potatoes
 }
 
 export function battleMods(r: Record<string, number>): BattleMods {
@@ -39,5 +41,6 @@ export function battleMods(r: Record<string, number>): BattleMods {
     beamDmg: 160 + 70 * L('beamPow'),
     beamCharge: Math.max(12, 32 - 1.0 * L('beamCharge')),
     startMoney: 50 * L('startMoney'),
+    windResist: 0.07 * L('muffler'),
   };
 }

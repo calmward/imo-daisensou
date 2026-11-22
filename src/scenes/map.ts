@@ -12,7 +12,7 @@ import { BONUS_ID, STAGES, STAR_NAMES, ticketReward, WORLD_NAMES } from '../game
 import { todayKey } from '../game/missions';
 import { canLevelUp, claimDaily, previewReward } from '../game/progress';
 import { claimable } from '../game/missions';
-import { drawGoldIcon, drawHand, wrapText } from './battle';
+import { drawGoldIcon, drawHand, MOD_LABEL, wrapText } from './battle';
 
 const SPACING = 96;
 
@@ -111,7 +111,7 @@ export class MapScene implements Scene {
     const topH = clamp(h * 0.1, 50, 70);
     const botH = clamp(h * 0.14, 70, 110);
     const area = { x: 0, y: topH, w, h: h - topH - botH };
-    this.axisLen = 140 + (STAGES.length - 1) * SPACING + 2 * 60;
+    this.axisLen = 140 + (STAGES.length - 1) * SPACING + (WORLD_NAMES.length - 1) * 60;
     this.viewMain = this.horizontal ? area.w : area.h;
     if (!this.inited) {
       this.inited = true;
@@ -122,10 +122,10 @@ export class MapScene implements Scene {
     // background bands per world
     ctx.fillStyle = '#8fd8ff';
     ctx.fillRect(0, 0, w, h);
-    for (let wi = 0; wi < 3; wi++) {
+    for (let wi = 0; wi < WORLD_NAMES.length; wi++) {
       const a = this.nodePos(wi * 12, area);
       const b = this.nodePos(wi * 12 + 11, area);
-      const th = THEMES[wi];
+      const th = THEMES[wi % THEMES.length];
       const start = (this.horizontal ? a.x : a.y) - SPACING * 0.8;
       const end = (this.horizontal ? b.x : b.y) + SPACING * 0.8;
       ctx.fillStyle = th.hill1;
@@ -241,6 +241,16 @@ export class MapScene implements Scene {
         portrait(ctx, 'jaga', p.x, p.y - r - 26 - Math.abs(Math.sin(this.t * 4)) * 6, 40, this.t, 0, 'walk');
       }
       if (open && p.y - r > area.y - 4 && p.y + r < area.y + area.h + 4 && !(isCleared(save, 6) && p.x + r > w - 118 && p.y - r < area.y + 66)) ui.add({ id: 'st' + st.id, r: { x: p.x - r - 6, y: p.y - r - 6, w: r * 2 + 12, h: r * 2 + 12 }, onTap: () => { this.popup = st.id; this.popT = 0; this.popStar = 1; } });
+    }
+    // "to be continued" teaser after the last stage
+    {
+      const p = this.nodePos(STAGES.length, area);
+      if (p.x > -80 && p.x < w + 80 && p.y > area.y - 40 && p.y < area.y + area.h + 40) {
+        ctx.fillStyle = '#8a5a22';
+        ctx.fillRect(p.x - 3, p.y - 6, 6, 34);
+        panel(ctx, { x: p.x - 56, y: p.y - 30, w: 112, h: 32 }, '#fff6dd', '#8a5a22', 8);
+        text(ctx, 'つづく…？', p.x, p.y - 14, 15, { color: '#5a3a12', stroke: 'none' });
+      }
     }
     // top bar
     const g = ctx.createLinearGradient(0, 0, 0, topH);
@@ -368,6 +378,7 @@ export class MapScene implements Scene {
     const fs = Math.min(24, pw * 0.06);
     text(ctx, `ステージ ${st.id}`, w / 2, py + fs * 1.1, fs * 0.75, { color: '#fff', stroke: '#8a5a22' });
     text(ctx, st.name, w / 2, py + fs * 2.4, fs, { color: st.boss ? '#ff5f5f' : '#ffd23a', maxW: pw - 20 });
+    if (st.mod) text(ctx, MOD_LABEL[st.mod], px + pw - 14, py + fs * 1.1, fs * 0.6, { align: 'right', color: '#3d97f0', stroke: '#fff' });
     // enemies preview
     const ids = [...new Set(st.spawns.map((s) => s.enemy))];
     const es = Math.min(64, (pw - 40) / Math.max(4, ids.length));

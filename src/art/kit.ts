@@ -4,10 +4,11 @@ export type Ctx = CanvasRenderingContext2D;
 export interface Pose {
   t: number; // global time (s)
   walk: number; // walk phase (s)
-  state: 'walk' | 'idle' | 'attack' | 'kb' | 'dead' | 'burrow' | 'portrait';
+  state: 'walk' | 'idle' | 'attack' | 'kb' | 'dead' | 'burrow' | 'portrait' | 'revive';
   atk: number; // attack progress 0..1 (0 windup -> 1 end)
   hurt: boolean;
   frozen?: boolean;
+  hp?: number; // 0..1 remaining health (for damage looks)
 }
 
 export const OUT = '#3b2412';
