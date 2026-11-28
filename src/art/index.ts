@@ -57,7 +57,23 @@ function sweat(ctx: Ctx, t: number, tall: number) {
 function evoAura(ctx: Ctx, t: number, tall: number, lvl = 1) {
   const h = 70 * tall;
   const g = ctx.createRadialGradient(0, -h * 0.45, 4, 0, -h * 0.45, h * 0.75);
-  if (lvl >= 2) {
+  if (lvl >= 3) {
+    // ウルトラ: blazing flame aura
+    g.addColorStop(0, 'rgba(255,240,140,0.75)');
+    g.addColorStop(0.5, 'rgba(255,120,30,0.45)');
+    g.addColorStop(1, 'rgba(220,30,0,0)');
+    ctx.fillStyle = g;
+    for (let i = 0; i < 7; i++) {
+      // flame tongues licking upward around the body
+      const a = (i / 7) * Math.PI * 2 + t * 0.6;
+      const fx = Math.cos(a) * h * 0.5;
+      const fl = h * (0.35 + 0.15 * Math.sin(t * 9 + i * 1.7));
+      ctx.beginPath();
+      ctx.moveTo(fx - h * 0.12, -h * 0.2);
+      ctx.quadraticCurveTo(fx, -h * 0.2 - fl * 1.6, fx + h * 0.12, -h * 0.2);
+      ctx.fill();
+    }
+  } else if (lvl >= 2) {
     // ハイパー: shifting rainbow glow
     const hue = (t * 120) % 360;
     g.addColorStop(0, `hsla(${hue},100%,75%,0.6)`);
@@ -83,6 +99,15 @@ function evoSparkles(ctx: Ctx, t: number, tall: number, lvl = 1) {
       ctx.fillStyle = `hsl(${(i * 72 + t * 200) % 360},100%,65%)`;
       ctx.fill();
     }
+  }
+  if (lvl >= 3) {
+    // embers rising
+    for (let i = 0; i < 5; i++) {
+      const k = (t * 0.9 + i / 5) % 1;
+      ctx.globalAlpha = 1 - k;
+      ellipseFill(ctx, Math.sin(i * 2.3 + t) * h * 0.45, -h * 0.1 - k * h * 1.1, 3, i % 2 ? '#ffd23a' : '#ff6a1f');
+    }
+    ctx.globalAlpha = 1;
   }
   // little golden crown-star badge
   ctx.save();
@@ -152,4 +177,11 @@ export function silhouette(ctx: Ctx, id: string, cx: number, cy: number, size: n
   ctx.globalAlpha *= alpha;
   drawTinted(ctx, size * 0.75, color, 1, (c) => portrait(c, id, 0, 0, size, 0, side));
   ctx.restore();
+}
+
+function ellipseFill(ctx: Ctx, x: number, y: number, r: number, c: string) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = c;
+  ctx.fill();
 }

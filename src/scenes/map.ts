@@ -13,6 +13,8 @@ import { todayKey } from '../game/missions';
 import { canLevelUp, claimDaily, previewReward } from '../game/progress';
 import { claimable } from '../game/missions';
 import { drawGoldIcon, drawHand, MOD_LABEL, wrapText } from './battle';
+import { MEDALS } from '../game/medals';
+import { TOWER_OPEN_STAGE } from '../game/tower';
 
 const SPACING = 96;
 
@@ -320,6 +322,20 @@ export class MapScene implements Scene {
       }
       if (!this.popup && !this.daily) ui.add({ id: 'fest', r: fr, onTap: () => { audio.sfx('whistle'); this.app.go('battle', BONUS_ID); } });
     }
+    // いもの とう (after stage 50)
+    if (isCleared(save, TOWER_OPEN_STAGE)) {
+      const tr = { x: w - 112, y: topH + 66, w: 104, h: 52 };
+      const off = drawButton(ctx, tr, STYLES.purple, ui.isPressed('tower'), 14);
+      text(ctx, 'いもの とう', tr.x + tr.w / 2, tr.y + off + 16, 15, { maxW: tr.w - 14 });
+      text(ctx, save.tower.best ? `きろく ${save.tower.best}かい` : 'のぼって みよう！', tr.x + tr.w / 2, tr.y + off + 34, 10, { color: '#fff36a', stroke: '#4a2a6a', maxW: tr.w - 8 });
+      if (!save.tower.best) {
+        ellipse(ctx, tr.x + tr.w - 4, tr.y + 4 + Math.sin(this.t * 6) * 3, 10, 10);
+        ctx.fillStyle = '#ff3b3b';
+        ctx.fill();
+        text(ctx, '!', tr.x + tr.w - 4, tr.y + 4 + Math.sin(this.t * 6) * 3, 13, { stroke: 'none' });
+      }
+      if (!this.popup && !this.daily) ui.add({ id: 'tower', r: tr, onTap: () => this.app.go('tower') });
+    }
     if (!this.popup && !this.daily && claimable(save).length && !(!save.tut.power && isCleared(save, 2) && save.gold >= 150)) {
       const mr = { x: (w - totalW) / 2 + 2 * (bw + 10), y: by + 10, w: bw, h: botH - 20 };
       text(ctx, 'もらえるよ！', mr.x + mr.w / 2, mr.y - 14 - Math.abs(Math.sin(this.t * 4)) * 4, 14, { color: '#fff36a', stroke: '#1d5aa3' });
@@ -420,6 +436,12 @@ export class MapScene implements Scene {
       if (tk) parts.push(`ガチャけん ${tk}まい`);
       if (st.unlock && ps === 1) parts.push('あたらしい なかま');
       text(ctx, `＋ ${parts.join('・')}`, px + 46, y, fs * 0.62, { align: 'left', color: '#c0392b', stroke: 'none', maxW: pw - 60 });
+      y += fs * 1.1;
+    }
+    const medal = MEDALS[st.id];
+    if (medal && cleared) {
+      const got = save.medals.includes(st.id);
+      text(ctx, `🏅 チャレンジ: ${medal.text}${got ? ' ✓' : '（🎟1まい）'}`, px + 20, y, fs * 0.6, { align: 'left', color: got ? '#2a8a2a' : '#c07000', stroke: 'none', maxW: pw - 40 });
       y += fs * 1.1;
     }
     if (st.tip && !cleared) {

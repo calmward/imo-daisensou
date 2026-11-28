@@ -154,25 +154,29 @@ export const ALLIES: AllyDef[] = [
 export const ALLY_MAP: Record<string, AllyDef> = Object.fromEntries(ALLIES.map((a) => [a.id, a]));
 
 /** Stat multiplier for a unit level. */
-export function levelMult(lv: number): number {
-  return (1 + 0.26 * (lv - 1)) * (lv >= EVOLVE_LV ? 1.2 : 1) * (lv >= HYPER_LV ? 1.15 : 1);
+export function levelMult(lv: number, ultra = false): number {
+  return (1 + 0.26 * (lv - 1)) * (lv >= EVOLVE_LV ? 1.2 : 1) * (lv >= HYPER_LV ? 1.15 : 1) * (ultra && lv >= ULTRA_LV ? ULTRA_MULT : 1);
 }
+
+/** third evolution (ウルトラ): Lv22 + 1 ほのおのいし */
+export const ULTRA_LV = 22;
+export const ULTRA_MULT = 1.12;
 
 /** At this level a potato evolves ("しんか") into its super form. */
 export const EVOLVE_LV = 7;
 /** second evolution (ハイパー) */
 export const HYPER_LV = 15;
 
-export function evoStage(lv: number): 0 | 1 | 2 {
-  return lv >= HYPER_LV ? 2 : lv >= EVOLVE_LV ? 1 : 0;
+export function evoStage(lv: number, ultra = false): 0 | 1 | 2 | 3 {
+  return ultra && lv >= ULTRA_LV ? 3 : lv >= HYPER_LV ? 2 : lv >= EVOLVE_LV ? 1 : 0;
 }
 
 export function isEvolved(lv: number) {
   return lv >= EVOLVE_LV;
 }
 
-export function unitName(def: AllyDef, lv: number) {
-  return lv >= HYPER_LV ? 'ハイパー' + def.name : isEvolved(lv) ? 'スーパー' + def.name : def.name;
+export function unitName(def: AllyDef, lv: number, ultra = false) {
+  return ultra && lv >= ULTRA_LV ? 'ウルトラ' + def.name : lv >= HYPER_LV ? 'ハイパー' + def.name : isEvolved(lv) ? 'スーパー' + def.name : def.name;
 }
 
 export const MAX_LEVEL = 30;

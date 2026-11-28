@@ -33,7 +33,7 @@ export interface Fighter {
   flash: number; // render: hit flash timer
   walkT: number; // render: animation phase
   size: number;
-  evo: number; // 0 normal, 1 スーパー, 2 ハイパー (visual)
+  evo: number; // 0 normal, 1 スーパー, 2 ハイパー, 3 ウルトラ (visual)
   shield: number; // remaining barrier threshold (0 = broken / none)
   mult: number; // enemy strength % (passed on to splits/summons)
   revived: boolean;
@@ -81,6 +81,7 @@ export type BEvent =
 export interface Slot {
   def: AllyDef;
   level: number;
+  ultra?: boolean;
   stats: CombatStats;
   cd: number; // seconds until ready
 }
@@ -159,7 +160,7 @@ export class Battle {
   private rushQueue: { t: number; enemy: string; mult: number }[] = [];
   private rushIdx = 0;
 
-  constructor(stage: StageDef, deck: { id: string; level: number }[], mods: BattleMods, seed = 1) {
+  constructor(stage: StageDef, deck: { id: string; level: number; ultra?: boolean }[], mods: BattleMods, seed = 1) {
     this.stage = stage;
     this.mods = mods;
     this.rng = new Rng(seed);
@@ -170,10 +171,11 @@ export class Battle {
     this.eBase = { hp: stage.baseHp, max: stage.baseHp, hitT: 0 };
     this.slots = deck.map((d) => {
       const def = ALLY_MAP[d.id];
-      const m = levelMult(d.level);
+      const m = levelMult(d.level, d.ultra);
       const evo = isEvolved(d.level);
-      const evoCrit = (evo ? 0.08 : 0) + (evoStage(d.level) === 2 ? 0.1 : 0);
-      return { def, level: d.level, stats: { ...def, hp: Math.round(def.hp * m), atk: Math.round(def.atk * m), crit: (def.crit ?? 0) + evoCrit }, cd: 0 };
+      const es = evoStage(d.level, d.ultra);
+      const evoCrit = (evo ? 0.08 : 0) + (es >= 2 ? 0.1 : 0) + (es === 3 ? 0.05 : 0);
+      return { def, level: d.level, ultra: es === 3, stats: { ...def, hp: Math.round(def.hp * m), atk: Math.round(def.atk * m), crit: (def.crit ?? 0) + evoCrit }, cd: 0 };
     });
     this.spawns = stage.spawns.map((_, idx) => ({ idx, next: 0, spawned: 0, active: false, activatedAt: 0 }));
   }
@@ -212,7 +214,7 @@ export class Battle {
     this.money -= this.slotCost(i);
     s.cd = s.def.cooldown * (isEvolved(s.level) ? 0.85 : 1);
     const f = this.makeFighter(0, s.def.id, s.stats, -14 + this.rng.range(-6, 6), s.def.size * (isEvolved(s.level) ? 1.1 : 1), 0);
-    f.evo = evoStage(s.level);
+    f.evo = evoStage(s.level, s.ultra);
     this.allies.push(f);
     this.deploys++;
     this.typesUsed.add(s.def.id);

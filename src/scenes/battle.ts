@@ -8,9 +8,11 @@ import { ATTACK_BACKSWING, Battle, KB_TIME, MAX_ALLIES, WALLET_MAX_LV, type BEve
 import { ALLY_MAP, evoStage } from '../game/allies';
 import { ENEMY_MAP } from '../game/enemies';
 import { MUSIC } from '../game/music';
-import { applyBonusWin, applyLoss, applyWin, canLevelUp, type WinResult } from '../game/progress';
+import { applyBonusWin, applyLoss, applyTowerWin, applyWin, awardMedal, canLevelUp, cheerAvailable, noteResult, type WinResult } from '../game/progress';
+import { MEDALS } from '../game/medals';
+import { TOWER_ID, towerStage, type TowerReward } from '../game/tower';
 import { countToday } from '../game/missions';
-import { deckSize } from '../game/save';
+import { deckSize, isCleared } from '../game/save';
 import { battleMods } from '../game/research';
 import { BONUS_ID, bonusStage, STAGES, STAR_NAMES, starStage } from '../game/stages';
 import { FX } from './fx';
@@ -75,14 +77,28 @@ export class BattleScene implements Scene {
   readyPop: number[] = [];
 
   star = 1;
-  constructor(private app: App, arg: number | { id: number; star?: number }) {
+  floor = 0; // いもの とう floor
+  cheer = false; // おうえんパワー
+  medalOn = false; // a チャレンジメダル can be earned in this battle
+  medalRes: { stone: boolean } | null = null;
+  towerRes: TowerReward | null = null;
+  constructor(private app: App, arg: number | { id: number; star?: number; floor?: number; cheer?: boolean }) {
     const stageId = typeof arg === 'number' ? arg : arg.id;
     this.star = typeof arg === 'number' ? 1 : arg.star ?? 1;
+    this.floor = typeof arg === 'number' ? 0 : arg.floor ?? 0;
+    this.cheer = typeof arg === 'number' ? false : !!arg.cheer;
     this.stageId = stageId;
-    const stage = stageId === BONUS_ID ? bonusStage(Object.keys(app.save.cleared).length) : starStage(STAGES[stageId - 1], this.star);
+    const stage = stageId === TOWER_ID ? towerStage(Math.max(1, this.floor)) : stageId === BONUS_ID ? bonusStage(Object.keys(app.save.cleared).length) : starStage(STAGES[stageId - 1], this.star);
     const save = app.save;
-    const deck = save.deck.map((id) => ({ id, level: save.units[id] ?? 1 }));
+    const deck = save.deck.map((id) => ({ id, level: save.units[id] ?? 1, ultra: save.ultra.includes(id) }));
     this.b = new Battle(stage, deck, battleMods(save.research), (Date.now() & 0xffff) + stageId);
+    this.medalOn = !!MEDALS[stageId] && isCleared(save, stageId) && !save.medals.includes(stageId) && !this.cheer;
+    if (this.cheer) {
+      // おうえんパワー: a little help after several losses in a row
+      this.b.money = Math.min(this.b.cap, Math.round(this.b.money * 1.15) + 150);
+      this.b.pBase.max = Math.round(this.b.pBase.max * 1.15);
+      this.b.pBase.hp = this.b.pBase.max;
+    }
     if (stageId === 1 && !save.tut.battle) {
       this.tut = 'deploy';
       this.b.money = Math.max(this.b.money, 100);
@@ -96,8 +112,9 @@ export class BattleScene implements Scene {
   enter() {
     audio.playMusic('battle', MUSIC.battle);
     const st = this.b.stage;
-    this.banner = { text: st.boss ? 'ボス ステージ！' : 'スタート！', sub: `${st.id === BONUS_ID ? '' : st.id + '. '}${st.name}${this.star > 1 ? '（' + STAR_NAMES[this.star] + '）' : ''}`, t: 0, color: st.boss ? '#ff5f5f' : '#ffd23a', dur: 2.2 };
+    this.banner = { text: st.boss ? 'ボス ステージ！' : 'スタート！', sub: `${st.id === BONUS_ID || st.id === TOWER_ID ? '' : st.id + '. '}${st.name}${this.star > 1 ? '（' + STAR_NAMES[this.star] + '）' : ''}`, t: 0, color: st.boss ? '#ff5f5f' : '#ffd23a', dur: 2.2 };
     if (st.mod) this.banner.sub = (this.banner.sub ?? '') + '　' + MOD_LABEL[st.mod];
+    if (this.cheer) this.banner.sub = (this.banner.sub ?? '') + '　💪 おうえんパワー！';
     audio.sfx('whistle');
     this.rotateTip = this.app.h > this.app.w * 1.1 && (this.app.save.stats.wins + this.app.save.stats.losses) < 8 ? 5 : 0;
     setTimeout(() => audio.say(st.boss ? 'ボスステージだ！ しゅつげき！' : 'しゅつげき！'), 300);
@@ -590,11 +607,19 @@ export class BattleScene implements Scene {
     this.shake = 20;
     this.flashT = 0.4;
     if (win) {
-      this.winRes = stage.id === BONUS_ID ? applyBonusWin(save, stage, killGold) : applyWin(save, stage, killGold, this.star);
+      if (stage.id === TOWER_ID) {
+        this.towerRes = applyTowerWin(save, this.floor, killGold);
+        this.winRes = { gold: this.towerRes.gold, tickets: this.towerRes.tickets, first: this.towerRes.first, star: 1 };
+      } else this.winRes = stage.id === BONUS_ID ? applyBonusWin(save, stage, killGold) : applyWin(save, stage, killGold, this.star);
+      if (this.medalOn && MEDALS[stage.id].ok(this.b)) {
+        this.medalRes = awardMedal(save, stage.id);
+        if (this.medalRes) setTimeout(() => audio.jingle('win'), 2600);
+      }
       if (this.winRes.unlocked) this.app.lastNew = this.winRes.unlocked;
       countToday(save, 'wins');
+      if (stage.id <= STAGES.length) noteResult(save, stage.id, true);
       if (stage.id === 1) save.tut.battle = true;
-      if (stage.id !== BONUS_ID) save.lastStage = Math.min(STAGES.length, stage.id + (this.winRes.first ? 1 : 0));
+      if (stage.id <= STAGES.length) save.lastStage = Math.min(STAGES.length, stage.id + (this.winRes.first ? 1 : 0));
       const bx = this.b.length + 70;
       for (let i = 0; i < 70; i++)
         this.fx.add({ kind: 'debris', x: bx + (Math.random() - 0.5) * 120, y: -Math.random() * 220, vx: (Math.random() - 0.5) * 700, vy: -300 - Math.random() * 500, grav: 800, max: 2.2, size: 8 + Math.random() * 14, color: ['#6a4a2a', '#3a2a1a', '#ffd23a', '#9a7a5a', '#fff'][i % 5], rot: Math.random() * 6, vr: 10 });
@@ -606,10 +631,17 @@ export class BattleScene implements Scene {
       setTimeout(() => audio.say('やったー！ しょうり！'), 600);
     } else {
       this.lossGold = applyLoss(save, stage, killGold);
+      if (stage.id <= STAGES.length) noteResult(save, stage.id, false);
       setTimeout(() => audio.jingle('lose'), 600);
       setTimeout(() => audio.say('まけちゃった… つぎは がんばろう'), 2200);
     }
     this.app.persist();
+  }
+
+  /** arguments to replay this same battle */
+  private again() {
+    if (this.stageId === TOWER_ID) return { id: TOWER_ID, floor: this.floor };
+    return { id: this.stageId, star: this.star, cheer: this.cheer || (this.star === 1 && cheerAvailable(this.app.save, this.stageId)) };
   }
 
   // ---------- layout ----------
@@ -817,7 +849,7 @@ export class BattleScene implements Scene {
       ctx.strokeStyle = '#ff6a1f';
       ctx.lineWidth = 3;
       ctx.stroke();
-      text(ctx, 'タップ！', rx, L.groundY - 46 * s, clamp(16 * s * 1.2, 12, 18), { color: '#fff', stroke: '#c00000' });
+      text(ctx, 'タップ！', rx, L.groundY - 46 * s - (i % 3) * 16, clamp(16 * s * 1.2, 12, 18), { color: '#fff', stroke: '#c00000' });
       const hit = { x: rx - 70 * s, y: ry - 30 * s, w: 140 * s, h: L.groundY + 20 * s - (ry - 30 * s) };
       this.app.ui.add({ id: 'rock' + i + '_' + Math.round(rk.x), r: hit, onDown: () => b.tapRock(i), sound: false });
     });
@@ -898,6 +930,11 @@ export class BattleScene implements Scene {
       text(ctx, '◀ おしろが あぶない！', L.field.x + 10, L.field.y + L.field.h * 0.55, clamp(L.field.h * 0.08, 14, 22), { align: 'left', color: '#fff', stroke: '#c00000' });
     }
     this.drawBossBar(ctx, L);
+    if (this.medalOn && !b.result) {
+      const m = MEDALS[this.stageId].live(b);
+      const fsz = clamp(L.field.h * 0.045, 11, 15);
+      text(ctx, `🏅 ${m.text}`, L.field.x + L.field.w - 8, L.field.y + L.field.h * 0.46, fsz, { align: 'right', color: m.fail ? '#b0b0b0' : '#ffe14d', stroke: '#3a1a00' });
+    }
     if (b.timeLimit && !b.result && b.time > b.timeLimit - 60) {
       const left = Math.max(0, Math.ceil(b.timeLimit - b.time));
       const pulse = 1 + (left <= 10 ? Math.abs(Math.sin(this.t * 6)) * 0.15 : 0);
@@ -1265,7 +1302,7 @@ export class BattleScene implements Scene {
       ctx.clip();
       const ps = Math.min(r.w * 0.95, (r.h - 3) * 0.85);
       if (!ready) ctx.globalAlpha = slot.cd > 0 ? 0.55 : 0.85;
-      portrait(ctx, slot.def.id, r.x + r.w / 2, r.y + off + (r.h - 3) * 0.42, ps, t * (ready ? 1 : 0), 0, ready ? 'idle' : 'portrait', evoStage(slot.level));
+      portrait(ctx, slot.def.id, r.x + r.w / 2, r.y + off + (r.h - 3) * 0.42, ps, t * (ready ? 1 : 0), 0, ready ? 'idle' : 'portrait', evoStage(slot.level, slot.ultra));
       ctx.globalAlpha = 1;
       // cooldown overlay
       if (slot.cd > 0) {
@@ -1485,7 +1522,7 @@ export class BattleScene implements Scene {
     const bh = Math.max(40, Math.min(56, (ph * 0.72 - 30) / 4));
     const items: [string, string, keyof typeof STYLES, () => void][] = [
       ['resume', 'つづける', 'green', () => (this.paused = false)],
-      ['retry', 'やりなおす', 'orange', () => this.app.go('battle', { id: this.stageId, star: this.star })],
+      ['retry', 'やりなおす', 'orange', () => this.app.go('battle', this.again())],
       ['quit', 'マップに もどる', 'blue', () => this.app.go('map')],
       ['sound', audio.muted ? 'おと: オフ' : 'おと: オン', 'cream', () => { audio.setMuted(!audio.muted); this.app.save.muted = audio.muted; this.app.persist(); }],
     ];
@@ -1552,7 +1589,7 @@ export class BattleScene implements Scene {
     const step = Math.min(0.16, 0.84 / Math.max(1, deck.length));
     deck.forEach((s, i) => {
       const cx = w / 2 + (i - (deck.length - 1) / 2) * pw * step;
-      portrait(ctx, s.def.id, cx, py + ph * 0.37 - (win ? Math.abs(Math.sin(this.t * 5 + i * 0.9)) * 14 : 0), Math.min(64, pw * Math.max(step, 0.1)), this.t * (win ? 2 : 0.3) + i, 0, win ? 'walk' : 'kb', evoStage(s.level));
+      portrait(ctx, s.def.id, cx, py + ph * 0.37 - (win ? Math.abs(Math.sin(this.t * 5 + i * 0.9)) * 14 : 0), Math.min(64, pw * Math.max(step, 0.1)), this.t * (win ? 2 : 0.3) + i, 0, win ? 'walk' : 'kb', evoStage(s.level, s.ultra));
     });
     const fs = Math.min(22, pw * 0.055);
     const by = py + ph - Math.min(54, ph * 0.15) - 16;
@@ -1569,6 +1606,23 @@ export class BattleScene implements Scene {
       if (r.tickets) {
         text(ctx, `🎟 ガチャけん +${r.tickets}`, w / 2, y, fs * 0.9, { color: '#ff9ccf' });
         y += fs * 1.4;
+      }
+      if (r.stone) {
+        text(ctx, '🔥 ほのおのいし +1（ウルトラしんか に つかえる）', w / 2, y, fs * 0.75, { color: '#ff8a3a', maxW: pw - 30 });
+        y += fs * 1.3;
+      }
+      if (this.towerRes?.stone) {
+        text(ctx, `🔥 ほのおのいし +1${this.towerRes.title ? '　しょうごう「' + this.towerRes.title + '」' : ''}`, w / 2, y, fs * 0.8, { color: '#ff8a3a', maxW: pw - 30 });
+        y += fs * 1.3;
+      }
+      if (this.medalRes && this.resultT > 4.4) {
+        const k3 = easeOutBack(Math.min(1, (this.resultT - 4.4) / 0.4));
+        ctx.save();
+        ctx.translate(w / 2, y);
+        ctx.scale(k3, k3);
+        text(ctx, `🏅 チャレンジメダル ゲット！ 🎟+1${this.medalRes.stone ? ' 🔥+1' : ''}`, 0, 0, fs * 0.8, { color: '#ffd23a', stroke: '#8a4a00', maxW: pw - 30 });
+        ctx.restore();
+        y += fs * 1.3;
       }
       if (r.newSlot) {
         text(ctx, `へんせいの わくが ${deckSize(this.app.save)}こに ふえた！`, w / 2, y, fs * 0.75, { color: '#7cc8ff', maxW: pw - 30 });
@@ -1623,6 +1677,10 @@ export class BattleScene implements Scene {
       const left = Math.ceil((this.b.eBase.hp / this.b.eBase.max) * 100);
       text(ctx, left <= 40 ? `あと ちょっと！ てきの おしろ のこり ${left}%` : `てきの おしろ のこり ${left}%`, w / 2, y, fs * 0.7, { color: left <= 40 ? '#ff8a1f' : '#5a5a8a', stroke: 'none', maxW: pw - 30 });
       y += fs * 1.1;
+      if (this.star === 1 && !this.cheer && cheerAvailable(this.app.save, this.stageId)) {
+        text(ctx, '💪 おうえんパワーが つかえるよ！（おかね・おしろ アップ）', w / 2, y, fs * 0.62, { color: '#e0601a', stroke: 'none', maxW: pw - 30 });
+        y += fs * 1.1;
+      }
       // blame whoever hurt the castle most (e.g. thieves), else whoever beat the most potatoes
       const foe = (Object.entries(this.b.castleBy).sort((a, c) => c[1] - a[1])[0] ?? Object.entries(this.b.killedBy).sort((a, c) => c[1] - a[1])[0])?.[0];
       const room = by - y;
@@ -1638,7 +1696,8 @@ export class BattleScene implements Scene {
     const ui = this.app.ui;
     const bh = Math.min(54, ph * 0.15);
     const bw = (pw - 48) / 2;
-    const next = this.stageId !== BONUS_ID && STAGES[this.stageId] && win;
+    const next = this.stageId < STAGES.length && win;
+    const towerNext = this.stageId === TOWER_ID && win;
     const b1 = { x: px + 16, y: by, w: bw, h: bh };
     const b2 = { x: px + 32 + bw, y: by, w: bw, h: bh };
     if (k >= 1) {
@@ -1649,10 +1708,18 @@ export class BattleScene implements Scene {
       const newOut = win && this.winRes?.unlocked && !this.app.save.deck.includes(this.winRes.unlocked);
       text(ctx, newOut ? 'なかまを いれる' : win ? 'マップへ' : 'つよくする', b1.x + bw / 2, b1.y + o1 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
       if (armed) ui.add({ id: 'r1', r: b1, onTap: () => this.app.go(newOut || !win ? 'power' : 'map') });
-      const o2 = drawButton(ctx, b2, next ? STYLES.orange : STYLES.green, ui.isPressed('r2'));
-      text(ctx, next ? 'つぎの ステージ' : 'もういちど', b2.x + bw / 2, b2.y + o2 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
+      const o2 = drawButton(ctx, b2, next || towerNext ? STYLES.orange : STYLES.green, ui.isPressed('r2'));
+      text(ctx, towerNext ? `${this.floor + 1}かいへ ▲` : next ? 'つぎの ステージ' : !win && this.again().cheer ? '💪 おうえんで もういちど' : 'もういちど', b2.x + bw / 2, b2.y + o2 + (bh - 6) / 2, bh * 0.36, { maxW: bw - 10 });
       ctx.globalAlpha = 1;
-      if (armed) ui.add({ id: 'r2', r: b2, onTap: () => this.app.go(next ? 'map' : 'battle', next ? { focus: this.star > 1 ? this.stageId : this.stageId + 1, open: this.star === 1 } : { id: this.stageId, star: this.star }) });
+      if (armed)
+        ui.add({
+          id: 'r2',
+          r: b2,
+          onTap: () =>
+            towerNext
+              ? this.app.go('battle', { id: TOWER_ID, floor: this.floor + 1 })
+              : this.app.go(next ? 'map' : 'battle', next ? { focus: this.star > 1 ? this.stageId : this.stageId + 1, open: this.star === 1 } : this.again()),
+        });
     }
     ctx.restore();
   }

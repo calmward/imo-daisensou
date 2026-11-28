@@ -3,6 +3,9 @@ import { RESEARCH, researchCost } from './research';
 import { deckSize, SLOT_STAGES, type SaveData } from './save';
 import type { StageDef } from './types';
 import { ticketReward } from './stages';
+import { MEDALS } from './medals';
+import { towerReward, type TowerReward } from './tower';
+import { ULTRA_LV } from './allies';
 
 export function stageReward(stage: StageDef, firstClear: boolean): number {
   return firstClear ? stage.reward : Math.round((stage.reward * 0.4) / 10) * 10;
@@ -16,6 +19,7 @@ export interface WinResult {
   chest?: { kind: 'gold' | 'ticket'; amount: number };
   newSlot?: boolean;
   star: number;
+  stone?: boolean;
 }
 
 /** Gold for winning a stage at a difficulty (same numbers the map preview shows). */
@@ -45,6 +49,12 @@ export function applyWin(save: SaveData, stage: StageDef, killGold: number, star
     tickets = star - 1;
     save.tickets += tickets;
   }
+  // ★★ on the volcano bosses gives a ほのおのいし
+  let stone = false;
+  if (first && star === 2 && (stage.id === 56 || stage.id === 60)) {
+    save.stones += 1;
+    stone = true;
+  }
   if (first && star === 1) {
     tickets = ticketReward(stage);
     save.tickets += tickets;
@@ -59,7 +69,7 @@ export function applyWin(save: SaveData, stage: StageDef, killGold: number, star
   }
   save.stats.wins++;
   const newSlot = first && star === 1 && SLOT_STAGES.includes(stage.id);
-  return { gold, tickets, unlocked, first, chest, star, newSlot };
+  return { gold, tickets, unlocked, first, chest, star, newSlot, stone };
 }
 
 /** Consolation prize on a loss so kids still progress. */
@@ -121,4 +131,46 @@ export function applyBonusWin(save: SaveData, stage: StageDef, killGold: number)
   save.tickets += tickets;
   save.stats.wins++;
   return { gold, tickets, first, star: 1 };
+}
+
+/** チャレンジメダル: returns true when a new medal was earned (1 ticket; every 3rd medal also gives a ほのおのいし) */
+export function awardMedal(save: SaveData, stageId: number): { stone: boolean } | null {
+  if (!MEDALS[stageId] || save.medals.includes(stageId)) return null;
+  save.medals.push(stageId);
+  save.tickets += 1;
+  const stone = save.medals.length % 3 === 0;
+  if (stone) save.stones += 1;
+  return { stone };
+}
+
+/** いもの とう floor cleared */
+export function applyTowerWin(save: SaveData, floor: number, killGold: number): TowerReward {
+  const first = floor > save.tower.best;
+  const r = towerReward(floor, first);
+  if (first) save.tower.best = floor;
+  save.gold += r.gold + killGold;
+  save.tickets += r.tickets;
+  if (r.stone) save.stones += 1;
+  save.stats.wins++;
+  return { ...r, gold: r.gold + killGold };
+}
+
+export function canUltra(save: SaveData, id: string) {
+  return (save.units[id] ?? 0) >= ULTRA_LV && save.stones > 0 && !save.ultra.includes(id);
+}
+
+export function doUltra(save: SaveData, id: string): boolean {
+  if (!canUltra(save, id)) return false;
+  save.stones--;
+  save.ultra.push(id);
+  return true;
+}
+
+/** おうえんパワー: offered after losing the same stage 3 times in a row */
+export function noteResult(save: SaveData, stageId: number, win: boolean) {
+  if (win) save.lose = { id: 0, n: 0 };
+  else save.lose = save.lose.id === stageId ? { id: stageId, n: save.lose.n + 1 } : { id: stageId, n: 1 };
+}
+export function cheerAvailable(save: SaveData, stageId: number) {
+  return stageId >= 49 && save.lose.id === stageId && save.lose.n >= 3;
 }

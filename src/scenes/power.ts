@@ -3,11 +3,11 @@ import { ellipse } from '../art/kit';
 import type { App, Scene } from '../core/app';
 import { audio } from '../core/audio';
 import { clamp, drawButton, panel, rr, STYLES, text, type Rect } from '../core/ui';
-import { ALLIES, ALLY_MAP, EVOLVE_LV, HYPER_LV, evoStage, isEvolved, levelCost, levelMult, MAX_LEVEL, unitName } from '../game/allies';
+import { ALLIES, ALLY_MAP, EVOLVE_LV, HYPER_LV, evoStage, isEvolved, levelCost, levelMult, MAX_LEVEL, ULTRA_LV, unitName } from '../game/allies';
 import { MUSIC } from '../game/music';
-import { canLevelUp, canResearch, doResearch, levelUp } from '../game/progress';
+import { canLevelUp, canResearch, canUltra, doResearch, doUltra, levelUp } from '../game/progress';
 import { RESEARCH, researchCost } from '../game/research';
-import { deckSize } from '../game/save';
+import { deckSize, isCleared } from '../game/save';
 import { STAGES } from '../game/stages';
 import { drawGoldIcon, drawHand, wrapText } from './battle';
 
@@ -157,7 +157,7 @@ export class PowerScene implements Scene {
       rr(ctx, r.x, r.y, r.w, 6, 3);
       ctx.fill();
       if (owned) {
-        portrait(ctx, a.id, r.x + r.w / 2, r.y + r.h * 0.44, r.w * 0.78, selected ? this.t * 2 : 0, 0, selected ? 'walk' : 'idle', evoStage(save.units[a.id]));
+        portrait(ctx, a.id, r.x + r.w / 2, r.y + r.h * 0.44, r.w * 0.78, selected ? this.t * 2 : 0, 0, selected ? 'walk' : 'idle', evoStage(save.units[a.id], save.ultra.includes(a.id)));
         text(ctx, a.name, r.x + r.w / 2, r.y + r.h - 26, clamp(r.w * 0.13, 9, 12), { color: '#5a3a12', stroke: 'none', maxW: r.w - 6 });
         text(ctx, `Lv.${save.units[a.id]}`, r.x + r.w / 2, r.y + r.h - 11, clamp(r.w * 0.15, 10, 14), { color: '#fff' });
         if (canLevelUp(save, a.id)) text(ctx, '▲', r.x + r.w - 10, r.y + 16, 14, { color: '#7dff7d' });
@@ -208,13 +208,13 @@ export class PowerScene implements Scene {
     ctx.fillStyle = 'rgba(140,200,255,0.25)';
     ellipse(ctx, px, py, ps * 0.55, ps * 0.55);
     ctx.fill();
-    if (owned) portrait(ctx, a.id, px, py, ps, this.t * 1.5, 0, Math.sin(this.t * 0.7) > 0.6 ? 'attack' : 'walk', evoStage(save.units[a.id]));
+    if (owned) portrait(ctx, a.id, px, py, ps, this.t * 1.5, 0, Math.sin(this.t * 0.7) > 0.6 ? 'attack' : 'walk', evoStage(save.units[a.id], save.ultra.includes(a.id)));
     else {
       silhouette(ctx, a.id, px, py, ps, 0, '#000', 0.3);
     }
     const tx = px + ps * 0.62;
     const tw = r.x + r.w - tx - 10;
-    text(ctx, owned ? unitName(a, save.units[a.id]) : '？？？', tx, r.y + fs * 1.1, fs * 1.1, { align: 'left', color: '#ffd23a', maxW: tw });
+    text(ctx, owned ? unitName(a, save.units[a.id], save.ultra.includes(a.id)) : '？？？', tx, r.y + fs * 1.1, fs * 1.1, { align: 'left', color: '#ffd23a', maxW: tw });
     ctx.fillStyle = RARITY_COLOR[a.rarity];
     rr(ctx, tx, r.y + fs * 2, Math.min(tw, fs * 6.5), fs * 1.2, fs * 0.6);
     ctx.fill();
@@ -222,9 +222,24 @@ export class PowerScene implements Scene {
     if (owned) {
       const lv = save.units[a.id];
       text(ctx, `Lv.${lv}`, tx, r.y + fs * 4.1, fs * 1.1, { align: 'left', color: '#fff' });
+      const ult = save.ultra.includes(a.id);
+      if (lv >= HYPER_LV && !ult && (save.stones > 0 || isCleared(save, 50))) {
+        const ur = { x: tx + fs * 3.4, y: r.y + fs * 3.45, w: Math.max(40, tw - fs * 3.4), h: fs * 1.4 };
+        if (canUltra(save, a.id)) {
+          const o = drawButton(ctx, ur, STYLES.orange, ui.isPressed('ultra'), 8);
+          text(ctx, '🔥 ウルトラしんか！', ur.x + ur.w / 2, ur.y + o + (ur.h - 6) / 2, fs * 0.6, { maxW: ur.w - 6 });
+          ui.add({ id: 'ultra', r: ur, sound: false, onTap: () => {
+            if (doUltra(save, a.id)) {
+              audio.sfx('fanfare');
+              this.popText = { s: `ウルトラしんか！ ${unitName(a, lv, true)}！`, t: -0.8 };
+              this.app.persist();
+            }
+          } });
+        } else text(ctx, lv < ULTRA_LV ? `Lv.${ULTRA_LV}＋🔥1こで ウルトラしんか` : `🔥ほのおのいし で ウルトラしんか（いま ${save.stones}こ）`, tx + fs * 3.4, r.y + fs * 4.15, fs * 0.55, { align: 'left', color: '#e0601a', stroke: 'none', maxW: tw - fs * 3.4 });
+      }
       if (lv < HYPER_LV) text(ctx, isEvolved(lv) ? `Lv.${HYPER_LV}で ハイパーしんか！` : `Lv.${EVOLVE_LV}で しんか！`, tx + fs * 3.4, r.y + fs * 4.15, fs * 0.6, { align: 'left', color: '#ff8a1f', stroke: 'none', maxW: tw - fs * 3.4 });
       // stats bars
-      const m = levelMult(lv);
+      const m = levelMult(lv, ult);
       const stats: [string, number, number][] = [
         ['たいりょく', Math.round(a.hp * m), 7000],
         ['こうげき', Math.round(a.atk * m), 900],
