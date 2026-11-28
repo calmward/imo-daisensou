@@ -498,7 +498,7 @@ export class BattleScene implements Scene {
             e.f.id === 'kooriou'
               ? { text: 'こおり大王が おこったぞ！', sub: 'ふぶきが ふいてくる！', t: 0, color: '#9be8ff', dur: 1.5 }
               : { text: `ガオー！ ${ENEMY_MAP[e.f.id]?.name ?? ''}が ほえた！`, sub: '← むかいかぜ！ つぎは ずしん！に ちゅうい', t: 0, color: '#ffb070', dur: 1.6 };
-        if (e.kind === 'meteor') this.banner = { text: 'ふんか！ いわが おちるよ！', sub: 'あかい かげを タップ！', t: 0, color: '#ff9a5a', dur: 1.6 };
+        if (e.kind === 'meteor') fx.add({ kind: 'text', x: e.f.x - 80, y: -200, vy: -10, max: 1.8, size: 24, color: '#ffb070', stroke: '#5a1a00', text: 'ふんか！ かげを タップ！' });
         break;
       case 'hatch':
         fx.add({ kind: 'text', x: e.f.x, y: -100, vy: -30, max: 1.1, size: 20, color: '#8ae09a', stroke: '#2a5a2a', text: 'パカッ！ うまれた！' });
@@ -506,7 +506,8 @@ export class BattleScene implements Scene {
         audio.sfx('pop');
         break;
       case 'rockWarn':
-        if (!this.banner || this.banner.t > 1) this.banner = { text: 'ゴゴゴ… いわが おちるよ！', sub: 'あかい かげを タップで こわせ！', t: 0, color: '#ff9a5a', dur: 2.2 };
+        if (this.b.bossAlive) fx.add({ kind: 'text', x: this.camX + (this.L.field.w / this.L.scale) * 0.5, y: -190, vy: -10, max: 2, size: 22, color: '#ffb070', stroke: '#5a1a00', text: 'いわが おちるよ！ タップ！' });
+        else if (!this.banner || this.banner.t > 1) this.banner = { text: 'ゴゴゴ… いわが おちるよ！', sub: 'あかい かげを タップで こわせ！', t: 0, color: '#ff9a5a', dur: 2.2 };
         audio.sfx('boss');
         break;
       case 'rock':
@@ -583,7 +584,8 @@ export class BattleScene implements Scene {
               tamago: '12びょうで ラプトルが うまれる！ タップでも われるよ',
               magmagolem: 'ふっかつ する！ いもアイスで ひやそう',
             };
-            if (intro[e.f.id] && (!this.banner || this.banner.t > 1.5)) {
+            // no new-enemy banners over a boss fight or in the tower (they hid the boss and the floor name)
+            if (intro[e.f.id] && (!this.banner || this.banner.t > 1.5) && !this.b.bossAlive && this.stageId !== TOWER_ID) {
               this.banner = { text: `${ENEMY_MAP[e.f.id].name}が きた！`, sub: intro[e.f.id], t: 0, color: '#9be8ff', dur: 2.6 };
               this.userCamT = 0;
             }
@@ -963,9 +965,13 @@ export class BattleScene implements Scene {
       text(ctx, '◀ おしろが あぶない！', L.field.x + 10, L.field.y + L.field.h * 0.55, clamp(L.field.h * 0.08, 14, 22), { align: 'left', color: '#fff', stroke: '#c00000' });
     }
     this.drawBossBar(ctx, L);
+    if (!b.result && b.allies.length >= MAX_ALLIES && b.allies.filter((a) => a.state !== 'dead').length >= MAX_ALLIES) {
+      // army cap: tell the kid why the cards don't work and what to do instead
+      text(ctx, b.beam >= 1 ? '🙌 なかま いっぱい！ いもビームで おしかえそう！' : '🙌 なかま いっぱい！ ビームを ためよう', L.field.x + L.field.w / 2, L.field.y + L.field.h * 0.62, clamp(L.field.h * 0.055, 13, 18), { color: '#fff36a', stroke: '#7a2a00' });
+    }
     if (this.medalOn && !b.result && !this.banner) {
       const m = MEDALS[this.stageId].live(b);
-      const fsz = clamp(L.field.h * 0.045, 11, 15);
+      const fsz = clamp(L.field.h * 0.055, 13, 18);
       text(ctx, `🏅 ${m.text}`, L.field.x + L.field.w - 8, L.field.y + L.field.h * 0.46, fsz, { align: 'right', color: m.fail ? '#b0b0b0' : '#ffe14d', stroke: '#3a1a00' });
     }
     if (b.timeLimit && !b.result && b.time <= b.timeLimit - 60) {
@@ -976,7 +982,7 @@ export class BattleScene implements Scene {
       const left = Math.max(0, Math.ceil(b.timeLimit - b.time));
       const pulse = 1 + (left <= 10 ? Math.abs(Math.sin(this.t * 6)) * 0.15 : 0);
       text(ctx, `⏰ のこり ${left}びょう`, L.field.x + L.field.w / 2, L.field.y + L.field.h * 0.2, clamp(L.field.h * 0.07, 14, 24) * pulse, { color: left <= 10 ? '#ff5f5f' : '#fff', stroke: '#3a1a00' });
-      if (left <= 30 && !this.banner) text(ctx, 'じかんぎれは おしろの のこりで はんてい！', L.field.x + L.field.w / 2, L.field.y + L.field.h * 0.2 + clamp(L.field.h * 0.07, 14, 24) * 1.2, clamp(L.field.h * 0.05, 11, 16), { color: '#ffd23a', stroke: '#3a1a00' });
+      if (left <= 60 && !this.banner) text(ctx, 'じかんぎれは おしろの のこりで はんてい！', L.field.x + L.field.w / 2, L.field.y + L.field.h * 0.2 + clamp(L.field.h * 0.07, 14, 24) * 1.2, clamp(L.field.h * 0.05, 11, 16), { color: '#ffd23a', stroke: '#3a1a00' });
     }
     this.drawHud(ctx, L, w);
     this.drawControls(ctx, L);
@@ -1655,8 +1661,8 @@ export class BattleScene implements Scene {
         text(ctx, `🔥 ほのおのいし +1${this.towerRes.title ? '　しょうごう「' + this.towerRes.title + '」' : ''}`, w / 2, y, fs * 0.8, { color: '#ff8a3a', maxW: pw - 30 });
         y += fs * 1.3;
       }
-      if (this.medalRes && this.resultT > 4.4) {
-        const k3 = easeOutBack(Math.min(1, (this.resultT - 4.4) / 0.4));
+      if (this.medalRes && this.resultT > 3.0) {
+        const k3 = easeOutBack(Math.min(1, (this.resultT - 3.0) / 0.4));
         const room = y + fs * 1.3 < by - fs * 0.3;
         ctx.save();
         // no room left under the rewards: show it as a badge in the panel's top-left corner instead
@@ -1720,6 +1726,11 @@ export class BattleScene implements Scene {
       const left = Math.ceil((this.b.eBase.hp / this.b.eBase.max) * 100);
       text(ctx, left <= 40 ? `あと ちょっと！ てきの おしろ のこり ${left}%` : `てきの おしろ のこり ${left}%`, w / 2, y, fs * 0.7, { color: left <= 40 ? '#ff8a1f' : '#5a5a8a', stroke: 'none', maxW: pw - 30 });
       y += fs * 1.1;
+      const resTotal = Object.values(this.app.save.research).reduce((a, c) => a + c, 0);
+      if (this.stageId >= 49 && resTotal < 30) {
+        text(ctx, '🏰「つよくする」の「おしろ」も つよくしよう！', w / 2, y, fs * 0.62, { color: '#1d5aa3', stroke: 'none', maxW: pw - 30 });
+        y += fs * 1.1;
+      }
       if (this.star === 1 && !this.cheer && cheerAvailable(this.app.save, this.stageId)) {
         text(ctx, '💪 おうえんパワーが つかえるよ！（おかね・おしろ アップ）', w / 2, y, fs * 0.62, { color: '#e0601a', stroke: 'none', maxW: pw - 30 });
         y += fs * 1.1;

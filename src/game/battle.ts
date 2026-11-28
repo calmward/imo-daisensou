@@ -153,6 +153,7 @@ export class Battle {
   rocks: { x: number; t: number }[] = [];
   private nextRocks = 25;
   eggTaps = 0;
+  eggsBroken = 0;
   private rockWarned = false;
   /** which enemy defeated how many potatoes (for the loss hint) */
   killedBy: Record<string, number> = {};
@@ -180,7 +181,9 @@ export class Battle {
       const evo = isEvolved(d.level);
       const es = evoStage(d.level, d.ultra);
       const evoCrit = (evo ? 0.08 : 0) + (es >= 2 ? 0.1 : 0) + (es === 3 ? 0.05 : 0);
-      return { def, level: d.level, ultra: es === 3, stats: { ...def, hp: Math.round(def.hp * m), atk: Math.round(def.atk * m), crit: (def.crit ?? 0) + evoCrit }, cd: 0 };
+      // ウルトラ: fire-proof and strong against fire enemies
+      const strongVs = es === 3 ? [...new Set([...(def.strongVs ?? []), 'fire' as const])] : def.strongVs;
+      return { def, level: d.level, ultra: es === 3, stats: { ...def, strongVs, hp: Math.round(def.hp * m), atk: Math.round(def.atk * m), crit: (def.crit ?? 0) + evoCrit }, cd: 0 };
     });
     this.spawns = stage.spawns.map((_, idx) => ({ idx, next: 0, spawned: 0, active: false, activatedAt: 0 }));
   }
@@ -218,7 +221,7 @@ export class Battle {
     const s = this.slots[i];
     this.money -= this.slotCost(i);
     s.cd = s.def.cooldown * (isEvolved(s.level) ? 0.85 : 1);
-    const f = this.makeFighter(0, s.def.id, s.stats, -14 + this.rng.range(-6, 6), s.def.size * (isEvolved(s.level) ? 1.1 : 1), 0);
+    const f = this.makeFighter(0, s.def.id, s.stats, -14 + this.rng.range(-6, 6), s.def.size * (isEvolved(s.level) ? 1.1 : 1) * (s.ultra ? 1.12 : 1), 0);
     f.evo = evoStage(s.level, s.ultra);
     this.allies.push(f);
     this.deploys++;
@@ -389,7 +392,9 @@ export class Battle {
     const w5 = this.w5rules;
     const dmg = Math.round(this.eBase.max * (w5 ? 0.5 : 0.25));
     if (w5) for (const e of [...this.enemies]) if (e !== target && this.targetable(e)) this.knockback(e);
-    this.eBase.hp = Math.max(1, this.eBase.hp - dmg);
+    // world 5: beating the last boss can bring the castle down right away (a proper finale)
+    const last = w5 && this.bossCount >= this.bossTotal && !this.enemies.some((e) => e.boss && e !== target && e.state !== 'dead');
+    this.eBase.hp = Math.max(last ? 0 : 1, this.eBase.hp - dmg);
     this.eBase.hitT = 0.6;
     this.events.push({ type: 'baseHit', side: 1, dmg });
     this.events.push({ type: 'castleShake' });
@@ -443,6 +448,7 @@ export class Battle {
       target.kbFrom = target.x;
       target.kbTo = target.x + (target.side === 0 ? -1 : 1) * 70;
       this.events.push({ type: 'death', f: target });
+      if (target.s.hatch) this.eggsBroken++;
       if (target.side === 0 && src) this.killedBy[src.id] = (this.killedBy[src.id] ?? 0) + 1;
       if (target.side === 1 && target.boss) this.bossDown(target, src);
       if (target.side === 1) {
@@ -962,7 +968,7 @@ export class Battle {
       this.events.push({ type: 'end', win: false });
     } else if (this.timeLimit && this.time >= this.timeLimit) {
       // time up: whoever's castle is in better shape wins ("はんてい")
-      const win = !this.bossAlive && this.eBase.hp / this.eBase.max < this.pBase.hp / this.pBase.max;
+      const win = !this.bossAlive && this.eBase.hp / this.eBase.max <= this.pBase.hp / this.pBase.max;
       this.result = win ? 'win' : 'lose';
       this.judged = true;
       if (win)

@@ -34,7 +34,7 @@ export const MEDALS: Record<number, Medal> = {
   50: inTime(180),
   51: { text: 'いわを 5こ こわして かつ', ok: (b) => b.rocksBroken >= 5, live: (b) => ({ text: `いわ ${Math.min(5, b.rocksBroken)}/5`, fail: false }) },
   52: noBeam(),
-  53: { text: 'たまごを 1こも かえさずに かつ（タップで われる！）', ok: (b) => b.hatched === 0, live: (b) => ({ text: b.hatched ? 'うまれちゃった…' : 'たまご まもり中', fail: b.hatched > 0 }) },
+  53: { text: 'たまごを 8こ わって かつ（タップでも われる！）', ok: (b) => b.eggsBroken >= 8, live: (b) => ({ text: `たまご ${Math.min(8, b.eggsBroken)}/8`, fail: false }) },
   54: keepCastle(0.5),
   55: { text: '3しゅるい だけで かつ', ok: (b) => b.typesUsed.size <= 3, live: (b) => ({ text: `しゅるい ${b.typesUsed.size}/3`, fail: b.typesUsed.size > 3 }) },
   56: {

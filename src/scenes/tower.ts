@@ -149,7 +149,13 @@ export class TowerScene implements Scene {
     y += fs * 1.1;
     text(ctx, `🔥 ほのおのいし ${save.stones}こ`, px + 16, y, fs * 0.6, { align: 'left', color: '#e0601a', stroke: 'none', maxW: pw - 30 });
     y += fs * 1.1;
-    if (y < py + ph - fs * 4.6) text(ctx, 'まけても なにも へらないよ。どこまで のぼれるかな？', px + pw / 2, y + fs * 0.2, fs * 0.55, { color: '#8a5a22', stroke: 'none', maxW: pw - 20 });
+    {
+      // little rules list, left of the climb button
+      const bhh = clamp(ph * 0.16, 44, 58);
+      const sz = Math.max(10, Math.min(fs * 0.5, bhh * 0.26));
+      const ty0 = py + ph - bhh - 12 + sz * 0.7;
+      wrapLines(ctx, ['👑=ボスで 🎟', '10かいごとに 🔥', 'まけても へらない'], px + 12, ty0, sz, pw * 0.34 - 16);
+    }
     const bh = clamp(ph * 0.16, 44, 58);
     const go = { x: px + pw * 0.36, y: py + ph - bh - 12, w: pw * 0.58, h: bh };
     const off = drawButton(ctx, go, STYLES.orange, ui.isPressed('climb'));
@@ -166,4 +172,8 @@ export class TowerScene implements Scene {
     text(ctx, '🗼 いもの とう', Math.max(w / 2, back.x + back.w + topH * 2), topH / 2, topH * 0.42, { stroke: '#6a3f7a' });
     void ellipse;
   }
+}
+
+function wrapLines(ctx: CanvasRenderingContext2D, lines: string[], x: number, y: number, size: number, maxW: number) {
+  lines.forEach((l, i) => text(ctx, l, x, y + i * size * 1.3, size, { align: 'left', color: '#8a5a22', stroke: 'none', maxW }));
 }

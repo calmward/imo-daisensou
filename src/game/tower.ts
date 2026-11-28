@@ -62,7 +62,7 @@ export function towerStage(f: number): StageDef {
     name: `いもの とう ${f}かい${bossFloor ? '（ボス）' : ''}`,
     // scenery follows the floor's weather (snow for blizzard/ice, volcano for rocks/lava)
     world: mod === 'blizzard' || mod === 'slippery' ? 3 : mod === 'eruption' || mod === 'lava' ? 4 : f > 20 ? 4 : f > 10 ? 3 : 2,
-    length: Math.min(3000, 2000 + 20 * f),
+    length: Math.min(3000, 1600 + 40 * f),
     baseHp: Math.round(15000 + 900 * Math.min(f, 40)),
     spawns,
     reward: 0,

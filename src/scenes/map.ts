@@ -430,7 +430,7 @@ export class MapScene implements Scene {
     const medal = MEDALS[st.id];
     if (medal && cleared && y + fs * 1.2 < py + ph - Math.min(58, ph * 0.16) - 22 - Math.max(46, Math.min(58, ph * 0.16) * 0.7)) {
       const got = save.medals.includes(st.id);
-      text(ctx, `🏅 チャレンジ: ${medal.text}${got ? ' ✓' : '（🎟1まい）'}`, px + 20, y, fs * 0.6, { align: 'left', color: got ? '#2a8a2a' : '#c07000', stroke: 'none', maxW: pw - 40 });
+      text(ctx, `🏅 チャレンジ: ${medal.text}${got ? ' ✓' : '（🎟1まい）'}`, px + 20, y, fs * 0.72, { align: 'left', color: got ? '#2a8a2a' : '#e07000', stroke: '#fff', maxW: pw - 40 });
       y += fs * 1.1;
     }
     if (st.tip && !cleared) {

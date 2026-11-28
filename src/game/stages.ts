@@ -189,7 +189,7 @@ const RAW: Raw[] = [
     spawns: [e('torikera', 8, [16, 20]), e('tamago', 12, [16, 20]), e('kame', 20, [26, 32]), e('yukiusagi', 2, [4, 6])] },
   { name: 'ボス！ ティラノサウルス', len: 2800, hp: 66000, d: 100, boss: true,
     tip: 'ガオー！の あとに ずしん！ ティラノを たおさないと おしろは こわせないよ',
-    spawns: [e('hinotokage', 2, [4, 6], 0, 340), boss('tyranno', 160, 0.95, 2), e('raptor', 10, [14, 18], 0, 300, 0.95), e('tamago', 20, [24, 28], 0, 300, 0.9)] },
+    spawns: [e('hinotokage', 2, [4, 6], 0, 113), boss('tyranno', 160, 0.95, 2), e('raptor', 10, [14, 18], 0, 100, 0.95), e('tamago', 20, [24, 28], 0, 100, 0.9)] },
   { name: 'ようがん どうくつ', len: 3000, hp: 80000, d: 490, mod: 'eruption',
     tip: 'ゴーレムと ユキオトコ！ ふっかつ する てきに ちゅうい',
     spawns: [e('magmagolem', 15, [20, 24]), e('yukiotoko', 25, [26, 30]), e('ptera', 6, [12, 15]), e('tonakai', 12, [20, 24]), e('hinotokage', 2, [4, 6])] },
@@ -212,7 +212,8 @@ export const STAGES: StageDef[] = RAW.map((r, i) => ({
   world: Math.floor(i / 12),
   length: r.len,
   baseHp: i >= 19 ? Math.round(r.hp * 0.42) : i >= 12 ? Math.round(r.hp * 0.55) : r.hp,
-  spawns: withThieves(i + 1, r).map((s) => ({ ...s, mult: Math.round(((s.mult ?? 100) * r.d * (TUNING[i] ?? 1)) / 100) })),
+  // world 5 thieves stay at a fixed strength: scaled like the rest they wiped a full castle in a second
+  spawns: withThieves(i + 1, r).map((s) => ({ ...s, mult: i >= 48 && s.enemy === 'dorobou' ? 450 : Math.round(((s.mult ?? 100) * r.d * (TUNING[i] ?? 1)) / 100) })),
   reward: Math.round((150 + 60 * i + (r.boss ? 300 + 40 * i : 0)) / 10) * 10,
   unlock: r.unlock,
   boss: r.boss,
