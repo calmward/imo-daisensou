@@ -12,6 +12,7 @@ export interface BotOptions {
 
 export class Bot {
   private t = 0;
+  private seenRocks = new WeakSet<object>();
   constructor(private b: Battle, private opts: BotOptions = {}) {}
 
   step(dt: number) {
@@ -22,6 +23,13 @@ export class Bot {
     this.t = 0;
     const b = this.b;
     if (b.result) return;
+    // a kid notices about half of the falling rocks and taps them
+    for (let i = b.rocks.length - 1; i >= 0; i--) {
+      const r = b.rocks[i];
+      if (r.t > 1.4 || this.seenRocks.has(r)) continue;
+      this.seenRocks.add(r);
+      if (b.rng.next() < 0.5) b.tapRock(i);
+    }
     if (this.opts.spam) {
       if (b.beam >= 1) b.fireBeam();
       for (let i = 0; i < b.slots.length; i++) if (b.canDeploy(i)) b.deploy(i);

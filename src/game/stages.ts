@@ -26,7 +26,7 @@ interface Raw {
   mod?: StageMod;
 }
 
-export const WORLD_NAMES = ['いもばたけ', 'どんぐりの もり', 'ぐらぐら やま', 'ゆきの くに'];
+export const WORLD_NAMES = ['いもばたけ', 'どんぐりの もり', 'ぐらぐら やま', 'ゆきの くに', 'かざんの しま'];
 
 const RAW: Raw[] = [
   // ===== World 1: いもばたけ =====
@@ -164,9 +164,47 @@ const RAW: Raw[] = [
   { name: 'さいごの たたかい！ こおり大王', len: 3000, hp: 88000, d: 100, boss: true, unlock: 'german',
     tip: 'こおり大王を たおせ！ ポテトグラタンで こおりを とかそう',
     spawns: [e('yukiusagi', 2, [4, 6], 0, 340), boss('kooriou', 120, 0.95, 3), e('yukidaruma', 10, [16, 20], 0, 320, 0.95), e('tonakai', 20, [22, 26], 0, 300, 0.9), boss('mammoth', 100, 0.7, 2)] },
+
+  // ===== World 5: かざんの しま =====
+  { name: 'かざんの しま', len: 2900, hp: 70000, d: 440,
+    tip: 'ひのこトカゲに やけどさせられると すこしずつ へっていくよ',
+    spawns: [e('hinotokage', 2, [4, 6]), e('raptor', 12, [16, 20]), e('penguin', 8, [14, 18]), e('tanuki', 15, [12, 15])] },
+  { name: 'ラプトルの もり', len: 2900, hp: 72000, d: 450, unlock: 'imoice',
+    tip: 'ラプトルは とびこえて くるよ！ うしろにも なかまを',
+    spawns: [e('raptor', 6, [12, 15]), e('ptera', 10, [14, 18]), e('hinotokage', 2, [4, 6]), e('yukiusagi', 4, [6, 8])] },
+  { name: 'ふんかの ふもと', len: 2800, hp: 70000, d: 430, mod: 'eruption',
+    tip: 'いわが おちてくる！ あかい かげを タップして こわそう',
+    spawns: [e('torikera', 15, [22, 28]), e('hinotokage', 2, [4, 6]), e('hachi', 8, [10, 13]), e('kamakiri', 12, [14, 18])] },
+  { name: 'ひみつの おんせん', len: 2200, hp: 48000, d: 280, max: 36, mod: 'onsen',
+    tip: 'おんせんで なかまが すこしずつ げんきに なるよ。たまごは はやく わろう',
+    spawns: [e('hinotokage', 1, [1.5, 2.2]), e('tamago', 5, [10, 12]), e('chibidaruma', 3, [3, 4])] },
+  { name: 'きょうりゅうの すあな', len: 2900, hp: 74000, d: 460, unlock: 'imomochi',
+    tip: 'たまごは 12びょうで ラプトルに なる！ ゴーレムは いもアイスで ひやそう',
+    spawns: [e('tamago', 6, [12, 15]), e('raptor', 15, [18, 22]), e('magmagolem', 20, [24, 30]), e('nezumi', 2, [3, 5])] },
+  { name: 'マグマの かわ', len: 3000, hp: 76000, d: 450, mod: 'lava',
+    tip: 'マグマが ながれる ときは あぶない！ かたまって いる ときに わたろう',
+    spawns: [e('magmagolem', 12, [20, 24]), e('ptera', 6, [12, 15]), e('hinotokage', 2, [4, 6]), e('kaeru', 15, [16, 20])] },
+  { name: 'トリケラの とっしん', len: 3000, hp: 78000, d: 480,
+    tip: 'トリケラの かおは かたい！ つよい いちげきで わろう',
+    spawns: [e('torikera', 8, [16, 20]), e('tamago', 12, [16, 20]), e('kame', 20, [26, 32]), e('yukiusagi', 2, [4, 6])] },
+  { name: 'ボス！ ティラノサウルス', len: 2800, hp: 66000, d: 100, boss: true,
+    tip: 'ガオー！の あとに ずしん！ ふっとばされたら すぐ だしなおそう',
+    spawns: [e('hinotokage', 2, [4, 6], 0, 340), boss('tyranno', 160, 0.95, 2), e('raptor', 10, [14, 18], 0, 300, 0.95), e('tamago', 20, [24, 28], 0, 300, 0.9)] },
+  { name: 'ようがん どうくつ', len: 3000, hp: 80000, d: 490, mod: 'eruption', unlock: 'pie',
+    tip: 'ゴーレムと ユキオトコ！ ふっかつ する てきに ちゅうい',
+    spawns: [e('magmagolem', 15, [20, 24]), e('yukiotoko', 25, [26, 30]), e('ptera', 6, [12, 15]), e('tonakai', 12, [20, 24]), e('hinotokage', 2, [4, 6])] },
+  { name: 'かざん まつり', len: 2300, hp: 50000, d: 300, max: 36, mod: 'festival',
+    tip: 'おまつりだ！ おかね 2ばい！',
+    spawns: [e('hinotokage', 1, [1.5, 2]), e('tamago', 4, [8, 10]), e('metal', 20, [25, 30], 5)] },
+  { name: 'マグマの かこう', len: 3100, hp: 84000, d: 540, mod: 'lava',
+    tip: 'さいごの まえの たたかい！ ぜんぶの ちからを だそう',
+    spawns: [e('raptor', 8, [14, 18]), e('torikera', 20, [24, 28]), e('magmagolem', 15, [22, 26]), e('ptera', 5, [12, 15]), e('tamago', 12, [18, 22]), e('fukurou', 10, [16, 20]), e('hinotokage', 2, [4, 6])] },
+  { name: 'さいごの たたかい！ マグマ大王', len: 3100, hp: 96000, d: 100, boss: true,
+    tip: 'マグマ大王は ふっかつ する！ さいごは いもアイスで ひやそう',
+    spawns: [e('hinotokage', 2, [4, 6], 0, 340), boss('magmaou', 125, 0.95, 3), e('torikera', 12, [18, 22], 0, 320, 0.95), e('raptor', 10, [14, 18], 0, 300, 0.9), boss('tyranno', 100, 0.6, 2)] },
 ];
 
-const VALLEYS = new Set([9, 16, 21, 28, 34, 40, 46]);
+const VALLEYS = new Set([9, 16, 21, 28, 34, 40, 46, 52, 58]);
 
 export const STAGES: StageDef[] = RAW.map((r, i) => ({
   id: i + 1,

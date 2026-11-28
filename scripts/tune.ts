@@ -12,10 +12,12 @@ import { TUNING } from '../src/game/tuning';
 const SKILL = Number(process.env.SKILL ?? 0.6);
 const LIMIT = (_id: number) => 420;
 // "valley" stages are intentionally easy; bosses a bit harder
-const VALLEY = new Set([9, 16, 21, 28, 34, 40, 46]);
+const VALLEY = new Set([9, 16, 21, 28, 34, 40, 46, 52, 58]);
 function target(id: number) {
   const st = STAGES[id - 1];
   if (VALLEY.has(id)) return 0.5; // factor relative to the max-beatable factor
+  // world 5 is a clear step up: the kid is strong now and clears worlds in a day
+  if (id >= 49) return st.boss ? 1.0 : 0.8 + 0.15 * (((id - 1) % 12) / 11);
   if (st.boss) return 0.95;
   if (id <= 3) return 0.45;
   // slow sawtooth inside each world: rises towards boss
@@ -60,27 +62,30 @@ for (const st of STAGES) {
     f = Math.min(f, Math.round(slo * 0.92 * 1000) / 1000);
   }
   // keep battles short enough for kids: ~4 min max for bosses, ~3 min otherwise
-  const cap = st.boss ? 220 : 160;
+  const cap = st.id >= 49 ? (st.boss ? 240 : 180) : st.boss ? 220 : 160;
   for (let k = 0; k < 12; k++) {
     const ts = [11, 23].map((sd) => trial(save, st.id, f, sd).time);
     if (Math.max(...ts) <= cap) break;
     f = Math.round(f * 0.9 * 1000) / 1000;
   }
   // push difficulty up until the castle actually gets hurt (tension), as long as the bot still wins
-  const castleGoal = VALLEY.has(st.id) || st.id <= 2 ? 1.01 : st.boss ? 0.6 : 0.85;
+  const castleGoal = VALLEY.has(st.id) || st.id <= 2 ? 1.01 : st.id >= 49 ? (st.boss ? 0.45 : 0.7) : st.boss ? 0.6 : 0.85;
   for (let k = 0; k < 10; k++) {
     const rs = [11, 23, 37].map((sd) => trial(save, st.id, f, sd));
     const avg = rs.reduce((a, r) => a + r.baseFrac, 0) / rs.length;
     if (avg <= castleGoal) break;
     const f2 = Math.round(f * 1.08 * 1000) / 1000;
     const rs2 = [11, 23, 37].map((sd) => trial(save, st.id, f2, sd));
-    if (!rs2.every((r) => r.win) || Math.max(...rs2.map((r) => r.time)) > (st.boss ? 220 : 160)) break;
+    if (!rs2.every((r) => r.win) || Math.max(...rs2.map((r) => r.time)) > (st.id >= 49 ? (st.boss ? 240 : 180) : st.boss ? 220 : 160)) break;
     if (st.id <= 10 && ![11, 23].every((sd) => trial(save, st.id, f2, sd, true).win)) break;
     f = f2;
   }
   // hand adjustments for spikes found by the multi-skill campaign test
   const ADJUST: Record<number, number> = { 38: 0.85, 44: 1.0, 48: 1.0, 41: 0.85, 3: 0.6, 5: 0.85, 12: 0.88, 17: 0.88, 18: 0.88, 20: 0.85, 29: 0.88 };
   f = Math.round(f * (ADJUST[st.id] ?? 1) * 1000) / 1000;
+  // world 5 is calibrated to a ~55-65% first-try win rate for an average kid bot (scripts/calib.ts 0.6 0.55)
+  const CALIB: Record<number, number> = {49: 1.94, 50: 1.645, 51: 1.583, 53: 1.514, 54: 1.595, 55: 1.786, 56: 5.397, 57: 1.064, 59: 1.395, 60: 4.789};
+  if (CALIB[st.id]) f = CALIB[st.id];
   out.push(f);
   const r = trial(save, st.id, f, 99);
   console.log(`${st.id} max=${lo.toFixed(2)} use=${f} win=${r.win} t=${r.time.toFixed(0)} base=${r.baseFrac.toFixed(2)} lv=${(save.deck.reduce((a, d) => a + save.units[d], 0) / save.deck.length).toFixed(1)}`);

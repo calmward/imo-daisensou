@@ -968,4 +968,157 @@ const german: Drawer = (ctx, p) => {
   }
 };
 
-export const ALLY_ART: Record<string, Drawer> = { gratin, ski, german, korokke, potesala, mash, jaga, sato, chips, satsu, kenpi, fry, yaki, murasaki, konnyaku, butter, naga, sweet, youkan, ninja, hash, daigaku, king };
+const imoice: Drawer = (ctx, p) => {
+  const m = motion(p, 8);
+  ctx.save();
+  ctx.translate(0, -m.bob);
+  ctx.rotate(m.lean * 0.6);
+  // waffle cone
+  ctx.beginPath();
+  ctx.moveTo(-14, -26);
+  ctx.lineTo(14, -26);
+  ctx.lineTo(0, 0);
+  ctx.closePath();
+  fillStroke(ctx, '#e8b060', 2.5);
+  ctx.strokeStyle = 'rgba(150,90,30,0.6)';
+  ctx.lineWidth = 1.5;
+  for (const d of [-8, 0, 8]) {
+    ctx.beginPath();
+    ctx.moveTo(d - 6, -24);
+    ctx.lineTo(d + 4, -8);
+    ctx.stroke();
+  }
+  // purple sweet-potato ice cream scoop
+  blob(ctx, 0, -38, 20, 16, 0.12, 5);
+  fillStroke(ctx, radial(ctx, -4, -42, 20, '#e8c8ff', '#a878d8'));
+  ctx.fillStyle = '#ffffff';
+  ellipse(ctx, -8, -46, 5, 2.5);
+  ctx.fill();
+  face(ctx, 2, -38, 7.5, p, { mouthKind: 'cat', sparkle: true });
+  ctx.restore();
+  // frosty sparkles
+  ctx.fillStyle = '#bfe8ff';
+  for (let i = 0; i < 3; i++) {
+    const k = (p.t * 0.9 + i / 3) % 1;
+    star(ctx, -16 + i * 16, -58 - k * 14, 3, 4, 0.4);
+    ctx.globalAlpha = 1 - k;
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  if (p.state === 'attack' && p.atk > 0.45) {
+    ctx.globalAlpha = 1 - (p.atk - 0.45) / 0.55;
+    for (let i = 0; i < 4; i++) {
+      ellipse(ctx, 34 + i * 15, -34 + Math.sin(p.t * 20 + i) * 3, 9 - i, 7 - i);
+      ctx.fillStyle = i % 2 ? '#e6f6ff' : '#9be8ff';
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+};
+
+const imomochi: Drawer = (ctx, p) => {
+  const m = motion(p, 6);
+  const sq = Math.sin(p.t * 4) * 0.05;
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.4);
+  ctx.scale(1 + sq, 1 - sq);
+  ctx.beginPath();
+  ctx.ellipse(0, -18, 28, 19, 0, 0, Math.PI * 2);
+  fillStroke(ctx, radial(ctx, -6, -24, 28, '#fff2d0', '#e8c890'), 3);
+  // grill marks & soy glaze
+  ctx.fillStyle = 'rgba(160,90,30,0.55)';
+  ctx.fillRect(-16, -34, 32, 4);
+  ctx.strokeStyle = 'rgba(120,70,20,0.5)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-20, -24);
+  ctx.lineTo(-12, -8);
+  ctx.moveTo(14, -26);
+  ctx.lineTo(20, -10);
+  ctx.stroke();
+  face(ctx, 3, -20, 8.5, p, { mouthKind: 'cat' });
+  ctx.restore();
+  if (p.state === 'attack') {
+    // sticky strands
+    ctx.strokeStyle = 'rgba(255,240,200,0.9)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(24, -18);
+    ctx.quadraticCurveTo(40, -10 + Math.sin(p.atk * 10) * 6, 56 * p.atk + 20, -16);
+    ctx.stroke();
+  }
+};
+
+const nyokki: Drawer = (ctx, p) => {
+  const m = motion(p, 14);
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.6);
+  ctx.rotate(m.lean);
+  for (const [x, y, r] of [[-12, -10, 9], [0, -14, 10], [12, -9, 9]] as [number, number, number][]) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 0.8, 0, 0, Math.PI * 2);
+    fillStroke(ctx, radial(ctx, x - 3, y - 3, r, '#fff6d8', '#e8d090'), 2);
+    ctx.strokeStyle = 'rgba(160,120,60,0.5)';
+    ctx.lineWidth = 1.2;
+    for (let k = -1; k <= 1; k++) {
+      ctx.beginPath();
+      ctx.moveTo(x + k * 3, y - r * 0.6);
+      ctx.lineTo(x + k * 3, y + r * 0.6);
+      ctx.stroke();
+    }
+  }
+  // basil leaf hat
+  ctx.beginPath();
+  ctx.ellipse(0, -26, 8, 4, -0.3, 0, Math.PI * 2);
+  fillStroke(ctx, '#4cbf3a', 1.5);
+  eye(ctx, -3, -15, 2.8, { look: 0.8, angry: p.state === 'attack' });
+  eye(ctx, 5, -15, 2.8, { look: 0.8, angry: p.state === 'attack' });
+  mouth(ctx, 2, -9, 4, p.state === 'attack' ? 'open' : 'smile');
+  ctx.restore();
+};
+
+const pie: Drawer = (ctx, p) => {
+  const m = motion(p, 7);
+  feet(ctx, 0, 0, 13, 6, p.walk * 7, m.moving, '#a0602a');
+  ctx.save();
+  ctx.translate(0, -m.bob);
+  ctx.rotate(m.lean * 0.6);
+  ctx.scale(1 / m.squash, m.squash);
+  // pie tin
+  ctx.beginPath();
+  ctx.moveTo(-28, -18);
+  ctx.lineTo(28, -18);
+  ctx.lineTo(22, -4);
+  ctx.lineTo(-22, -4);
+  ctx.closePath();
+  fillStroke(ctx, '#c9d2e0', 2.5);
+  // golden crust with lattice
+  ctx.beginPath();
+  ctx.ellipse(0, -24, 30, 14, 0, Math.PI, 0);
+  ctx.closePath();
+  fillStroke(ctx, radial(ctx, -6, -30, 30, '#ffd88a', '#d08a2a'), 2.5);
+  ctx.strokeStyle = '#b06a1a';
+  ctx.lineWidth = 2;
+  for (let i = -2; i <= 2; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * 10 - 6, -36);
+    ctx.lineTo(i * 10 + 6, -19);
+    ctx.stroke();
+  }
+  face(ctx, 3, -27, 8, p, { angry: true, mouthKind: 'grin' });
+  ctx.restore();
+  // giant rolling pin for the big hit
+  const a = p.state === 'attack' ? (p.atk < 0.5 ? -1.3 : 0.6) : -0.5;
+  ctx.save();
+  ctx.translate(18, -30);
+  ctx.rotate(a);
+  ctx.beginPath();
+  ctx.rect(-4, -40, 8, 44);
+  fillStroke(ctx, '#e0b07a', 2);
+  ctx.beginPath();
+  ctx.rect(-9, -40, 18, 10);
+  fillStroke(ctx, '#c8905a', 2);
+  ctx.restore();
+};
+
+export const ALLY_ART: Record<string, Drawer> = { imoice, imomochi, nyokki, pie, gratin, ski, german, korokke, potesala, mash, jaga, sato, chips, satsu, kenpi, fry, yaki, murasaki, konnyaku, butter, naga, sweet, youkan, ninja, hash, daigaku, king };

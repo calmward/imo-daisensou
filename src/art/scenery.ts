@@ -13,6 +13,7 @@ export const THEMES: WorldTheme[] = [
   { sky: ['#ffcf9a', '#fff1d6'], hill1: '#5aa86a', hill2: '#3a8a4a', ground: ['#a07a4a', '#7a5a32'], accent: '#e8792a' },
   { sky: ['#b8a6ff', '#ffe0f0'], hill1: '#9a90b8', hill2: '#7a6a9a', ground: ['#a08a7a', '#7a6a5a'], accent: '#c0b0e0' },
   { sky: ['#9fd4f5', '#f2fbff'], hill1: '#e6f2fb', hill2: '#c4dcef', ground: ['#f4f8fc', '#b8cfe2'], accent: '#7fc8f0' },
+  { sky: ['#ff9a6a', '#ffe2b8'], hill1: '#6b4a5c', hill2: '#4a3042', ground: ['#5c4036', '#3a2822'], accent: '#ff5a2a' },
 ];
 
 /** Parallax background. camX in world units, scale = px per world unit. */
@@ -56,6 +57,7 @@ export function drawBackground(ctx: Ctx, w: number, h: number, groundY: number, 
   if (world === 1) drawTrees(ctx, w, groundY, camX, scale, 0.4);
   if (world === 2 || world === 3) drawPeaks(ctx, w, groundY, camX, scale);
   if (world === 3) drawAurora(ctx, w, groundY, t);
+  if (world === 4) drawVolcano(ctx, w, groundY, camX, scale, t);
   hillLayer(th.hill2, 0.5, 18, 40, 0.007);
   // ground
   const gg = ctx.createLinearGradient(0, groundY, 0, h);
@@ -67,11 +69,13 @@ export function drawBackground(ctx: Ctx, w: number, h: number, groundY: number, 
   ctx.fillRect(0, groundY - 2, w, Math.max(4, 7 * scale));
   drawGroundProps(ctx, w, groundY, camX, scale, world, t);
   // ambient weather: petals / leaves / snow
-  const colors = [['#ffc0d8', '#fff'], ['#e8a040', '#c86a20'], ['#ffffff', '#e8f0ff'], ['#ffffff', '#dff2ff']][world % 4];
+  const colors = [['#ffc0d8', '#fff'], ['#e8a040', '#c86a20'], ['#ffffff', '#e8f0ff'], ['#ffffff', '#dff2ff'], ['#ffb040', '#9a8a8a']][world % 5];
   for (let i = 0; i < 14; i++) {
     const sp = 18 + (i % 5) * 6;
     const x = ((i * 173 + t * sp * 0.6 - camX * scale * 0.3) % (w + 60) + w + 60) % (w + 60) - 30;
-    const y = ((i * 97 + t * sp) % (groundY + 40)) - 20;
+    // embers rise in the volcano world, everything else falls
+    const y0 = ((i * 97 + t * sp) % (groundY + 40)) - 20;
+    const y = world === 4 ? groundY - y0 : y0;
     ctx.save();
     ctx.translate(x + Math.sin(t * 2 + i) * 8, y);
     ctx.rotate(t * 2 + i);
@@ -295,6 +299,57 @@ export function drawEnemyBase(ctx: Ctx, hpFrac: number, t: number, hitT: number,
     ctx.ellipse(70, -5, 30, 34, 0, Math.PI, 0);
     ctx.fill();
     faceY = -105;
+  } else if (kind === 6 || kind === 7) {
+    // volcano fortress (7 = マグマ大王の しろ)
+    const big = kind === 7;
+    ctx.beginPath();
+    ctx.moveTo(-6, 0);
+    ctx.lineTo(40, big ? -200 : -170);
+    ctx.lineTo(100, big ? -200 : -170);
+    ctx.lineTo(146, 0);
+    ctx.closePath();
+    fillStroke(ctx, radial(ctx, 60, -100, 140, '#8a5a4a', '#3a2422'), 4);
+    // lava pouring from the crater
+    ctx.fillStyle = '#ff6a1f';
+    ctx.beginPath();
+    ctx.ellipse(70, big ? -200 : -170, 30, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (const [x, len] of [[52, 60], [84, 90], [66, 40]] as [number, number][]) {
+      const drip = len + Math.sin(t * 2 + x) * 8;
+      ctx.fillStyle = '#ff8a2a';
+      ctx.beginPath();
+      ctx.moveTo(x - 5, big ? -196 : -166);
+      ctx.lineTo(x + 5, big ? -196 : -166);
+      ctx.lineTo(x + 2, (big ? -196 : -166) + drip);
+      ctx.lineTo(x - 2, (big ? -196 : -166) + drip);
+      ctx.fill();
+    }
+    // smoke
+    ctx.fillStyle = 'rgba(90,80,80,0.5)';
+    for (let i = 0; i < 3; i++) {
+      const k2 = (t * 0.3 + i / 3) % 1;
+      ellipse(ctx, 70 + Math.sin(t + i) * 10, (big ? -210 : -180) - k2 * 60, 14 + k2 * 14, 10 + k2 * 10);
+      ctx.fill();
+    }
+    // dinosaur-skull gate
+    ellipse(ctx, 70, -30, 26, 22);
+    fillStroke(ctx, '#f2ead8', 3);
+    ctx.fillStyle = '#2a1a1a';
+    ctx.beginPath();
+    ctx.ellipse(70, -18, 14, 12, 0, Math.PI, 0);
+    ctx.fill();
+    for (const ex of [60, 80]) {
+      ellipse(ctx, ex, -36, 5, 6);
+      ctx.fill();
+    }
+    if (big) {
+      ctx.beginPath();
+      ctx.moveTo(52, -214);
+      for (let i = 0; i <= 4; i++) ctx.lineTo(52 + i * 9, i % 2 ? -236 : -218);
+      ctx.closePath();
+      fillStroke(ctx, '#ffd23a', 2);
+    }
+    faceY = big ? -120 : -105;
   } else if (kind === 4 || kind === 5) {
     // ice castle (5 = こおり大王の こおりの きゅうでん)
     const big = kind === 5;
@@ -502,6 +557,11 @@ function drawGroundProps(ctx: Ctx, w: number, groundY: number, camX: number, sca
       if (kind < 0.4) mushroom(ctx, i % 2 ? '#e8312f' : '#c8783a');
       else if (kind < 0.7) acorn(ctx);
       else flower(ctx, '#c49bff', t + i);
+    } else if (world === 4) {
+      if (kind < 0.35) fern(ctx, t + i);
+      else if (kind < 0.55) bones(ctx);
+      else if (kind < 0.75) lavaCrack(ctx, t + i);
+      else rock(ctx, hash(i * 1.9));
     } else if (world === 3) {
       if (kind < 0.35) pine(ctx);
       else if (kind < 0.5) igloo(ctx);
@@ -645,6 +705,12 @@ function shrub(ctx: Ctx) {
 
 /** Decorative prop for the world map (feet at 0,0, ~40 units tall). */
 export function mapProp(ctx: Ctx, world: number, k: number, t: number) {
+  if (world === 4) {
+    if (k < 0.45) fern(ctx, t);
+    else if (k < 0.7) bones(ctx);
+    else lavaCrack(ctx, t);
+    return;
+  }
   if (world === 3) {
     if (k < 0.45) pine(ctx);
     else if (k < 0.7) igloo(ctx);
@@ -766,4 +832,81 @@ function iceCrystal(ctx: Ctx, t: number) {
   ctx.closePath();
   fillStroke(ctx, '#bfe8ff', 1.5, '#5a9ac8');
   ctx.restore();
+}
+
+function drawVolcano(ctx: Ctx, w: number, groundY: number, camX: number, scale: number, t: number) {
+  const x = w * 0.7 - camX * scale * 0.05;
+  const y = groundY - 40 * scale;
+  ctx.save();
+  // lava glow
+  const g = ctx.createRadialGradient(x, y - 190 * scale, 4, x, y - 190 * scale, 120 * scale);
+  g.addColorStop(0, 'rgba(255,140,60,0.55)');
+  g.addColorStop(1, 'rgba(255,140,60,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(x - 140 * scale, y - 320 * scale, 280 * scale, 240 * scale);
+  ctx.fillStyle = '#5a3a4a';
+  ctx.beginPath();
+  ctx.moveTo(x - 220 * scale, y);
+  ctx.lineTo(x - 40 * scale, y - 190 * scale);
+  ctx.lineTo(x + 40 * scale, y - 190 * scale);
+  ctx.lineTo(x + 220 * scale, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ff6a1f';
+  ctx.beginPath();
+  ctx.moveTo(x - 40 * scale, y - 190 * scale);
+  ctx.lineTo(x + 40 * scale, y - 190 * scale);
+  ctx.lineTo(x + 24 * scale, y - 150 * scale);
+  ctx.lineTo(x + 6 * scale, y - 170 * scale);
+  ctx.lineTo(x - 12 * scale, y - 140 * scale);
+  ctx.lineTo(x - 22 * scale, y - 165 * scale);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = 'rgba(110,100,100,0.45)';
+  for (let i = 0; i < 4; i++) {
+    const k = (t * 0.15 + i / 4) % 1;
+    ellipse(ctx, x + Math.sin(t * 0.5 + i) * 20 * scale, y - (200 + k * 140) * scale, (24 + k * 40) * scale, (16 + k * 26) * scale);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function fern(ctx: Ctx, t: number) {
+  const sw = Math.sin(t * 1.5) * 0.08;
+  for (const [a, l] of [[-0.7, 26], [-0.25, 32], [0.25, 32], [0.7, 26]] as [number, number][]) {
+    ctx.save();
+    ctx.rotate(a + sw);
+    ctx.beginPath();
+    ctx.ellipse(0, -l / 2, 5, l / 2, 0, 0, Math.PI * 2);
+    fillStroke(ctx, '#4a9a4a', 1.5, '#1e4a1e');
+    ctx.restore();
+  }
+}
+
+function bones(ctx: Ctx) {
+  ctx.strokeStyle = '#f2ead8';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-14, -3);
+  ctx.lineTo(14, -6);
+  ctx.stroke();
+  for (const [x, y] of [[-14, -3], [14, -6]] as [number, number][]) {
+    ellipse(ctx, x, y - 2, 4, 3);
+    ctx.fillStyle = '#f2ead8';
+    ctx.fill();
+    ellipse(ctx, x, y + 2, 4, 3);
+    ctx.fill();
+  }
+}
+
+function lavaCrack(ctx: Ctx, t: number) {
+  ctx.strokeStyle = `rgba(255,${120 + Math.sin(t * 3) * 50},40,0.9)`;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-18, 2);
+  ctx.lineTo(-6, -2);
+  ctx.lineTo(2, 3);
+  ctx.lineTo(16, -1);
+  ctx.stroke();
 }
