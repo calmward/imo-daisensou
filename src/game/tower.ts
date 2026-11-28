@@ -17,7 +17,8 @@ const NAMES = ['いしの かいだん', 'ほこりの へや', 'くもの す',
 
 /** strength (%) of a floor. Calibrated with scripts/towercalib.ts against the campaign. */
 export function towerPower(f: number) {
-  const base = TOWER_BASE * (1 + 0.075 * (Math.min(f, 30) - 1));
+  // gentle up to floor 20, then steeper so floors 21-30 need a well-trained team
+  const base = TOWER_BASE * (1 + 0.075 * (Math.min(f, 20) - 1)) * (1 + 0.08 * Math.max(0, Math.min(f, 30) - 20));
   return f > 30 ? base * Math.pow(1.05, f - 30) : base;
 }
 export const TOWER_BASE = 420;
