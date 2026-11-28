@@ -1,7 +1,7 @@
-export type Trait = 'bug' | 'bird' | 'beast' | 'boss' | 'ice';
+export type Trait = 'bug' | 'bird' | 'beast' | 'boss' | 'ice' | 'fire';
 
 export interface Effect {
-  kind: 'slow' | 'freeze' | 'knock';
+  kind: 'slow' | 'freeze' | 'knock' | 'burn';
   chance: number; // 0..1
   dur: number; // seconds (ignored for knock)
   vs?: Trait[]; // only triggers vs these traits (undefined = all)
@@ -27,6 +27,7 @@ export interface CombatStats {
   multiHit?: number; // hits per attack (visual + split damage)
   minRange?: number; // can't hit things closer than this (long-range snipers)
   split?: { id: string; n: number }; // breaks into smaller enemies when defeated
+  hatch?: { id: string; t: number }; // turns into another enemy after t seconds alive
   revive?: number; // comes back once with this fraction of hp (unless finished by an 'ice' counter)
   skills?: Skill[]; // boss abilities
   heal?: number; // heals nearby allies by this fraction of their max hp each attack
@@ -94,10 +95,10 @@ export interface Rush {
   mult: number;
 }
 
-export type StageMod = 'blizzard' | 'slippery' | 'festival';
+export type StageMod = 'blizzard' | 'slippery' | 'festival' | 'eruption' | 'lava' | 'onsen';
 
 export interface Skill {
-  kind: 'stomp' | 'summon' | 'blizzard' | 'breath';
+  kind: 'stomp' | 'summon' | 'blizzard' | 'breath' | 'meteor';
   power?: number; // breath: fraction of the potato castle's max hp
   every?: number; // seconds between uses
   below?: number; // fire once when hp fraction drops below this

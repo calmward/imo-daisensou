@@ -6,16 +6,18 @@ import { PowerScene } from './scenes/power';
 import { GachaScene } from './scenes/gacha';
 import { MissionScene } from './scenes/missions';
 import { ZukanScene } from './scenes/zukan';
+import { TowerScene } from './scenes/tower';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const app = new App(canvas);
 app.register('title', () => new TitleScene(app));
 app.register('map', (arg) => new MapScene(app, arg));
-app.register('battle', (id: number) => new BattleScene(app, id));
+app.register('battle', (arg) => new BattleScene(app, arg));
 app.register('power', (arg) => new PowerScene(app, arg));
 app.register('gacha', () => new GachaScene(app));
 app.register('missions', () => new MissionScene(app));
 app.register('zukan', () => new ZukanScene(app));
+app.register('tower', () => new TowerScene(app));
 app.go('title', undefined, true);
 app.start();
 (window as any).__app = app; // handy for automated tests

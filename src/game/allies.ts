@@ -73,6 +73,18 @@ export const ALLIES: AllyDef[] = [
     desc: 'スキーで てきを とびこえて、うしろの てきを こうげき！',
     cost: 360, cooldown: 9.0, hp: 600, atk: 110, range: 130, speed: 100, atkInterval: 1.0, foreswing: 0.2, kb: 2, area: false, width: 44, size: 1.0, crit: 0.1, burrow: 280, jump: true,
   },
+  {
+    id: 'imoice', name: 'いもアイス', role: 'ひやす', rarity: 'N',
+    desc: 'ひんやり アイスで ほのおの てきを ひやす！ ゴーレムも ふっかつ させない',
+    cost: 450, cooldown: 11.0, hp: 1100, atk: 140, range: 250, speed: 42, atkInterval: 2.0, foreswing: 0.4, kb: 3, area: true, width: 46, size: 1.05, strongVs: ['fire'],
+    effect: { kind: 'slow', chance: 0.4, dur: 2 },
+  },
+  {
+    id: 'imomochi', name: 'いももち', role: 'ねばねば', rarity: 'N',
+    desc: 'もちもち ボディで うけとめて、けものを ねばねばで とめる！',
+    cost: 360, cooldown: 9.0, hp: 2400, atk: 60, range: 120, speed: 40, atkInterval: 1.6, foreswing: 0.3, kb: 2, area: true, width: 56, size: 1.1,
+    effect: { kind: 'freeze', chance: 0.5, dur: 1.5, vs: ['beast'] },
+  },
   // ---- ガチャ限定 ----
   {
     id: 'sweet', name: 'スイートポテト', role: 'とめる', rarity: 'R', gacha: true,
@@ -112,6 +124,16 @@ export const ALLIES: AllyDef[] = [
     effect: { kind: 'slow', chance: 0.6, dur: 3 },
   },
   {
+    id: 'nyokki', name: 'ニョッキ', role: 'れんぞく', rarity: 'R', gacha: true,
+    desc: 'ころころ ニョッキが ちかくの てき 3たいを いっきに こうげき！',
+    cost: 200, cooldown: 4.0, hp: 900, atk: 40, range: 110, speed: 70, atkInterval: 0.8, foreswing: 0.15, kb: 2, area: false, width: 40, size: 0.9, multiHit: 3,
+  },
+  {
+    id: 'pie', name: 'ポテトパイ', role: 'こうらわり', rarity: 'SR', gacha: true,
+    desc: 'さくさく パイの すごい いちげき！ かたい バリアも わる',
+    cost: 600, cooldown: 15.0, hp: 2200, atk: 1100, range: 180, speed: 45, atkInterval: 3.4, foreswing: 0.6, kb: 3, area: false, width: 54, size: 1.15, crit: 0.1,
+  },
+  {
     id: 'german', name: 'ジャーマンポテト', role: 'じゅうじゅう', rarity: 'SR', gacha: true,
     desc: 'じゅうじゅう やけた ベーコンで まとめて ふっとばす！ むれに つよい',
     cost: 420, cooldown: 7.0, hp: 1800, atk: 220, range: 200, speed: 55, atkInterval: 1.4, foreswing: 0.3, kb: 3, area: true, width: 60, size: 1.15,
@@ -132,25 +154,29 @@ export const ALLIES: AllyDef[] = [
 export const ALLY_MAP: Record<string, AllyDef> = Object.fromEntries(ALLIES.map((a) => [a.id, a]));
 
 /** Stat multiplier for a unit level. */
-export function levelMult(lv: number): number {
-  return (1 + 0.26 * (lv - 1)) * (lv >= EVOLVE_LV ? 1.2 : 1) * (lv >= HYPER_LV ? 1.15 : 1);
+export function levelMult(lv: number, ultra = false): number {
+  return (1 + 0.26 * (lv - 1)) * (lv >= EVOLVE_LV ? 1.2 : 1) * (lv >= HYPER_LV ? 1.15 : 1) * (ultra && lv >= ULTRA_LV ? ULTRA_MULT : 1);
 }
+
+/** third evolution (ウルトラ): Lv22 + 1 ほのおのいし */
+export const ULTRA_LV = 22;
+export const ULTRA_MULT = 1.12;
 
 /** At this level a potato evolves ("しんか") into its super form. */
 export const EVOLVE_LV = 7;
 /** second evolution (ハイパー) */
 export const HYPER_LV = 15;
 
-export function evoStage(lv: number): 0 | 1 | 2 {
-  return lv >= HYPER_LV ? 2 : lv >= EVOLVE_LV ? 1 : 0;
+export function evoStage(lv: number, ultra = false): 0 | 1 | 2 | 3 {
+  return ultra && lv >= ULTRA_LV ? 3 : lv >= HYPER_LV ? 2 : lv >= EVOLVE_LV ? 1 : 0;
 }
 
 export function isEvolved(lv: number) {
   return lv >= EVOLVE_LV;
 }
 
-export function unitName(def: AllyDef, lv: number) {
-  return lv >= HYPER_LV ? 'ハイパー' + def.name : isEvolved(lv) ? 'スーパー' + def.name : def.name;
+export function unitName(def: AllyDef, lv: number, ultra = false) {
+  return ultra && lv >= ULTRA_LV ? 'ウルトラ' + def.name : lv >= HYPER_LV ? 'ハイパー' + def.name : isEvolved(lv) ? 'スーパー' + def.name : def.name;
 }
 
 export const MAX_LEVEL = 30;

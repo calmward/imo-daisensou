@@ -22,6 +22,11 @@ export interface SaveData {
   kills: Record<string, number>; // enemy id -> defeated count
   today: { date: string; counts: Record<string, number>; claimed: string[]; ids?: string[] };
   stats: { wins: number; losses: number; kills: number };
+  medals: number[]; // stage ids whose チャレンジメダル was earned
+  stones: number; // ほのおのいし (for ウルトラしんか)
+  ultra: string[]; // unit ids that went ウルトラ
+  tower: { best: number }; // highest いもの とう floor cleared
+  lose: { id: number; n: number }; // losing streak on one stage (for おうえんパワー)
 }
 
 const KEY = 'imo-daisensou-save-v1';
@@ -54,6 +59,11 @@ export function newSave(): SaveData {
     kills: {},
     today: { date: '', counts: {}, claimed: [] },
     stats: { wins: 0, losses: 0, kills: 0 },
+    medals: [],
+    stones: 0,
+    ultra: [],
+    tower: { best: 0 },
+    lose: { id: 0, n: 0 },
   };
 }
 
@@ -103,6 +113,12 @@ export function sanitize(d: unknown): SaveData {
   for (const [k, v] of Object.entries(obj(td.counts))) s.today.counts[k] = num(v, 0);
   const st = obj(o.stats);
   s.stats = { wins: num(st.wins, 0), losses: num(st.losses, 0), kills: num(st.kills, 0) };
+  s.medals = Array.isArray(o.medals) ? [...new Set(o.medals.filter((x): x is number => Number.isInteger(x) && x >= 49 && x <= 60))] : [];
+  s.stones = num(o.stones, 0, 0, 999);
+  s.ultra = Array.isArray(o.ultra) ? [...new Set(o.ultra.filter((x): x is string => typeof x === 'string' && Object.prototype.hasOwnProperty.call(s.units, x) && s.units[x] >= 22))] : [];
+  s.tower = { best: num(obj(o.tower).best, 0, 0, 9999) };
+  const lo = obj(o.lose);
+  s.lose = { id: num(lo.id, 0, 0, 999), n: num(lo.n, 0, 0, 99) };
   const deck = Array.isArray(o.deck) ? o.deck : [];
   s.deck = deck.filter((id, i): id is string => typeof id === 'string' && Object.prototype.hasOwnProperty.call(s.units, id) && deck.indexOf(id) === i).slice(0, DECK_SIZE);
   if (!s.deck.length) s.deck = Object.keys(s.units).slice(0, deckSize(s));

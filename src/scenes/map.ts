@@ -10,9 +10,11 @@ import { MUSIC } from '../game/music';
 import { highestUnlocked, isCleared } from '../game/save';
 import { BONUS_ID, STAGES, STAR_NAMES, ticketReward, WORLD_NAMES } from '../game/stages';
 import { todayKey } from '../game/missions';
-import { canLevelUp, claimDaily, previewReward } from '../game/progress';
+import { canLevelUp, cheerAvailable, claimDaily, previewReward } from '../game/progress';
 import { claimable } from '../game/missions';
 import { drawGoldIcon, drawHand, MOD_LABEL, wrapText } from './battle';
+import { MEDALS } from '../game/medals';
+import { TOWER_OPEN_STAGE } from '../game/tower';
 
 const SPACING = 96;
 
@@ -275,14 +277,17 @@ export class MapScene implements Scene {
     const by = h - botH;
     ctx.fillStyle = '#5a3a1e';
     ctx.fillRect(0, by, w, botH);
-    const bw = Math.min(180, (w - 50) / 4);
+    const towerOpen = isCleared(save, TOWER_OPEN_STAGE);
+    const nb = towerOpen ? 5 : 4;
+    const bw = Math.min(180, (w - 10 * (nb + 1)) / nb);
     const btns: [string, string, keyof typeof STYLES, () => void, boolean][] = [
       ['power', 'つよくする', 'green', () => this.app.go('power'), isCleared(save, 1) && Object.keys(save.units).some((id) => canLevelUp(save, id))],
       ['gacha', 'ガチャ', 'pink', () => this.app.go('gacha'), save.tickets > 0],
       ['missions', 'ミッション', 'blue', () => this.app.go('missions'), claimable(save).length > 0],
       ['zukan', 'ずかん', 'purple', () => this.app.go('zukan'), false],
     ];
-    const totalW = bw * 4 + 30;
+    if (towerOpen) btns.push(['tower', 'いもの とう', 'orange', () => this.app.go('tower'), !save.tower.best]);
+    const totalW = bw * nb + 10 * (nb - 1);
     btns.forEach(([id, label, st, fn, badge], i) => {
       const r = { x: (w - totalW) / 2 + i * (bw + 10), y: by + 10, w: bw, h: botH - 20 };
       const off = drawButton(ctx, r, STYLES[st], ui.isPressed(id));
@@ -422,6 +427,12 @@ export class MapScene implements Scene {
       text(ctx, `＋ ${parts.join('・')}`, px + 46, y, fs * 0.62, { align: 'left', color: '#c0392b', stroke: 'none', maxW: pw - 60 });
       y += fs * 1.1;
     }
+    const medal = MEDALS[st.id];
+    if (medal && cleared && y + fs * 1.2 < py + ph - Math.min(58, ph * 0.16) - 22 - Math.max(46, Math.min(58, ph * 0.16) * 0.7)) {
+      const got = save.medals.includes(st.id);
+      text(ctx, `🏅 チャレンジ: ${medal.text}${got ? ' ✓' : '（🎟1まい）'}`, px + 20, y, fs * 0.72, { align: 'left', color: got ? '#2a8a2a' : '#e07000', stroke: '#fff', maxW: pw - 40 });
+      y += fs * 1.1;
+    }
     if (st.tip && !cleared) {
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       const tipH = Math.max(36, py + ph - 80 - y);
@@ -445,8 +456,9 @@ export class MapScene implements Scene {
     }
     const go = { x: px + pw * 0.38, y: py + ph - bh - 14, w: pw * 0.56, h: bh };
     const off = drawButton(ctx, go, STYLES.orange, ui.isPressed('go'));
-    text(ctx, 'しゅつげき！', go.x + go.w / 2, go.y + off + (bh - 6) / 2, bh * 0.4);
-    if (this.popT > 0.3) ui.add({ id: 'go', r: go, onTap: () => { audio.sfx('whistle'); this.app.go('battle', { id: st.id, star: this.popStar }); } });
+    const cheer = this.popStar === 1 && cheerAvailable(save, st.id);
+    text(ctx, cheer ? '💪 おうえんで しゅつげき' : 'しゅつげき！', go.x + go.w / 2, go.y + off + (bh - 6) / 2, bh * (cheer ? 0.3 : 0.4), { maxW: go.w - 10 });
+    if (this.popT > 0.3) ui.add({ id: 'go', r: go, onTap: () => { audio.sfx('whistle'); this.app.go('battle', { id: st.id, star: this.popStar, cheer: this.popStar === 1 && cheerAvailable(save, st.id) }); } });
     const cl = { x: px + pw * 0.06, y: go.y, w: pw * 0.28, h: bh };
     const off2 = drawButton(ctx, cl, STYLES.cream, ui.isPressed('close'));
     text(ctx, 'とじる', cl.x + cl.w / 2, cl.y + off2 + (bh - 6) / 2, bh * 0.32, { color: '#5a3a12', stroke: 'none' });

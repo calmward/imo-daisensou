@@ -6,7 +6,7 @@ import { ENEMIES } from '../game/enemies';
 import { MUSIC } from '../game/music';
 import { wrapText } from './battle';
 
-const TRAIT: Record<string, [string, string]> = { bug: ['むし', '#6ccf4a'], bird: ['とり', '#3d97f0'], beast: ['けもの', '#c8783a'], boss: ['ボス', '#e8312f'], ice: ['こおり', '#7cc8ff'] };
+const TRAIT: Record<string, [string, string]> = { bug: ['むし', '#6ccf4a'], bird: ['とり', '#3d97f0'], beast: ['けもの', '#c8783a'], boss: ['ボス', '#e8312f'], ice: ['こおり', '#7cc8ff'], fire: ['ほのお', '#ff6a1f'] };
 
 export class ZukanScene implements Scene {
   name = 'zukan';

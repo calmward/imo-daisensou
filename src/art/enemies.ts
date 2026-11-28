@@ -1088,7 +1088,329 @@ const kooriou: Drawer = (ctx, p) => {
   ctx.restore();
 };
 
+// ---------- World 5: かざんの しま ----------
+function dinoLegs(ctx: Ctx, xs: number[], y: number, len: number, phase: number, moving: boolean, color: string) {
+  ctx.lineCap = 'round';
+  xs.forEach((x, i) => {
+    const sw = moving ? Math.sin(phase + i * 1.7) * 4 : 0;
+    ctx.strokeStyle = OUT;
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.moveTo(x, y - len);
+    ctx.lineTo(x + sw, y);
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 6;
+    ctx.stroke();
+  });
+}
+
+const hinotokage: Drawer = (ctx, p) => {
+  const m = motion(p, 14);
+  dinoLegs(ctx, [-10, 10], 0, 8, p.walk * 14, m.moving, '#e8762a');
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.5);
+  ctx.rotate(m.lean);
+  // tail with a flame tip
+  ctx.beginPath();
+  ctx.moveTo(-14, -12);
+  ctx.quadraticCurveTo(-34, -8, -40, -20 + Math.sin(p.t * 8) * 3);
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = OUT;
+  ctx.stroke();
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = '#f0903a';
+  ctx.stroke();
+  ellipse(ctx, -41, -24 + Math.sin(p.t * 8) * 3, 5, 7);
+  ctx.fillStyle = '#ffd23a';
+  ctx.fill();
+  ellipse(ctx, 0, -14, 18, 11);
+  fillStroke(ctx, radial(ctx, -4, -18, 18, '#ffb36a', '#e8622a'));
+  ellipse(ctx, 16, -20, 10, 8);
+  fillStroke(ctx, '#f0903a', 2.5);
+  eye(ctx, 18, -23, 3.6, { look: 0.8, angry: true });
+  mouth(ctx, 22, -15, 5, p.state === 'attack' ? 'open' : 'grin');
+  ctx.restore();
+  if (p.state === 'attack' && p.atk > 0.45) {
+    ctx.globalAlpha = 1 - p.atk;
+    for (let i = 0; i < 3; i++) {
+      ellipse(ctx, 32 + i * 10, -18, 6 - i, 5 - i);
+      ctx.fillStyle = i % 2 ? '#ffd23a' : '#ff6a1f';
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+};
+
+const raptor: Drawer = (ctx, p) => {
+  const m = motion(p, 12);
+  dinoLegs(ctx, [-6, 8], 0, 16, p.walk * 12, m.moving, '#5aa86a');
+  ctx.save();
+  ctx.translate(0, -m.bob);
+  ctx.rotate(m.lean + 0.1);
+  ctx.beginPath();
+  ctx.moveTo(-10, -22);
+  ctx.quadraticCurveTo(-36, -22, -46, -34);
+  ctx.lineWidth = 9;
+  ctx.strokeStyle = OUT;
+  ctx.stroke();
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = '#6ac87a';
+  ctx.stroke();
+  ellipse(ctx, 0, -26, 18, 13);
+  fillStroke(ctx, radial(ctx, -4, -30, 18, '#8ae09a', '#4a9a5a'));
+  // stripes
+  ctx.strokeStyle = '#3a7a4a';
+  ctx.lineWidth = 2.5;
+  for (const x of [-8, 0]) {
+    ctx.beginPath();
+    ctx.moveTo(x, -38);
+    ctx.lineTo(x + 3, -30);
+    ctx.stroke();
+  }
+  ellipse(ctx, 18, -40, 12, 9);
+  fillStroke(ctx, '#6ac87a', 2.5);
+  eye(ctx, 18, -44, 3.8, { look: 0.9, angry: true });
+  mouth(ctx, 25, -35, 6, p.state === 'attack' ? 'open' : 'grr');
+  arm(ctx, 10, -24, 18 + (p.state === 'attack' ? 8 : 0), -20, 3, '#6ac87a');
+  ctx.restore();
+};
+
+const ptera: Drawer = (ctx, p) => {
+  const fl = Math.sin(p.t * 9) * 0.6;
+  ctx.save();
+  ctx.translate(0, -14 - Math.sin(p.t * 4) * 4);
+  for (const d of [-1, 1]) {
+    ctx.save();
+    ctx.translate(0, -18);
+    ctx.rotate(d * (0.25 + fl * 0.5));
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(d * 38, -8);
+    ctx.lineTo(d * 10, 8);
+    ctx.closePath();
+    fillStroke(ctx, '#c07ad8', 2.5);
+    ctx.restore();
+  }
+  ellipse(ctx, 0, -16, 12, 10);
+  fillStroke(ctx, radial(ctx, -3, -20, 12, '#e0a8f0', '#9a5ab0'));
+  // head with crest and beak
+  ctx.beginPath();
+  ctx.moveTo(6, -30);
+  ctx.lineTo(-10, -38);
+  ctx.lineTo(8, -24);
+  ctx.closePath();
+  fillStroke(ctx, '#9a5ab0', 2);
+  ellipse(ctx, 10, -26, 7, 6);
+  fillStroke(ctx, '#c07ad8', 2);
+  ctx.beginPath();
+  ctx.moveTo(15, -27);
+  ctx.lineTo(30, -24 + (p.state === 'attack' ? 4 : 0));
+  ctx.lineTo(15, -23);
+  ctx.closePath();
+  fillStroke(ctx, '#ffd23a', 1.5);
+  eye(ctx, 11, -28, 2.8, { look: 0.8, angry: true });
+  ctx.restore();
+};
+
+const torikera: Drawer = (ctx, p) => {
+  const m = motion(p, 6);
+  dinoLegs(ctx, [-20, -6, 10, 22], 0, 14, p.walk * 6, m.moving, '#6a9ac8');
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.5);
+  ctx.rotate(m.lean * 0.6);
+  ellipse(ctx, -4, -24, 30, 17);
+  fillStroke(ctx, radial(ctx, -10, -30, 30, '#9cc8f0', '#4a7ab0'));
+  // frill shield (the barrier)
+  const shield = (p.hp ?? 1) > 0;
+  ctx.beginPath();
+  ctx.ellipse(18, -34, 16, 22, 0.2, 0, Math.PI * 2);
+  fillStroke(ctx, shield ? '#f2c46a' : '#c8a060', 3);
+  ctx.fillStyle = '#e8762a';
+  for (let i = 0; i < 5; i++) {
+    const a = -1.4 + i * 0.7;
+    ellipse(ctx, 18 + Math.cos(a) * 14, -34 + Math.sin(a) * 19, 3, 3);
+    ctx.fill();
+  }
+  ellipse(ctx, 30, -26, 12, 10);
+  fillStroke(ctx, '#7aa8d8', 2.5);
+  // horns
+  for (const [hx, hy, a] of [[34, -36, -0.6], [40, -32, -0.2], [42, -24, 0.2]] as [number, number, number][]) {
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.rotate(a + (p.state === 'attack' ? -0.3 : 0));
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(14, -2);
+    ctx.lineTo(0, 4);
+    ctx.closePath();
+    fillStroke(ctx, '#fff8e0', 1.5);
+    ctx.restore();
+  }
+  eye(ctx, 32, -30, 3.6, { look: 0.8, angry: true });
+  ctx.restore();
+};
+
+const tamago: Drawer = (ctx, p) => {
+  const age = p.t % 999;
+  void age;
+  const wob = Math.sin(p.t * (p.state === 'walk' ? 6 : 3)) * 0.12;
+  ctx.save();
+  ctx.rotate(wob);
+  ctx.beginPath();
+  ctx.ellipse(0, -22, 17, 22, 0, 0, Math.PI * 2);
+  fillStroke(ctx, radial(ctx, -5, -30, 22, '#fffbe6', '#e8d8a0'), 3);
+  ctx.fillStyle = '#8ad07a';
+  for (const [x, y, r] of [[-7, -30, 4], [6, -16, 5], [5, -36, 3], [-8, -12, 3]] as [number, number, number][]) {
+    ellipse(ctx, x, y, r, r * 0.8);
+    ctx.fill();
+  }
+  // a peeking eye through a crack
+  ctx.strokeStyle = OUT;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-10, -26);
+  ctx.lineTo(-4, -22);
+  ctx.lineTo(2, -27);
+  ctx.lineTo(8, -22);
+  ctx.stroke();
+  eye(ctx, 2, -20, 3, { look: 0.6 });
+  ctx.restore();
+};
+
+const magmagolem: Drawer = (ctx, p) => {
+  const m = motion(p, 5);
+  feet(ctx, 0, 0, 14, 8, p.walk * 5, m.moving, '#5a3a32');
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.6);
+  ctx.rotate(m.lean * 0.5);
+  blob(ctx, 0, -32, 26, 30, 0.12, 3);
+  fillStroke(ctx, radial(ctx, -6, -40, 30, '#7a5a52', '#3a2422'), 3);
+  // glowing lava cracks
+  ctx.strokeStyle = `rgba(255,${140 + Math.sin(p.t * 6) * 60},40,1)`;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-14, -50);
+  ctx.lineTo(-6, -38);
+  ctx.lineTo(-12, -24);
+  ctx.moveTo(8, -52);
+  ctx.lineTo(4, -40);
+  ctx.lineTo(12, -30);
+  ctx.lineTo(6, -16);
+  ctx.stroke();
+  ellipse(ctx, 6, -42, 13, 9);
+  ctx.fillStyle = '#ff7a2a';
+  ctx.fill();
+  eye(ctx, 1, -43, 3.6, { look: 0.7, angry: true, color: '#8a1a00' });
+  eye(ctx, 12, -43, 3.6, { look: 0.7, angry: true, color: '#8a1a00' });
+  const a = p.state === 'attack' ? (p.atk < 0.5 ? -14 : 16) : 0;
+  arm(ctx, 18, -30, 32 + a, -36, 11, '#5a3a32');
+  ellipse(ctx, 34 + a, -36, 6, 6);
+  ctx.fillStyle = '#ff9a3a';
+  ctx.fill();
+  ctx.restore();
+};
+
+const tyranno: Drawer = (ctx, p) => {
+  const m = motion(p, 4);
+  dinoLegs(ctx, [-6, 12], 0, 18, p.walk * 4, m.moving, '#c86a4a');
+  ctx.save();
+  ctx.translate(0, -m.bob * 0.7);
+  ctx.rotate(m.lean * 0.5);
+  ctx.beginPath();
+  ctx.moveTo(-14, -26);
+  ctx.quadraticCurveTo(-44, -24, -52, -10);
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = OUT;
+  ctx.stroke();
+  ctx.lineWidth = 10;
+  ctx.strokeStyle = '#d87a5a';
+  ctx.stroke();
+  blob(ctx, 0, -34, 24, 22, 0.04, 2);
+  fillStroke(ctx, radial(ctx, -6, -40, 24, '#f0a07a', '#b0503a'), 3);
+  ellipse(ctx, 4, -28, 12, 12);
+  fillStroke(ctx, '#ffe0b0', 2);
+  // big head
+  const roar = p.state === 'attack' ? (p.atk > 0.4 ? 0.35 : -0.1) : 0;
+  ctx.save();
+  ctx.translate(22, -52);
+  ctx.rotate(-roar * 0.3);
+  ellipse(ctx, 6, 0, 22, 15);
+  fillStroke(ctx, '#d87a5a', 3);
+  // jaw
+  ctx.save();
+  ctx.translate(-6, 6);
+  ctx.rotate(roar);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(28, 2);
+  ctx.lineTo(24, 10);
+  ctx.lineTo(0, 8);
+  ctx.closePath();
+  fillStroke(ctx, '#c86a4a', 2.5);
+  ctx.restore();
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(4 + i * 6, 6);
+    ctx.lineTo(7 + i * 6, 11);
+    ctx.lineTo(10 + i * 6, 6);
+    ctx.fill();
+  }
+  eye(ctx, 10, -4, 4.5, { look: 0.8, angry: true });
+  ctx.restore();
+  arm(ctx, 16, -32, 24, -26, 4, '#d87a5a');
+  ctx.restore();
+};
+
+const magmaou: Drawer = (ctx, p) => {
+  const m = motion(p, 4);
+  feet(ctx, 0, 0, 18, 8, p.walk * 4, m.moving, '#5a2a1a');
+  ctx.save();
+  ctx.translate(0, -m.bob);
+  ctx.rotate(m.lean * 0.5);
+  // fire cape
+  ctx.beginPath();
+  ctx.moveTo(-10, -62);
+  ctx.quadraticCurveTo(-54, -40 + Math.sin(p.t * 4) * 5, -46, 0);
+  ctx.lineTo(10, -2);
+  ctx.closePath();
+  fillStroke(ctx, '#e8312f', 2.5);
+  blob(ctx, 0, -34, 30, 33, 0.06, 2);
+  fillStroke(ctx, radial(ctx, -8, -42, 32, '#ff9a5a', '#a8301a'), 3);
+  // flame hair
+  for (let i = 0; i < 5; i++) {
+    const fx = -14 + i * 8;
+    const fh = 14 + Math.sin(p.t * 10 + i) * 4;
+    ctx.beginPath();
+    ctx.moveTo(fx - 5, -62);
+    ctx.quadraticCurveTo(fx, -62 - fh, fx + 5, -62);
+    ctx.closePath();
+    fillStroke(ctx, i % 2 ? '#ffd23a' : '#ff7a2a', 1.5);
+  }
+  // crown
+  ctx.beginPath();
+  ctx.moveTo(-10, -60);
+  for (let i = 0; i <= 4; i++) ctx.lineTo(-10 + i * 7, i % 2 ? -72 : -62);
+  ctx.lineTo(18, -60);
+  ctx.closePath();
+  fillStroke(ctx, '#ffd23a', 2);
+  eye(ctx, 0, -42, 6, { look: 0.7, angry: true, color: '#8a1a00' });
+  eye(ctx, 18, -42, 6, { look: 0.7, angry: true, color: '#8a1a00' });
+  mouth(ctx, 10, -28, 12, p.state === 'attack' ? 'open' : 'grr');
+  // magma fork
+  const a = p.state === 'attack' ? (p.atk < 0.5 ? -0.9 : 0.6) : -0.2;
+  ctx.save();
+  ctx.translate(26, -34);
+  ctx.rotate(a);
+  arm(ctx, 0, 0, 0, -48, 4, '#5a3a32');
+  for (const fx of [-6, 0, 6]) arm(ctx, fx, -48, fx, -62, 3, '#ff7a2a');
+  ctx.restore();
+  ctx.restore();
+};
+
 export const ENEMY_ART: Record<string, Drawer> = {
+  hinotokage, raptor, ptera, torikera, tamago, magmagolem, tyranno, magmaou,
   yukiusagi, penguin, yukidaruma, chibidaruma, tonakai, yukiotoko, mammoth, kooriou,
   kame, dorobou, kaeru, metal,
   ari, nezumi, kemushi, karasu, hachi, mogura, katatsumuri, tanuki, kamakiri, hebi, inoshishi, fukurou, kabuto, okarasu, kuma, daiou,
