@@ -83,7 +83,7 @@ export const ALLIES: AllyDef[] = [
     id: 'imomochi', name: 'いももち', role: 'ねばねば', rarity: 'N',
     desc: 'もちもち ボディで うけとめて、けものを ねばねばで とめる！',
     cost: 360, cooldown: 9.0, hp: 2400, atk: 60, range: 120, speed: 40, atkInterval: 1.6, foreswing: 0.3, kb: 2, area: true, width: 56, size: 1.1,
-    effect: { kind: 'freeze', chance: 0.35, dur: 1.5, vs: ['beast'] },
+    effect: { kind: 'freeze', chance: 0.5, dur: 1.5, vs: ['beast'] },
   },
   // ---- ガチャ限定 ----
   {
@@ -126,7 +126,7 @@ export const ALLIES: AllyDef[] = [
   {
     id: 'nyokki', name: 'ニョッキ', role: 'れんぞく', rarity: 'R', gacha: true,
     desc: 'ころころ ニョッキが ちかくの てき 3たいを いっきに こうげき！',
-    cost: 200, cooldown: 4.0, hp: 500, atk: 40, range: 110, speed: 70, atkInterval: 0.8, foreswing: 0.15, kb: 2, area: false, width: 40, size: 0.9, multiHit: 3,
+    cost: 200, cooldown: 4.0, hp: 900, atk: 40, range: 110, speed: 70, atkInterval: 0.8, foreswing: 0.15, kb: 2, area: false, width: 40, size: 0.9, multiHit: 3,
   },
   {
     id: 'pie', name: 'ポテトパイ', role: 'こうらわり', rarity: 'SR', gacha: true,

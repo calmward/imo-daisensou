@@ -174,3 +174,8 @@ export function noteResult(save: SaveData, stageId: number, win: boolean) {
 export function cheerAvailable(save: SaveData, stageId: number) {
   return stageId >= 49 && save.lose.id === stageId && save.lose.n >= 3;
 }
+/** how much help: after 3 losses +25% castle / +300 money, after 5 losses +50% / +600 */
+export function cheerPower(save: SaveData, stageId: number) {
+  const big = save.lose.id === stageId && save.lose.n >= 5;
+  return big ? { castle: 1.5, money: 600 } : { castle: 1.25, money: 300 };
+}

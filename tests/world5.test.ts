@@ -111,7 +111,7 @@ describe('world 5 goals', () => {
     applyWin(s, STAGES[55], 0, 1, () => 1);
     applyWin(s, STAGES[55], 0, 2, () => 1);
     expect(s.stones).toBe(1);
-    const old = sanitize({ cleared: { 1: 1 }, units: { jaga: 3 }, medals: [49, 'x', 999], ultra: ['nope', 'jaga'], tower: { best: 5 } });
+    const old = sanitize({ cleared: { 1: 1 }, units: { jaga: 22 }, medals: [49, 'x', 999, 3], ultra: ['nope', 'jaga'], tower: { best: 5 } });
     expect(old.medals).toEqual([49]);
     expect(old.ultra).toEqual(['jaga']);
     expect(old.tower.best).toBe(5);

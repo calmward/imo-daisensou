@@ -113,9 +113,9 @@ export function sanitize(d: unknown): SaveData {
   for (const [k, v] of Object.entries(obj(td.counts))) s.today.counts[k] = num(v, 0);
   const st = obj(o.stats);
   s.stats = { wins: num(st.wins, 0), losses: num(st.losses, 0), kills: num(st.kills, 0) };
-  s.medals = Array.isArray(o.medals) ? [...new Set(o.medals.filter((x): x is number => Number.isInteger(x) && x >= 1 && x <= STAGES.length))] : [];
+  s.medals = Array.isArray(o.medals) ? [...new Set(o.medals.filter((x): x is number => Number.isInteger(x) && x >= 49 && x <= 60))] : [];
   s.stones = num(o.stones, 0, 0, 999);
-  s.ultra = Array.isArray(o.ultra) ? [...new Set(o.ultra.filter((x): x is string => typeof x === 'string' && Object.prototype.hasOwnProperty.call(s.units, x)))] : [];
+  s.ultra = Array.isArray(o.ultra) ? [...new Set(o.ultra.filter((x): x is string => typeof x === 'string' && Object.prototype.hasOwnProperty.call(s.units, x) && s.units[x] >= 22))] : [];
   s.tower = { best: num(obj(o.tower).best, 0, 0, 9999) };
   const lo = obj(o.lose);
   s.lose = { id: num(lo.id, 0, 0, 999), n: num(lo.n, 0, 0, 99) };

@@ -30,18 +30,30 @@ function keepCastle(p: number): Medal {
 }
 
 export const MEDALS: Record<number, Medal> = {
-  49: maxDeploy(15),
+  49: keepCastle(0.8),
   50: inTime(180),
   51: { text: 'いわを 5こ こわして かつ', ok: (b) => b.rocksBroken >= 5, live: (b) => ({ text: `いわ ${Math.min(5, b.rocksBroken)}/5`, fail: false }) },
   52: noBeam(),
-  53: { text: 'たまごを 1こも かえさずに かつ', ok: (b) => b.hatched === 0, live: (b) => ({ text: b.hatched ? 'うまれちゃった…' : 'たまご まもり中', fail: b.hatched > 0 }) },
+  53: { text: 'たまごを 1こも かえさずに かつ（タップで われる！）', ok: (b) => b.hatched === 0, live: (b) => ({ text: b.hatched ? 'うまれちゃった…' : 'たまご まもり中', fail: b.hatched > 0 }) },
   54: keepCastle(0.5),
   55: { text: '3しゅるい だけで かつ', ok: (b) => b.typesUsed.size <= 3, live: (b) => ({ text: `しゅるい ${b.typesUsed.size}/3`, fail: b.typesUsed.size > 3 }) },
-  56: noBeam(),
-  57: maxDeploy(20),
+  56: {
+    text: 'ティラノを 2ふん いないに たおす',
+    ok: (b) => b.bossKillT >= 0 && b.bossT0 >= 0 && b.bossKillT - b.bossT0 <= 120,
+    live: (b) => {
+      if (b.bossT0 < 0) return { text: 'ティラノ まち…', fail: false };
+      const left = Math.ceil(120 - ((b.bossKillT >= 0 ? b.bossKillT : b.time) - b.bossT0));
+      return { text: b.bossKillT >= 0 ? (left >= 0 ? 'たおした！' : 'おそかった…') : `のこり ${Math.max(0, left)}びょう`, fail: left < 0 };
+    },
+  },
+  57: maxDeploy(35),
   58: { text: 'てきを 80ぴき たおして かつ', ok: (b) => b.kills >= 80, live: (b) => ({ text: `${Math.min(80, b.kills)}/80 ひき`, fail: false }) },
   59: keepCastle(0.7),
-  60: inTime(240),
+  60: {
+    text: 'マグマ大王を いもアイスで たおす',
+    ok: (b) => b.magmaKiller === 'imoice',
+    live: (b) => ({ text: b.magmaKiller ? (b.magmaKiller === 'imoice' ? 'ひやした！' : 'いもアイスじゃ なかった…') : 'さいごは いもアイスで！', fail: !!b.magmaKiller && b.magmaKiller !== 'imoice' }),
+  },
 };
 
 export const MEDAL_COUNT = Object.keys(MEDALS).length;

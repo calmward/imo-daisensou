@@ -139,6 +139,10 @@ export class Battle {
   judged = false;
   endT = 0;
   bossCount = 0;
+  bossT0 = -1; // when the first boss appeared
+  bossKiller = ''; // which potato finished the (last) boss
+  magmaKiller = '';
+  bossKillT = -1;
   bossAlive = false;
   kills = 0;
   hatched = 0;
@@ -148,6 +152,7 @@ export class Battle {
   typesUsed = new Set<string>();
   rocks: { x: number; t: number }[] = [];
   private nextRocks = 25;
+  eggTaps = 0;
   private rockWarned = false;
   /** which enemy defeated how many potatoes (for the loss hint) */
   killedBy: Record<string, number> = {};
@@ -262,8 +267,29 @@ export class Battle {
 
   /** After a while enemies get angry and stronger, so stalemates always resolve. */
   get rage() {
-    // world 5+ grows angry faster so long stand-offs end within a few minutes
-    return this.time > RAGE_START ? 1 + (this.time - RAGE_START) * (this.stage.id >= 49 ? 0.02 : 0.015) : 1;
+    const t0 = this.rageStart;
+    return this.time > t0 ? 1 + (this.time - t0) * 0.015 : 1;
+  }
+
+  /** world 5 rules (time limit, live rage, barrier wear...) apply to stages 49+ and the tower, not the daily bonus stage */
+  get w5rules() {
+    return this.stage.id >= 49 && this.stage.id !== 100;
+  }
+
+  /** world 5+ boss stages: the rage clock follows the boss (starts 60s after it appears, stops once all bosses are beaten) */
+  get w5Boss() {
+    return !!this.stage.boss && this.w5rules;
+  }
+  get bossTotal() {
+    return this.stage.spawns.filter((s) => s.boss).length;
+  }
+  get bossesDone() {
+    return this.bossCount >= this.bossTotal && !this.bossAlive;
+  }
+  get rageStart() {
+    if (!this.w5Boss) return RAGE_START;
+    if (this.bossT0 < 0 || this.bossesDone) return Infinity;
+    return this.bossT0 + 60;
   }
 
   spawnEnemy(id: string, mult = 100, atX?: number): Fighter {
@@ -280,6 +306,7 @@ export class Battle {
     this.events.push({ type: 'spawn', f });
     if (def.boss) {
       this.bossCount++;
+      if (this.bossT0 < 0) this.bossT0 = this.time;
       this.events.push({ type: 'boss', f });
     }
     if (def.shockwave) {
@@ -354,10 +381,24 @@ export class Battle {
     }
   }
 
+  private bossDown(target: Fighter, src: Fighter | null) {
+    // beating the boss rattles the enemy castle (world 5: much harder, and everyone gets blown back)
+    this.bossKiller = src?.id ?? '';
+    if (target.id === 'magmaou') this.magmaKiller = src?.id ?? 'beam';
+    this.bossKillT = this.time;
+    const w5 = this.w5rules;
+    const dmg = Math.round(this.eBase.max * (w5 ? 0.5 : 0.25));
+    if (w5) for (const e of [...this.enemies]) if (e !== target && this.targetable(e)) this.knockback(e);
+    this.eBase.hp = Math.max(1, this.eBase.hp - dmg);
+    this.eBase.hitT = 0.6;
+    this.events.push({ type: 'baseHit', side: 1, dmg });
+    this.events.push({ type: 'castleShake' });
+  }
+
   private damage(target: Fighter, amount: number, src: Fighter | null, crit: boolean) {
     if (target.state === 'dead') return;
     // world 5+: enemies on the field toughen up with the rage timer too
-    if (target.side === 1 && !target.boss && this.stage.id >= 49) amount /= this.rage / (target.rageAt ?? 1);
+    if (target.side === 1 && !target.boss && this.w5rules) amount /= this.rage / (target.rageAt ?? 1);
     if (target.state === 'revive') {
       // only an ice counter can hit the ice block: it melts for good
       if (!src || !canMelt(src, target)) return;
@@ -368,6 +409,7 @@ export class Battle {
       target.kbFrom = target.x;
       target.kbTo = target.x + 70;
       this.events.push({ type: 'death', f: target });
+      if (target.boss) this.bossDown(target, src);
       this.kills++;
       const reward = target.reward * (this.stage.mod === 'festival' ? 2 : 1);
       if (reward > 0) {
@@ -402,14 +444,7 @@ export class Battle {
       target.kbTo = target.x + (target.side === 0 ? -1 : 1) * 70;
       this.events.push({ type: 'death', f: target });
       if (target.side === 0 && src) this.killedBy[src.id] = (this.killedBy[src.id] ?? 0) + 1;
-      if (target.side === 1 && target.boss) {
-        // beating the boss rattles the enemy castle
-        const dmg = Math.round(this.eBase.max * 0.25);
-        this.eBase.hp = Math.max(1, this.eBase.hp - dmg);
-        this.eBase.hitT = 0.6;
-        this.events.push({ type: 'baseHit', side: 1, dmg });
-        this.events.push({ type: 'castleShake' });
-      }
+      if (target.side === 1 && target.boss) this.bossDown(target, src);
       if (target.side === 1) {
         this.kills++;
         const reward = target.reward * (this.stage.mod === 'festival' ? 2 : 1);
@@ -456,9 +491,10 @@ export class Battle {
       }
     }
     // world-4 bosses grow angrier over time too, so a stalemate always ends
-    let bossRage = f.boss && this.stage.id >= 37 && this.time > RAGE_START ? 1 + (this.time - RAGE_START) * 0.07 : 1;
+    const rs = this.rageStart;
+    let bossRage = f.boss && this.stage.id >= 37 && this.time > rs ? 1 + (this.time - rs) * (this.w5rules ? 0.04 : 0.07) : 1;
     // world 5+: enemies already on the field get angrier too (both sides at their unit caps used to freeze the line)
-    if (!f.boss && f.side === 1 && this.stage.id >= 49) bossRage = this.rage / (f.rageAt ?? 1);
+    if (!f.boss && f.side === 1 && this.w5rules) bossRage = this.rage / (f.rageAt ?? 1);
     for (const t of list) {
       let dmg = f.s.atk * bossRage;
       if (hasAny(f.s.strongVs, t.s.traits)) dmg *= 2.5;
@@ -470,7 +506,7 @@ export class Battle {
       if (t.shield > 0) {
         if (dmg < t.shield) {
           // world 5+: small hits slowly crack the barrier, so it is never an unbreakable wall
-          if (this.stage.id >= 49) t.shield = Math.max(1, t.shield - dmg * 0.3);
+          if (this.w5rules) t.shield = Math.max(1, t.shield - dmg * 0.3);
           this.events.push({ type: 'hit', x: t.x, lane: t.lane, side: f.side, dmg: 0, crit: false, big: false, targetSide: t.side, effect: 'block' });
           continue;
         }
@@ -496,11 +532,11 @@ export class Battle {
     }
     // world 4+: potatoes fighting right at the castle gate also chip the castle (no endless sieges)
     // world 5+: the same goes for enemies at the potato gate, so a siege of our castle can't last forever either
-    const spill = !base && list.length > 0 && (f.side === 0 ? this.stage.id >= 37 && this.length - f.x <= f.s.range : this.stage.id >= 49 && f.x <= f.s.range);
+    const spill = !base && list.length > 0 && (f.side === 0 ? this.stage.id >= 37 && this.length - f.x <= f.s.range : this.w5rules && f.x <= f.s.range);
     if (base || spill) {
       const b = f.side === 0 ? this.eBase : this.pBase;
       if (f.side === 1) this.castleBy[f.id] = (this.castleBy[f.id] ?? 0) + f.s.atk;
-      const dmg = f.s.atk * (spill ? 0.35 : 1) * (f.side === 1 && this.stage.id >= 49 ? bossRage : 1);
+      const dmg = f.s.atk * (spill ? 0.35 : 1) * (f.side === 1 && this.w5rules ? bossRage : 1);
       b.hp = Math.max(0, b.hp - dmg);
       b.hitT = 0.15;
       this.events.push({ type: 'baseHit', side: f.side === 0 ? 1 : 0, dmg });
@@ -510,11 +546,12 @@ export class Battle {
   private stepFighter(f: Fighter, dt: number) {
     if (f.flash > 0) f.flash -= dt;
     if (f.state !== 'dead') {
-      f.age += dt;
+      if (!(f.s.hatch && f.freezeT > 0)) f.age += dt; // frozen eggs don't hatch
       if (f.burnT > 0) {
         f.burnT -= dt;
         f.burnAcc += f.burnDps * dt;
-        if (f.burnAcc >= f.burnDps * 0.5 && f.state !== 'revive') {
+        if (f.state === 'revive') f.burnAcc = 0; // no stored-up burn while frozen
+        else if (f.burnAcc >= f.burnDps * 0.5) {
           this.damage(f, f.burnAcc, null, false);
           f.burnAcc = 0;
         }
@@ -738,7 +775,8 @@ export class Battle {
     }
   }
 
-  tapRock(i: number) {
+  tapRock(which: number | { x: number; t: number }) {
+    const i = typeof which === 'number' ? which : this.rocks.indexOf(which);
     const r = this.rocks[i];
     if (!r || this.result) return;
     this.rocks.splice(i, 1);
@@ -756,6 +794,21 @@ export class Battle {
     return [this.length * 0.42, this.length * 0.52];
   }
 
+  /** the eruption tutorial (51) rains often but gently; later stages rarely but hard */
+  get rockSet() {
+    return this.stage.id === 51 ? { n: 4, every: 16, dmg: 0.25 } : { n: 3, every: 28, dmg: 0.2 };
+  }
+
+  /** tap an egg to crack it a little */
+  tapEgg(uid: number) {
+    const e = this.enemies.find((x) => x.uid === uid);
+    if (!e || !e.s.hatch || !this.targetable(e) || this.result) return false;
+    this.damage(e, e.maxHp * 0.15, null, false);
+    this.eggTaps++;
+    this.events.push({ type: 'hit', x: e.x, lane: e.lane, side: 0, dmg: Math.round(e.maxHp * 0.15), crit: false, big: false, targetSide: 1 });
+    return true;
+  }
+
   private stepHazards(dt: number) {
     const mod = this.stage.mod;
     if (mod === 'eruption') {
@@ -764,8 +817,8 @@ export class Battle {
         this.events.push({ type: 'rockWarn' });
       }
       if (this.time >= this.nextRocks) {
-        this.dropRocks(3);
-        this.nextRocks = this.time + 22;
+        this.dropRocks(this.rockSet.n);
+        this.nextRocks = this.time + this.rockSet.every;
         this.rockWarned = false;
       }
     }
@@ -776,7 +829,7 @@ export class Battle {
       this.rocks.splice(i, 1);
       for (const a of [...this.allies]) {
         if (!this.targetable(a) || Math.abs(a.x - r.x) > 70) continue;
-        this.damage(a, a.maxHp * 0.2, null, false);
+        this.damage(a, a.maxHp * this.rockSet.dmg, null, false);
         this.knockback(a);
       }
       for (const e of [...this.enemies]) if (!e.boss && this.targetable(e) && Math.abs(e.x - r.x) <= 70) this.damage(e, e.maxHp * 0.1, null, false);
@@ -787,7 +840,8 @@ export class Battle {
       for (const f of [...this.allies, ...this.enemies]) {
         if (f.state === 'dead' || f.state === 'burrow' || f.state === 'kb' || f.state === 'revive') continue;
         if (f.s.flying || f.s.traits?.includes('fire') || f.x < a0 || f.x > a1) continue;
-        f.hazardAcc += f.maxHp * (f.side === 0 ? 0.05 : 0.025) * dt;
+        if (f.side === 0 && f.state === 'walk') continue; // potatoes hop across quickly; fighting in the lava hurts
+        f.hazardAcc += f.maxHp * 0.04 * dt;
         if (f.hazardAcc >= f.maxHp * 0.02) {
           this.damage(f, f.hazardAcc, null, false);
           f.hazardAcc = 0;
@@ -843,6 +897,7 @@ export class Battle {
 
   update(dt: number) {
     if (this.result) {
+      this.rocks.length = 0;
       this.endT += dt;
       for (const f of this.allies) this.stepEndAnim(f, dt);
       for (const f of this.enemies) this.stepEndAnim(f, dt);
@@ -850,7 +905,8 @@ export class Battle {
     }
     const before = this.time;
     this.time += dt;
-    if (before < RAGE_START && this.time >= RAGE_START) this.events.push({ type: 'rage' });
+    const rs0 = this.rageStart;
+    if (before < rs0 && this.time >= rs0) this.events.push({ type: 'rage' });
     this.money = Math.min(this.cap, this.money + this.rate * dt);
     // world 4+: when the army is full, the beam charges faster so there's still something to do
     const capped = this.stage.id >= 37 && this.allies.length >= MAX_ALLIES;
@@ -888,6 +944,8 @@ export class Battle {
     this.enemies = this.enemies.filter((f) => !(f.state === 'dead' && f.t > 0.9));
     this.bossAlive = this.enemies.some((e) => e.boss && e.state !== 'dead');
 
+    // world 5 boss stages: the castle can't fall while a boss is still alive or yet to come
+    if (this.w5Boss && !this.bossesDone && this.eBase.hp < this.eBase.max * 0.4) this.eBase.hp = Math.round(this.eBase.max * 0.4);
     if (this.eBase.hp <= 0) {
       this.result = 'win';
       // remaining enemies flee/vanish (no rewards, not counted as kills)
@@ -921,7 +979,7 @@ export class Battle {
 
   /** world 5+: battles end at 7 minutes with a castle-damage judgement */
   get timeLimit() {
-    return this.stage.id >= 49 ? TIME_LIMIT : 0;
+    return this.w5rules ? TIME_LIMIT : 0;
   }
 
   private stepEndAnim(f: Fighter, dt: number) {

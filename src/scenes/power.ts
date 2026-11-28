@@ -115,7 +115,7 @@ export class PowerScene implements Scene {
       const k = this.popText.t / 1.2;
       ctx.save();
       ctx.globalAlpha = 1 - k;
-      text(ctx, this.popText.s, w / 2, h * 0.45 - k * 40, clamp(w * 0.07, 24, 44), { color: '#ffe14d' });
+      text(ctx, this.popText.s, w / 2, h * 0.45 - k * 40, clamp(w * 0.07, 24, 44), { color: '#ffe14d', maxW: w - 24 });
       ctx.restore();
     }
   }
@@ -224,10 +224,11 @@ export class PowerScene implements Scene {
       text(ctx, `Lv.${lv}`, tx, r.y + fs * 4.1, fs * 1.1, { align: 'left', color: '#fff' });
       const ult = save.ultra.includes(a.id);
       if (lv >= HYPER_LV && !ult && (save.stones > 0 || isCleared(save, 50))) {
-        const ur = { x: tx + fs * 3.4, y: r.y + fs * 3.45, w: Math.max(40, tw - fs * 3.4), h: fs * 1.4 };
+        // a big button over the portrait so small fingers can hit it
+        const ur = { x: px - ps * 0.6, y: py + ps * 0.18, w: ps * 1.2, h: Math.max(44, fs * 1.9) };
         if (canUltra(save, a.id)) {
           const o = drawButton(ctx, ur, STYLES.orange, ui.isPressed('ultra'), 8);
-          text(ctx, '🔥 ウルトラしんか！', ur.x + ur.w / 2, ur.y + o + (ur.h - 6) / 2, fs * 0.6, { maxW: ur.w - 6 });
+          text(ctx, '🔥 ウルトラしんか！', ur.x + ur.w / 2, ur.y + o + (ur.h - 6) / 2, Math.max(13, fs * 0.7), { maxW: ur.w - 6 });
           ui.add({ id: 'ultra', r: ur, sound: false, onTap: () => {
             if (doUltra(save, a.id)) {
               audio.sfx('fanfare');
@@ -235,7 +236,7 @@ export class PowerScene implements Scene {
               this.app.persist();
             }
           } });
-        } else text(ctx, lv < ULTRA_LV ? `Lv.${ULTRA_LV}＋🔥1こで ウルトラしんか` : `🔥ほのおのいし で ウルトラしんか（いま ${save.stones}こ）`, tx + fs * 3.4, r.y + fs * 4.15, fs * 0.55, { align: 'left', color: '#e0601a', stroke: 'none', maxW: tw - fs * 3.4 });
+        } else text(ctx, lv < ULTRA_LV ? `Lv.${ULTRA_LV}＋🔥1こで ウルトラしんか` : `🔥いしで ウルトラしんか（${save.stones}こ）`, tx + fs * 3.4, r.y + fs * 4.15, Math.max(11, fs * 0.55), { align: 'left', color: '#e0601a', stroke: 'none', maxW: tw - fs * 3.4 });
       }
       if (lv < HYPER_LV) text(ctx, isEvolved(lv) ? `Lv.${HYPER_LV}で ハイパーしんか！` : `Lv.${EVOLVE_LV}で しんか！`, tx + fs * 3.4, r.y + fs * 4.15, fs * 0.6, { align: 'left', color: '#ff8a1f', stroke: 'none', maxW: tw - fs * 3.4 });
       // stats bars

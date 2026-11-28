@@ -18,7 +18,7 @@ const NAMES = ['いしの かいだん', 'ほこりの へや', 'くもの す',
 /** strength (%) of a floor. Calibrated with scripts/towercalib.ts against the campaign. */
 export function towerPower(f: number) {
   const base = TOWER_BASE * (1 + 0.075 * (Math.min(f, 30) - 1));
-  return f > 30 ? base * Math.pow(1.07, f - 30) : base;
+  return f > 30 ? base * Math.pow(1.05, f - 30) : base;
 }
 export const TOWER_BASE = 420;
 
@@ -44,7 +44,9 @@ export function towerStage(f: number): StageDef {
   picks.sort((a, b) => ENEMY_MAP[a].hp - ENEMY_MAP[b].hp);
   const p = towerPower(f);
   const spawns: SpawnEntry[] = picks.map((id, i) => {
-    const k = Math.max(0.5, Math.min(8, ROLE_HP[i] / ENEMY_MAP[id].hp));
+    // fast little enemies get a smaller boost, or they turn into unstoppable bullets
+    const def = ENEMY_MAP[id];
+    const k = Math.max(0.5, Math.min(def.speed >= 70 ? 2.5 : 6, ROLE_HP[i] / def.hp));
     return { enemy: id, start: [2, 8, 16][i], interval: ROLE_IV[i], count: 0, mult: Math.round(p * k) };
   });
   const bossFloor = f % 5 === 0;
@@ -57,7 +59,8 @@ export function towerStage(f: number): StageDef {
   return {
     id: TOWER_ID,
     name: `いもの とう ${f}かい${bossFloor ? '（ボス）' : ''}`,
-    world: f > 20 ? 4 : f > 10 ? 3 : 2,
+    // scenery follows the floor's weather (snow for blizzard/ice, volcano for rocks/lava)
+    world: mod === 'blizzard' || mod === 'slippery' ? 3 : mod === 'eruption' || mod === 'lava' ? 4 : f > 20 ? 4 : f > 10 ? 3 : 2,
     length: Math.min(3000, 2000 + 20 * f),
     baseHp: Math.round(15000 + 900 * Math.min(f, 40)),
     spawns,

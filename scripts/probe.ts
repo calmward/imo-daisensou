@@ -13,15 +13,18 @@ for (const st of STAGES) {
   chooseDeck(save);
   spendGold(save);
   if (ids.includes(st.id)) {
-    let w = 0, t = 0, bf = 0;
+    let w = 0, t = 0, bf = 0, jd = 0, bk = 0, hatch = 0;
     const N = 20;
     for (let s = 0; s < N; s++) {
       const b = new Battle(st, save.deck.map((id) => ({ id, level: save.units[id] })), battleMods(save.research), 1000 + s);
       const r = simulate(b, 600, skill);
       if (r.win) w++;
+      if (b.judged) jd++;
+      if (b.bossKillT >= 0) bk += b.bossKillT - b.bossT0;
+      hatch += b.hatched;
       t += r.time; bf += r.baseFrac;
     }
-    console.log(st.id, st.name, 'win', w + '/' + N, 'avgT', (t / N).toFixed(0), 'avgBase', (bf / N).toFixed(2), 'lv', (save.deck.reduce((a, d) => a + save.units[d], 0) / save.deck.length).toFixed(1));
+    console.log(st.id, st.name, 'win', w + '/' + N, 'avgT', (t / N).toFixed(0), 'avgBase', (bf / N).toFixed(2), 'judged', jd, 'bossKillDur', (bk / N).toFixed(0), 'hatch', (hatch / N).toFixed(1), 'lv', (save.deck.reduce((a, d) => a + save.units[d], 0) / save.deck.length).toFixed(1));
   }
   applyWin(save, st, 60, 1, () => 1);
   applyWin(save, st, 60, 1, () => 1);

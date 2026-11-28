@@ -84,7 +84,7 @@ for (const st of STAGES) {
   const ADJUST: Record<number, number> = { 38: 0.85, 44: 1.0, 48: 1.0, 41: 0.85, 3: 0.6, 5: 0.85, 12: 0.88, 17: 0.88, 18: 0.88, 20: 0.85, 29: 0.88 };
   f = Math.round(f * (ADJUST[st.id] ?? 1) * 1000) / 1000;
   // world 5 is calibrated to a ~55-65% first-try win rate for an average kid bot (scripts/calib.ts 0.6 0.55)
-  const CALIB: Record<number, number> = {49: 1.94, 50: 1.645, 51: 1.583, 53: 1.514, 54: 1.595, 55: 1.786, 56: 5.397, 57: 1.064, 59: 1.395, 60: 4.789};
+  const CALIB: Record<number, number> = {49: 2.272, 50: 1.63, 51: 1.334, 53: 1.407, 54: 1.449, 55: 2.46, 56: 8.977, 57: 1.071, 59: 1.625, 60: 4.4};
   if (CALIB[st.id]) f = CALIB[st.id];
   out.push(f);
   const r = trial(save, st.id, f, 99);

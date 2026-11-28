@@ -30,6 +30,9 @@ export class Bot {
       this.seenRocks.add(r);
       if (b.rng.next() < 0.5) b.tapRock(i);
     }
+    // ...and pokes at eggs now and then
+    const egg = b.enemies.find((e) => e.s.hatch && e.state !== 'dead' && e.age > 3);
+    if (egg && b.rng.next() < 0.35) b.tapEgg(egg.uid);
     if (this.opts.spam) {
       if (b.beam >= 1) b.fireBeam();
       for (let i = 0; i < b.slots.length; i++) if (b.canDeploy(i)) b.deploy(i);

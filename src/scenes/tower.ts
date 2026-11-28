@@ -14,8 +14,11 @@ export class TowerScene implements Scene {
   t = 0;
   /** floor shown in the info panel (defaults to the next unclimbed floor) */
   sel: number;
+  /** lowest floor in view (scroll with ▲▼ to replay older floors) */
+  low: number;
   constructor(private app: App) {
     this.sel = app.save.tower.best + 1;
+    this.low = Math.max(1, this.sel - 1);
   }
   enter() {
     audio.playMusic('map', MUSIC.map);
@@ -58,9 +61,9 @@ export class TowerScene implements Scene {
     const tBot = portraitMode ? h * 0.48 : h - 14;
     const rows = 6;
     const fh = (tBot - tTop) / rows;
-    // floors next+4 ... next-1 (top to bottom)
+    // floors low+5 ... low (top to bottom)
     for (let i = 0; i < rows; i++) {
-      const f = next + (rows - 2) - i;
+      const f = this.low + (rows - 1) - i;
       if (f < 1) continue;
       const y = tTop + i * fh;
       const done = f <= best;
@@ -88,6 +91,21 @@ export class TowerScene implements Scene {
         portrait(ctx, 'jaga', r.x + r.w * 0.2, r.y + r.h * 0.55, Math.min(40, fh * 0.8), this.t * 2, 0, 'walk');
       }
       if (f <= next) ui.add({ id: 'fl' + f, r, onTap: () => (this.sel = f) });
+    }
+
+    // scroll buttons
+    const sb = Math.min(48, fh * 0.9);
+    const up = { x: tx + tw - sb, y: tTop, w: sb, h: sb };
+    const dn = { x: tx + tw - sb, y: tBot - sb, w: sb, h: sb };
+    if (this.low + rows - 1 < next + 2) {
+      const o = drawButton(ctx, up, STYLES.cream, ui.isPressed('up'), 10);
+      text(ctx, '▲', up.x + sb / 2, up.y + o + (sb - 6) / 2, sb * 0.45, { color: '#5a3a12', stroke: 'none' });
+      ui.add({ id: 'up', r: up, onTap: () => (this.low = Math.min(next + 2 - rows + 1, this.low + rows - 1)) });
+    }
+    if (this.low > 1) {
+      const o = drawButton(ctx, dn, STYLES.cream, ui.isPressed('dn'), 10);
+      text(ctx, '▼', dn.x + sb / 2, dn.y + o + (sb - 6) / 2, sb * 0.45, { color: '#5a3a12', stroke: 'none' });
+      ui.add({ id: 'dn', r: dn, onTap: () => (this.low = Math.max(1, this.low - (rows - 1))) });
     }
 
     // ---- info panel ----

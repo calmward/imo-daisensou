@@ -43,7 +43,8 @@ export function spendGold(save: SaveData) {
 }
 
 export function chooseDeck(save: SaveData, allowGacha = false) {
-  const owned = ALLIES.filter((a) => save.units[a.id] && (allowGacha || !a.gacha));
+  // gacha units that a stage hands out (e.g. ポテトパイ) are used like normal friends
+  const owned = ALLIES.filter((a) => save.units[a.id] && (allowGacha || !a.gacha || STAGES.some((s) => s.unlock === a.id && s.id >= 49)));
   // prefer stronger units when over 10
   owned.sort((a, b) => b.cost - a.cost);
   save.deck = owned.slice(0, deckSize(save)).map((a) => a.id);
